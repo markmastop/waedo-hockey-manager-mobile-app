@@ -54,9 +54,14 @@ export default function LiveMatchScreen() {
   const convertPlayersDataToArray = (playersData: any): Player[] => {
     if (!playersData) return [];
     
-    // If it's already an array, return it
+    // If it's already an array, filter and return it
     if (Array.isArray(playersData)) {
-      return playersData.filter(player => player && player.id && player.name);
+      return playersData.filter(player => 
+        player && 
+        typeof player === 'object' && 
+        player.id && 
+        player.name
+      );
     }
     
     // If it's an object with position keys, convert to array
@@ -299,27 +304,25 @@ export default function LiveMatchScreen() {
       case 'defender':
       case 'def':
       case 'verdediger':
+      case 'sweeper':
+      case 'lastline':
+      case 'leftback':
+      case 'rightback':
         return '#1E40AF';
       case 'midfielder':
       case 'mid':
       case 'middenvelder':
+      case 'leftmidfield':
+      case 'rightmidfield':
+      case 'centermidfield':
         return '#7C3AED';
       case 'forward':
       case 'fwd':
       case 'aanvaller':
-        return '#EA580C';
       case 'striker':
+      case 'leftforward':
+      case 'rightforward':
         return '#EA580C';
-      case 'sweeper':
-        return '#1E40AF';
-      case 'lastline':
-        return '#1E40AF';
-      case 'leftback':
-      case 'rightback':
-        return '#1E40AF';
-      case 'leftmid':
-      case 'rightmid':
-        return '#7C3AED';
       default:
         return '#6B7280';
     }
@@ -338,10 +341,16 @@ export default function LiveMatchScreen() {
         return 'Linksback';
       case 'rightback':
         return 'Rechtsback';
-      case 'leftmid':
+      case 'leftmidfield':
         return 'Linksmidden';
-      case 'rightmid':
+      case 'rightmidfield':
         return 'Rechtsmidden';
+      case 'centermidfield':
+        return 'Middenmidden';
+      case 'leftforward':
+        return 'Linksvoorwaarts';
+      case 'rightforward':
+        return 'Rechtsvoorwaarts';
       case 'goalkeeper':
       case 'gk':
       case 'keeper':
