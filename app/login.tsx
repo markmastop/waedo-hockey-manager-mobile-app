@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogIn, Users, Target, RotateCcw, BarChart3 } from 'lucide-react-native';
+import { LogIn, Users, Target, RotateCcw, ChartBar as BarChart3 } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
