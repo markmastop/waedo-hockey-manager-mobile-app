@@ -51,12 +51,12 @@ export default function LiveMatchScreen() {
   const [isSubstituting, setIsSubstituting] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const convertPlayersObjectToArray = (playersData: any): Player[] => {
+  const convertPlayersDataToArray = (playersData: any): Player[] => {
     if (!playersData) return [];
     
     // If it's already an array, return it
     if (Array.isArray(playersData)) {
-      return playersData;
+      return playersData.filter(player => player && player.id && player.name);
     }
     
     // If it's an object with position keys, convert to array
@@ -73,7 +73,7 @@ export default function LiveMatchScreen() {
               id: playerData.id,
               name: playerData.name,
               number: playerData.number || 0,
-              position: playerData.position || position, // Use the position key if player.position is not set
+              position: playerData.position || position,
             });
           }
         }
@@ -104,9 +104,9 @@ export default function LiveMatchScreen() {
       console.log('Lineup data:', data.lineup);
       console.log('Reserve players data:', data.reserve_players);
       
-      // Convert both lineup and reserve_players objects to arrays
-      const lineupArray = convertPlayersObjectToArray(data.lineup);
-      const reservePlayersArray = convertPlayersObjectToArray(data.reserve_players);
+      // Convert both lineup and reserve_players to arrays
+      const lineupArray = convertPlayersDataToArray(data.lineup);
+      const reservePlayersArray = convertPlayersDataToArray(data.reserve_players);
       const substitutionsArray = Array.isArray(data.substitutions) ? data.substitutions : [];
       
       const matchData = {
@@ -163,9 +163,22 @@ export default function LiveMatchScreen() {
     if (!match) return;
 
     try {
+      // Prepare the updates for the database
+      const dbUpdates: any = {};
+      
+      // Convert arrays back to the format expected by the database if needed
+      Object.keys(updates).forEach(key => {
+        if (key === 'lineup' || key === 'reserve_players') {
+          // Keep as arrays since the database expects JSONB arrays
+          dbUpdates[key] = updates[key as keyof Match];
+        } else {
+          dbUpdates[key] = updates[key as keyof Match];
+        }
+      });
+
       const { error } = await supabase
         .from('matches')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', match.id);
 
       if (error) throw error;
@@ -230,15 +243,19 @@ export default function LiveMatchScreen() {
       const selectedIndex = newLineup.findIndex(p => p.id === selectedPlayer.id);
       const targetIndex = newReservePlayers.findIndex(p => p.id === targetPlayer.id);
       
-      newLineup[selectedIndex] = targetPlayer;
-      newReservePlayers[targetIndex] = selectedPlayer;
+      if (selectedIndex !== -1 && targetIndex !== -1) {
+        newLineup[selectedIndex] = targetPlayer;
+        newReservePlayers[targetIndex] = selectedPlayer;
+      }
     } else if (!selectedIsOnField && targetIsOnField) {
       // Move selected from bench to field, target from field to bench
       const selectedIndex = newReservePlayers.findIndex(p => p.id === selectedPlayer.id);
       const targetIndex = newLineup.findIndex(p => p.id === targetPlayer.id);
       
-      newReservePlayers[selectedIndex] = targetPlayer;
-      newLineup[targetIndex] = selectedPlayer;
+      if (selectedIndex !== -1 && targetIndex !== -1) {
+        newReservePlayers[selectedIndex] = targetPlayer;
+        newLineup[targetIndex] = selectedPlayer;
+      }
     }
 
     const substitution: Substitution = {
