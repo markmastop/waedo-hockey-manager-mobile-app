@@ -50,7 +50,7 @@ export default function ProfileScreen() {
       <View style={styles.content}>
         <View style={styles.userSection}>
           <View style={styles.userIcon}>
-            <User size={32} color="#1E40AF" />
+            <User size={32} color="#16A34A" />
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>Coach</Text>
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   userIcon: {
     width: 60,
     height: 60,
-    backgroundColor: '#EBF4FF',
+    backgroundColor: '#F0FDF4',
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',

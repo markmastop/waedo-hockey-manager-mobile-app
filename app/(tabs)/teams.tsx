@@ -33,7 +33,7 @@ export default function TeamsScreen() {
       const { data, error } = await supabase
         .from('teams')
         .select('*')
-        .contains('coaches', JSON.stringify([{ id: user.id }]))
+        .or(`coaches.cs.{"id":"${user.id}"},coach.cs.{"id":"${user.id}"}`)
         .order('name');
 
       if (error) throw error;
@@ -42,7 +42,7 @@ export default function TeamsScreen() {
       const teamsData = (data || []).map(team => ({
         ...team,
         players: Array.isArray(team.players) ? team.players : [],
-        coaches: Array.isArray(team.coaches) ? team.coaches : [],
+        coaches: Array.isArray(team.coaches) ? team.coaches : (Array.isArray(team.coach) ? team.coach : []),
       }));
       
       setTeams(teamsData);
@@ -102,7 +102,7 @@ export default function TeamsScreen() {
               <View key={team.id} style={styles.teamCard}>
                 <View style={styles.teamHeader}>
                   <View style={styles.teamIcon}>
-                    <Users size={24} color="#1E40AF" />
+                    <Users size={24} color="#16A34A" />
                   </View>
                   <View style={styles.teamInfo}>
                     <Text style={styles.teamName}>{team.name}</Text>
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   teamIcon: {
     width: 48,
     height: 48,
-    backgroundColor: '#EBF4FF',
+    backgroundColor: '#F0FDF4',
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   playerNumber: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#1E40AF',
+    color: '#16A34A',
   },
   playerName: {
     fontSize: 12,

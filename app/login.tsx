@@ -57,7 +57,7 @@ export default function LoginScreen() {
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <LogIn size={40} color="#1E40AF" />
+              <LogIn size={40} color="#16A34A" />
             </View>
             <Text style={styles.title}>GoHockey Coach</Text>
             <Text style={styles.subtitle}>Sign in to manage your matches</Text>
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 80,
     height: 80,
-    backgroundColor: '#EBF4FF',
+    backgroundColor: '#F0FDF4',
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   button: {
-    backgroundColor: '#1E40AF',
+    backgroundColor: '#16A34A',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

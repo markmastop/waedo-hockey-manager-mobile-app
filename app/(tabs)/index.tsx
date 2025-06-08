@@ -42,7 +42,7 @@ export default function MatchesScreen() {
       const { data: userTeams, error: teamsError } = await supabase
         .from('teams')
         .select('id')
-        .contains('coaches', JSON.stringify([{ id: user.id }]));
+        .or(`coaches.cs.{"id":"${user.id}"},coach.cs.{"id":"${user.id}"}`);
 
       if (teamsError) throw teamsError;
 
@@ -113,7 +113,7 @@ export default function MatchesScreen() {
       case 'paused':
         return '#EA580C';
       case 'upcoming':
-        return '#1E40AF';
+        return '#16A34A';
       default:
         return '#6B7280';
     }
@@ -218,7 +218,7 @@ export default function MatchesScreen() {
 
                 <View style={styles.matchActions}>
                   <View style={styles.coachButton}>
-                    <Users size={16} color="#1E40AF" />
+                    <Users size={16} color="#16A34A" />
                     <Text style={styles.coachButtonText}>Start Coaching</Text>
                   </View>
                 </View>
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#EBF4FF',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -371,6 +371,6 @@ const styles = StyleSheet.create({
   coachButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E40AF',
+    color: '#16A34A',
   },
 });

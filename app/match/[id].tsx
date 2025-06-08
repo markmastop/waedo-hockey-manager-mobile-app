@@ -323,7 +323,7 @@ export default function LiveMatchScreen() {
 
       {isSubstituting && (
         <View style={styles.substitutionBanner}>
-          <ArrowUpDown size={16} color="#1E40AF" />
+          <ArrowUpDown size={16} color="#16A34A" />
           <Text style={styles.substitutionText}>
             Select a player to substitute with {selectedPlayer?.name}
           </Text>
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
   substitutionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EBF4FF',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 20,
     paddingVertical: 12,
     gap: 8,
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   substitutionText: {
     flex: 1,
     fontSize: 14,
-    color: '#1E40AF',
+    color: '#16A34A',
     fontWeight: '500',
   },
   cancelText: {
@@ -581,8 +581,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   selectedCard: {
-    borderColor: '#1E40AF',
-    backgroundColor: '#EBF4FF',
+    borderColor: '#16A34A',
+    backgroundColor: '#F0FDF4',
   },
   playerNumber: {
     width: 40,
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   playerNumberText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#1E40AF',
+    color: '#16A34A',
   },
   playerInfo: {
     flex: 1,
