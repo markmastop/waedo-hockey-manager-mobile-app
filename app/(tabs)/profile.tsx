@@ -28,6 +28,7 @@ export default function ProfileScreen() {
               console.log('User initiated sign out');
               await signOut();
               console.log('Sign out completed, navigating to login');
+              // Use replace to prevent going back to the profile
               router.replace('/login');
             } catch (error) {
               console.error('Sign out error in profile:', error);

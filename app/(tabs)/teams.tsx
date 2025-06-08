@@ -6,10 +6,12 @@ import {
   StyleSheet,
   RefreshControl,
   SafeAreaView,
+  TouchableOpacity,
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, User } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Users, User, ChevronRight } from 'lucide-react-native';
 import { Player } from '@/types/database';
 
 interface Team {
@@ -65,6 +67,10 @@ export default function TeamsScreen() {
     fetchTeams();
   };
 
+  const handleTeamPress = (teamId: string) => {
+    router.push(`/team/${teamId}`);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -99,7 +105,11 @@ export default function TeamsScreen() {
         ) : (
           <View style={styles.teamList}>
             {teams.map((team) => (
-              <View key={team.id} style={styles.teamCard}>
+              <TouchableOpacity
+                key={team.id}
+                style={styles.teamCard}
+                onPress={() => handleTeamPress(team.id)}
+              >
                 <View style={styles.teamHeader}>
                   <View style={styles.teamIcon}>
                     <Users size={24} color="#16A34A" />
@@ -110,6 +120,7 @@ export default function TeamsScreen() {
                       {team.players.length} players • {team.coach.length} coaches
                     </Text>
                   </View>
+                  <ChevronRight size={20} color="#9CA3AF" />
                 </View>
 
                 <View style={styles.playersSection}>
@@ -142,7 +153,7 @@ export default function TeamsScreen() {
                     ))}
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
