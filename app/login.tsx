@@ -70,7 +70,7 @@ export default function LoginScreen() {
                   resizeMode="contain"
                 />
               </View>
-              <Text style={styles.title}>GoHockey Companion</Text>
+              <Text style={styles.title}>doHockey Companion</Text>
               <Text style={styles.subtitle}>De complete coaching app voor hockey</Text>
             </View>
 
@@ -115,7 +115,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.featuresSection}>
-              <Text style={styles.featuresTitle}>Wat je krijgt met GoHockey:</Text>
+              <Text style={styles.featuresTitle}>Wat je krijgt met doHockey:</Text>
               <View style={styles.featuresList}>
                 <Text style={styles.featureItem}>• Compleet teambeheer</Text>
                 <Text style={styles.featureItem}>• Opstellingen op basis van voorkeursposities</Text>

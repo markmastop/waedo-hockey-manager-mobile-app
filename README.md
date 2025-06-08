@@ -1,4 +1,4 @@
-# GoHockey Companion Mobile App
+# doHockey Companion Mobile App
 
 This project is an Expo React Native application used for managing hockey teams and matches. It uses Supabase for authentication and data storage.
 
