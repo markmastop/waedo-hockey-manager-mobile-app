@@ -3,9 +3,18 @@ import { Chrome as Home, Calendar, User } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { Redirect } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import { router } from 'expo-router';
 
 export default function TabLayout() {
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    // If user becomes null (signed out), redirect to login
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [user, loading]);
 
   if (loading) {
     return (
