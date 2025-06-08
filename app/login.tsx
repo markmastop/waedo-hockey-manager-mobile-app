@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogIn, Users, Target, RotateCcw, ChartBar as BarChart3 } from 'lucide-react-native';
+import { LogIn } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -50,29 +50,6 @@ export default function LoginScreen() {
     }
   };
 
-  const features = [
-    {
-      icon: Users,
-      title: 'Compleet teambeheer',
-      description: 'Beheer je volledige team en spelersinformatie op één plek',
-    },
-    {
-      icon: Target,
-      title: 'Opstellingen op basis van voorkeursposities',
-      description: 'Stel automatisch de beste formatie samen gebaseerd op spelerposities',
-    },
-    {
-      icon: RotateCcw,
-      title: 'Automatische wisselschema\'s',
-      description: 'Intelligente wissels die ervoor zorgen dat iedereen speeltijd krijgt',
-    },
-    {
-      icon: BarChart3,
-      title: 'Live dashboard',
-      description: 'Real-time inzichten en statistieken tijdens de wedstrijd',
-    },
-  ];
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -95,23 +72,6 @@ export default function LoginScreen() {
               </View>
               <Text style={styles.title}>GoHockey Coach</Text>
               <Text style={styles.subtitle}>De complete coaching app voor hockey</Text>
-            </View>
-
-            <View style={styles.featuresSection}>
-              <Text style={styles.featuresTitle}>Waarom coaches kiezen voor GoHockey</Text>
-              <View style={styles.featuresList}>
-                {features.map((feature, index) => (
-                  <View key={index} style={styles.featureItem}>
-                    <View style={styles.featureIcon}>
-                      <feature.icon size={20} color="#16A34A" />
-                    </View>
-                    <View style={styles.featureContent}>
-                      <Text style={styles.featureTitle}>{feature.title}</Text>
-                      <Text style={styles.featureDescription}>{feature.description}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
             </View>
 
             <View style={styles.form}>
@@ -152,6 +112,16 @@ export default function LoginScreen() {
                   {loading ? 'Inloggen...' : 'Inloggen'}
                 </Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.featuresSection}>
+              <Text style={styles.featuresTitle}>Wat je krijgt met GoHockey:</Text>
+              <View style={styles.featuresList}>
+                <Text style={styles.featureItem}>• Compleet teambeheer</Text>
+                <Text style={styles.featureItem}>• Opstellingen op basis van voorkeursposities</Text>
+                <Text style={styles.featureItem}>• Automatische wisselschema's</Text>
+                <Text style={styles.featureItem}>• Live dashboard</Text>
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -212,58 +182,9 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
   },
-  featuresSection: {
-    marginBottom: 32,
-  },
-  featuresTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  featuresList: {
-    gap: 16,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  featureIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#F0FDF4',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  featureContent: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  featureDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-  },
   form: {
     gap: 20,
+    marginBottom: 32,
   },
   inputContainer: {
     gap: 8,
@@ -300,5 +221,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  featuresSection: {
+    alignItems: 'center',
+  },
+  featuresTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  featuresList: {
+    alignItems: 'flex-start',
+  },
+  featureItem: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 8,
+    lineHeight: 20,
   },
 });
