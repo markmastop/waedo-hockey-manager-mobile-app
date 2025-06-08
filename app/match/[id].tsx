@@ -51,21 +51,21 @@ export default function LiveMatchScreen() {
   const [isSubstituting, setIsSubstituting] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const convertLineupObjectToArray = (lineupData: any): Player[] => {
-    if (!lineupData) return [];
+  const convertPlayersObjectToArray = (playersData: any): Player[] => {
+    if (!playersData) return [];
     
     // If it's already an array, return it
-    if (Array.isArray(lineupData)) {
-      return lineupData;
+    if (Array.isArray(playersData)) {
+      return playersData;
     }
     
     // If it's an object with position keys, convert to array
-    if (typeof lineupData === 'object') {
+    if (typeof playersData === 'object') {
       const players: Player[] = [];
       
       // Extract players from each position
-      Object.keys(lineupData).forEach(position => {
-        const playerData = lineupData[position];
+      Object.keys(playersData).forEach(position => {
+        const playerData = playersData[position];
         if (playerData && typeof playerData === 'object') {
           // Ensure the player has required fields
           if (playerData.id && playerData.name) {
@@ -104,9 +104,9 @@ export default function LiveMatchScreen() {
       console.log('Lineup data:', data.lineup);
       console.log('Reserve players data:', data.reserve_players);
       
-      // Convert lineup object to array and ensure reserve_players is an array
-      const lineupArray = convertLineupObjectToArray(data.lineup);
-      const reservePlayersArray = Array.isArray(data.reserve_players) ? data.reserve_players : [];
+      // Convert both lineup and reserve_players objects to arrays
+      const lineupArray = convertPlayersObjectToArray(data.lineup);
+      const reservePlayersArray = convertPlayersObjectToArray(data.reserve_players);
       const substitutionsArray = Array.isArray(data.substitutions) ? data.substitutions : [];
       
       const matchData = {
