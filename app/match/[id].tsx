@@ -20,6 +20,7 @@ import {
   Clock,
   Users,
   ArrowUpDown,
+  Star,
 } from 'lucide-react-native';
 
 interface Match {
@@ -225,6 +226,26 @@ export default function LiveMatchScreen() {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const getPositionColor = (position: string) => {
+    const safePosition = position?.toLowerCase() || '';
+    switch (safePosition) {
+      case 'goalkeeper':
+      case 'gk':
+        return '#DC2626';
+      case 'defender':
+      case 'def':
+        return '#1E40AF';
+      case 'midfielder':
+      case 'mid':
+        return '#7C3AED';
+      case 'forward':
+      case 'fwd':
+        return '#EA580C';
+      default:
+        return '#6B7280';
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -336,30 +357,52 @@ export default function LiveMatchScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Users size={20} color="#059669" />
-            <Text style={styles.sectionTitle}>On Field ({match.lineup.length})</Text>
+            <Star size={20} color="#16A34A" />
+            <Text style={styles.sectionTitle}>Starting Lineup ({match.lineup.length})</Text>
           </View>
-          <View style={styles.playersList}>
-            {match.lineup.map((player) => (
-              <TouchableOpacity
-                key={player.id}
-                style={[
-                  styles.playerCard,
-                  styles.onFieldCard,
-                  selectedPlayer?.id === player.id && styles.selectedCard,
-                ]}
-                onPress={() => handlePlayerPress(player, true)}
-              >
-                <View style={styles.playerNumber}>
-                  <Text style={styles.playerNumberText}>#{player.number}</Text>
-                </View>
-                <View style={styles.playerInfo}>
-                  <Text style={styles.playerName}>{player.name}</Text>
-                  <Text style={styles.playerPosition}>{player.position}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {match.lineup.length === 0 ? (
+            <View style={styles.emptyLineupContainer}>
+              <Users size={48} color="#9CA3AF" />
+              <Text style={styles.emptyTitle}>No starting lineup set</Text>
+              <Text style={styles.emptySubtitle}>
+                The starting lineup hasn't been configured for this match
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.playersList}>
+              {match.lineup.map((player) => (
+                <TouchableOpacity
+                  key={player.id}
+                  style={[
+                    styles.playerCard,
+                    styles.startingPlayerCard,
+                    selectedPlayer?.id === player.id && styles.selectedCard,
+                  ]}
+                  onPress={() => handlePlayerPress(player, true)}
+                >
+                  <View style={styles.playerNumber}>
+                    <Text style={styles.playerNumberText}>#{player.number}</Text>
+                  </View>
+                  <View style={styles.playerInfo}>
+                    <Text style={styles.playerName}>{player.name}</Text>
+                    <View style={styles.positionContainer}>
+                      <View
+                        style={[
+                          styles.positionBadge,
+                          { backgroundColor: getPositionColor(player.position) },
+                        ]}
+                      >
+                        <Text style={styles.positionText}>{player.position || 'Unknown'}</Text>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.startingIndicator}>
+                    <Star size={16} color="#16A34A" fill="#16A34A" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -383,12 +426,48 @@ export default function LiveMatchScreen() {
                 </View>
                 <View style={styles.playerInfo}>
                   <Text style={styles.playerName}>{player.name}</Text>
-                  <Text style={styles.playerPosition}>{player.position}</Text>
+                  <View style={styles.positionContainer}>
+                    <View
+                      style={[
+                        styles.positionBadge,
+                        { backgroundColor: getPositionColor(player.position) },
+                      ]}
+                    >
+                      <Text style={styles.positionText}>{player.position || 'Unknown'}</Text>
+                    </View>
+                  </View>
                 </View>
               </TouchableOpacity>
             ))}
           </View>
         </View>
+
+        {match.substitutions.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ArrowUpDown size={20} color="#EA580C" />
+              <Text style={styles.sectionTitle}>Substitutions ({match.substitutions.length})</Text>
+            </View>
+            <View style={styles.substitutionsList}>
+              {match.substitutions.map((sub, index) => (
+                <View key={index} style={styles.substitutionCard}>
+                  <View style={styles.substitutionTime}>
+                    <Text style={styles.substitutionTimeText}>
+                      {formatTime(sub.time)} - Q{sub.quarter}
+                    </Text>
+                  </View>
+                  <View style={styles.substitutionDetails}>
+                    <Text style={styles.substitutionText}>
+                      <Text style={styles.playerOut}>#{sub.playerOut.number} {sub.playerOut.name}</Text>
+                      {' → '}
+                      <Text style={styles.playerIn}>#{sub.playerIn.number} {sub.playerIn.name}</Text>
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -563,6 +642,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
+  emptyLineupContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
   playersList: {
     gap: 8,
   },
@@ -574,8 +674,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  onFieldCard: {
-    backgroundColor: '#ECFDF5',
+  startingPlayerCard: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#16A34A',
+    borderWidth: 1,
   },
   benchCard: {
     backgroundColor: '#F9FAFB',
@@ -605,10 +707,57 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  playerPosition: {
-    fontSize: 14,
+  positionContainer: {
+    flexDirection: 'row',
+  },
+  positionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  positionText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  startingIndicator: {
+    marginLeft: 8,
+  },
+  substitutionsList: {
+    gap: 8,
+  },
+  substitutionCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderLeftWidth: 4,
+    borderLeftColor: '#EA580C',
+  },
+  substitutionTime: {
+    marginBottom: 4,
+  },
+  substitutionTimeText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: '#6B7280',
+  },
+  substitutionDetails: {},
+  substitutionText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  playerOut: {
+    color: '#DC2626',
+    fontWeight: '500',
+  },
+  playerIn: {
+    color: '#16A34A',
+    fontWeight: '500',
   },
 });
