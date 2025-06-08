@@ -91,7 +91,7 @@ export default function MatchesScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('nl-NL', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -100,7 +100,7 @@ export default function MatchesScreen() {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString('nl-NL', {
       hour: 'numeric',
       minute: '2-digit',
     });
@@ -124,9 +124,9 @@ export default function MatchesScreen() {
       case 'inProgress':
         return 'LIVE';
       case 'paused':
-        return 'PAUSED';
+        return 'GEPAUZEERD';
       case 'upcoming':
-        return 'UPCOMING';
+        return 'AANKOMEND';
       default:
         return status.toUpperCase();
     }
@@ -136,7 +136,7 @@ export default function MatchesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading matches...</Text>
+          <Text style={styles.loadingText}>Wedstrijden laden...</Text>
         </View>
       </SafeAreaView>
     );
@@ -145,8 +145,8 @@ export default function MatchesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Matches</Text>
-        <Text style={styles.subtitle}>Matches for teams you're coaching</Text>
+        <Text style={styles.title}>Mijn Wedstrijden</Text>
+        <Text style={styles.subtitle}>Wedstrijden voor teams die je coacht</Text>
       </View>
 
       <ScrollView
@@ -158,9 +158,9 @@ export default function MatchesScreen() {
         {matches.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Calendar size={48} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No matches found</Text>
+            <Text style={styles.emptyTitle}>Geen wedstrijden gevonden</Text>
             <Text style={styles.emptySubtitle}>
-              You don't have any upcoming matches for teams you're coaching
+              Je hebt geen aankomende wedstrijden voor teams die je coacht
             </Text>
           </View>
         ) : (
@@ -196,7 +196,7 @@ export default function MatchesScreen() {
                     {match.home_team} vs {match.away_team}
                   </Text>
                   <Text style={styles.homeIndicator}>
-                    {match.is_home ? '(Home)' : '(Away)'}
+                    {match.is_home ? '(Thuis)' : '(Uit)'}
                   </Text>
                 </View>
 

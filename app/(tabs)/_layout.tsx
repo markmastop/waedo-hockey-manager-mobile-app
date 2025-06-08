@@ -10,7 +10,7 @@ export default function TabLayout() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>Laden...</Text>
       </View>
     );
   }
@@ -41,7 +41,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Matches',
+          title: 'Wedstrijden',
           tabBarIcon: ({ size, color }) => (
             <Home size={size} color={color} />
           ),
@@ -59,7 +59,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'Profiel',
           tabBarIcon: ({ size, color }) => (
             <User size={size} color={color} />
           ),

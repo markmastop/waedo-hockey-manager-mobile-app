@@ -77,7 +77,7 @@ export default function LiveMatchScreen() {
       setMatch(matchData);
     } catch (error) {
       console.error('Error fetching match:', error);
-      Alert.alert('Error', 'Failed to load match data');
+      Alert.alert('Fout', 'Kon wedstrijdgegevens niet laden');
     } finally {
       setLoading(false);
     }
@@ -126,7 +126,7 @@ export default function LiveMatchScreen() {
       setMatch(prev => prev ? { ...prev, ...updates } : null);
     } catch (error) {
       console.error('Error updating match:', error);
-      Alert.alert('Error', 'Failed to update match');
+      Alert.alert('Fout', 'Kon wedstrijd niet bijwerken');
     }
   };
 
@@ -144,12 +144,12 @@ export default function LiveMatchScreen() {
 
   const endMatch = () => {
     Alert.alert(
-      'End Match',
-      'Are you sure you want to end this match?',
+      'Wedstrijd Beëindigen',
+      'Weet je zeker dat je deze wedstrijd wilt beëindigen?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Annuleren', style: 'cancel' },
         {
-          text: 'End Match',
+          text: 'Beëindigen',
           style: 'destructive',
           onPress: () => updateMatch({ status: 'completed' }),
         },
@@ -231,15 +231,19 @@ export default function LiveMatchScreen() {
     switch (safePosition) {
       case 'goalkeeper':
       case 'gk':
+      case 'keeper':
         return '#DC2626';
       case 'defender':
       case 'def':
+      case 'verdediger':
         return '#1E40AF';
       case 'midfielder':
       case 'mid':
+      case 'middenvelder':
         return '#7C3AED';
       case 'forward':
       case 'fwd':
+      case 'aanvaller':
         return '#EA580C';
       default:
         return '#6B7280';
@@ -250,7 +254,7 @@ export default function LiveMatchScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading match...</Text>
+          <Text style={styles.loadingText}>Wedstrijd laden...</Text>
         </View>
       </SafeAreaView>
     );
@@ -260,7 +264,7 @@ export default function LiveMatchScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Match not found</Text>
+          <Text style={styles.loadingText}>Wedstrijd niet gevonden</Text>
         </View>
       </SafeAreaView>
     );
@@ -287,7 +291,7 @@ export default function LiveMatchScreen() {
         <View style={styles.timeDisplay}>
           <Clock size={20} color="#374151" />
           <Text style={styles.timeText}>{formatTime(match.match_time)}</Text>
-          <Text style={styles.quarterText}>Q{match.current_quarter}</Text>
+          <Text style={styles.quarterText}>K{match.current_quarter}</Text>
         </View>
         <View style={styles.statusBadge}>
           <Text
@@ -296,7 +300,10 @@ export default function LiveMatchScreen() {
               { color: match.status === 'inProgress' ? '#059669' : '#EA580C' },
             ]}
           >
-            {match.status === 'inProgress' ? 'LIVE' : match.status.toUpperCase()}
+            {match.status === 'inProgress' ? 'LIVE' : 
+             match.status === 'paused' ? 'GEPAUZEERD' :
+             match.status === 'upcoming' ? 'AANKOMEND' :
+             match.status.toUpperCase()}
           </Text>
         </View>
       </View>
@@ -305,7 +312,7 @@ export default function LiveMatchScreen() {
         {match.status === 'upcoming' && (
           <TouchableOpacity style={styles.startButton} onPress={startMatch}>
             <Play size={16} color="#FFFFFF" />
-            <Text style={styles.startButtonText}>Start Match</Text>
+            <Text style={styles.startButtonText}>Start Wedstrijd</Text>
           </TouchableOpacity>
         )}
         
@@ -313,17 +320,17 @@ export default function LiveMatchScreen() {
           <>
             <TouchableOpacity style={styles.controlButton} onPress={pauseMatch}>
               <Pause size={16} color="#374151" />
-              <Text style={styles.controlButtonText}>Pause</Text>
+              <Text style={styles.controlButtonText}>Pauzeren</Text>
             </TouchableOpacity>
             {match.current_quarter < 4 && (
               <TouchableOpacity style={styles.controlButton} onPress={nextQuarter}>
                 <SkipForward size={16} color="#374151" />
-                <Text style={styles.controlButtonText}>Next Quarter</Text>
+                <Text style={styles.controlButtonText}>Volgend Kwart</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.endButton} onPress={endMatch}>
               <Square size={16} color="#FFFFFF" />
-              <Text style={styles.endButtonText}>End</Text>
+              <Text style={styles.endButtonText}>Beëindigen</Text>
             </TouchableOpacity>
           </>
         )}
@@ -332,11 +339,11 @@ export default function LiveMatchScreen() {
           <>
             <TouchableOpacity style={styles.startButton} onPress={resumeMatch}>
               <Play size={16} color="#FFFFFF" />
-              <Text style={styles.startButtonText}>Resume</Text>
+              <Text style={styles.startButtonText}>Hervatten</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.endButton} onPress={endMatch}>
               <Square size={16} color="#FFFFFF" />
-              <Text style={styles.endButtonText}>End</Text>
+              <Text style={styles.endButtonText}>Beëindigen</Text>
             </TouchableOpacity>
           </>
         )}
@@ -346,10 +353,10 @@ export default function LiveMatchScreen() {
         <View style={styles.substitutionBanner}>
           <ArrowUpDown size={16} color="#16A34A" />
           <Text style={styles.substitutionText}>
-            Select a player to substitute with {selectedPlayer?.name}
+            Selecteer een speler om te wisselen met {selectedPlayer?.name}
           </Text>
           <TouchableOpacity onPress={cancelSubstitution}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>Annuleren</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -358,14 +365,14 @@ export default function LiveMatchScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Star size={20} color="#16A34A" />
-            <Text style={styles.sectionTitle}>Starting Lineup ({match.lineup.length})</Text>
+            <Text style={styles.sectionTitle}>Basisopstelling ({match.lineup.length})</Text>
           </View>
           {match.lineup.length === 0 ? (
             <View style={styles.emptyLineupContainer}>
               <Users size={48} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>No starting lineup set</Text>
+              <Text style={styles.emptyTitle}>Geen basisopstelling ingesteld</Text>
               <Text style={styles.emptySubtitle}>
-                The starting lineup hasn't been configured for this match
+                De basisopstelling is nog niet geconfigureerd voor deze wedstrijd
               </Text>
             </View>
           ) : (
@@ -392,7 +399,7 @@ export default function LiveMatchScreen() {
                           { backgroundColor: getPositionColor(player.position) },
                         ]}
                       >
-                        <Text style={styles.positionText}>{player.position || 'Unknown'}</Text>
+                        <Text style={styles.positionText}>{player.position || 'Onbekend'}</Text>
                       </View>
                     </View>
                   </View>
@@ -408,7 +415,7 @@ export default function LiveMatchScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Users size={20} color="#6B7280" />
-            <Text style={styles.sectionTitle}>Bench ({match.reserve_players.length})</Text>
+            <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
           </View>
           <View style={styles.playersList}>
             {match.reserve_players.map((player) => (
@@ -433,7 +440,7 @@ export default function LiveMatchScreen() {
                         { backgroundColor: getPositionColor(player.position) },
                       ]}
                     >
-                      <Text style={styles.positionText}>{player.position || 'Unknown'}</Text>
+                      <Text style={styles.positionText}>{player.position || 'Onbekend'}</Text>
                     </View>
                   </View>
                 </View>
@@ -446,14 +453,14 @@ export default function LiveMatchScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <ArrowUpDown size={20} color="#EA580C" />
-              <Text style={styles.sectionTitle}>Substitutions ({match.substitutions.length})</Text>
+              <Text style={styles.sectionTitle}>Wissels ({match.substitutions.length})</Text>
             </View>
             <View style={styles.substitutionsList}>
               {match.substitutions.map((sub, index) => (
                 <View key={index} style={styles.substitutionCard}>
                   <View style={styles.substitutionTime}>
                     <Text style={styles.substitutionTimeText}>
-                      {formatTime(sub.time)} - Q{sub.quarter}
+                      {formatTime(sub.time)} - K{sub.quarter}
                     </Text>
                   </View>
                   <View style={styles.substitutionDetails}>

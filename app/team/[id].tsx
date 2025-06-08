@@ -71,15 +71,19 @@ export default function TeamDetailsScreen() {
     switch (safePosition) {
       case 'goalkeeper':
       case 'gk':
+      case 'keeper':
         return '#DC2626';
       case 'defender':
       case 'def':
+      case 'verdediger':
         return '#1E40AF';
       case 'midfielder':
       case 'mid':
+      case 'middenvelder':
         return '#7C3AED';
       case 'forward':
       case 'fwd':
+      case 'aanvaller':
         return '#EA580C';
       default:
         return '#6B7280';
@@ -90,7 +94,7 @@ export default function TeamDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading team...</Text>
+          <Text style={styles.loadingText}>Team laden...</Text>
         </View>
       </SafeAreaView>
     );
@@ -100,7 +104,7 @@ export default function TeamDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Team not found</Text>
+          <Text style={styles.loadingText}>Team niet gevonden</Text>
         </View>
       </SafeAreaView>
     );
@@ -118,7 +122,7 @@ export default function TeamDetailsScreen() {
         <View style={styles.headerInfo}>
           <Text style={styles.teamName}>{team.name}</Text>
           <Text style={styles.teamStats}>
-            {team.players.length} players • {team.coach.length} coaches
+            {team.players.length} spelers • {team.coach.length} coaches
           </Text>
         </View>
       </View>
@@ -133,16 +137,16 @@ export default function TeamDetailsScreen() {
           <View style={styles.sectionHeader}>
             <Users size={20} color="#16A34A" />
             <Text style={styles.sectionTitle}>
-              Players ({team.players.length})
+              Spelers ({team.players.length})
             </Text>
           </View>
 
           {team.players.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Users size={48} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>No players found</Text>
+              <Text style={styles.emptyTitle}>Geen spelers gevonden</Text>
               <Text style={styles.emptySubtitle}>
-                This team doesn't have any players yet
+                Dit team heeft nog geen spelers
               </Text>
             </View>
           ) : (
@@ -161,7 +165,7 @@ export default function TeamDetailsScreen() {
                           { backgroundColor: getPositionColor(player.position) },
                         ]}
                       >
-                        <Text style={styles.positionText}>{player.position || 'Unknown'}</Text>
+                        <Text style={styles.positionText}>{player.position || 'Onbekend'}</Text>
                       </View>
                     </View>
                   </View>

@@ -16,12 +16,12 @@ export default function ProfileScreen() {
 
   const handleSignOut = () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      'Uitloggen',
+      'Weet je zeker dat je wilt uitloggen?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Annuleren', style: 'cancel' },
         {
-          text: 'Sign Out',
+          text: 'Uitloggen',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -44,8 +44,8 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Manage your account settings</Text>
+        <Text style={styles.title}>Profiel</Text>
+        <Text style={styles.subtitle}>Beheer je accountinstellingen</Text>
       </View>
 
       <View style={styles.content}>
@@ -62,12 +62,12 @@ export default function ProfileScreen() {
         <View style={styles.menu}>
           <TouchableOpacity style={styles.menuItem}>
             <Settings size={20} color="#374151" />
-            <Text style={styles.menuText}>Settings</Text>
+            <Text style={styles.menuText}>Instellingen</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
             <LogOut size={20} color="#DC2626" />
-            <Text style={[styles.menuText, styles.menuTextDanger]}>Sign Out</Text>
+            <Text style={[styles.menuText, styles.menuTextDanger]}>Uitloggen</Text>
           </TouchableOpacity>
         </View>
       </View>

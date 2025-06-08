@@ -75,7 +75,7 @@ export default function TeamsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading teams...</Text>
+          <Text style={styles.loadingText}>Teams laden...</Text>
         </View>
       </SafeAreaView>
     );
@@ -84,8 +84,8 @@ export default function TeamsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Teams</Text>
-        <Text style={styles.subtitle}>Teams you're coaching</Text>
+        <Text style={styles.title}>Mijn Teams</Text>
+        <Text style={styles.subtitle}>Teams die je coacht</Text>
       </View>
 
       <ScrollView
@@ -97,9 +97,9 @@ export default function TeamsScreen() {
         {teams.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Users size={48} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No teams found</Text>
+            <Text style={styles.emptyTitle}>Geen teams gevonden</Text>
             <Text style={styles.emptySubtitle}>
-              You're not currently assigned as a coach to any teams
+              Je bent momenteel niet toegewezen als coach aan teams
             </Text>
           </View>
         ) : (
@@ -117,14 +117,14 @@ export default function TeamsScreen() {
                   <View style={styles.teamInfo}>
                     <Text style={styles.teamName}>{team.name}</Text>
                     <Text style={styles.teamStats}>
-                      {team.players.length} players • {team.coach.length} coaches
+                      {team.players.length} spelers • {team.coach.length} coaches
                     </Text>
                   </View>
                   <ChevronRight size={20} color="#9CA3AF" />
                 </View>
 
                 <View style={styles.playersSection}>
-                  <Text style={styles.sectionTitle}>Players</Text>
+                  <Text style={styles.sectionTitle}>Spelers</Text>
                   <View style={styles.playersList}>
                     {team.players.slice(0, 8).map((player, index) => (
                       <View key={player.id} style={styles.playerChip}>
@@ -135,7 +135,7 @@ export default function TeamsScreen() {
                     {team.players.length > 8 && (
                       <View style={styles.morePlayersChip}>
                         <Text style={styles.morePlayersText}>
-                          +{team.players.length - 8} more
+                          +{team.players.length - 8} meer
                         </Text>
                       </View>
                     )}

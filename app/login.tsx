@@ -30,7 +30,7 @@ export default function LoginScreen() {
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Fout', 'Vul alle velden in');
       return;
     }
 
@@ -42,7 +42,7 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Sign in error:', error);
-      Alert.alert('Error', error.message || 'Failed to sign in');
+      Alert.alert('Fout', error.message || 'Inloggen mislukt');
     } finally {
       setLoading(false);
     }
@@ -60,17 +60,17 @@ export default function LoginScreen() {
               <LogIn size={40} color="#16A34A" />
             </View>
             <Text style={styles.title}>GoHockey Coach</Text>
-            <Text style={styles.subtitle}>Sign in to manage your matches</Text>
+            <Text style={styles.subtitle}>Log in om je wedstrijden te beheren</Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>E-mail</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="Enter your email"
+                placeholder="Voer je e-mailadres in"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -79,12 +79,12 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Wachtwoord</Text>
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password"
+                placeholder="Voer je wachtwoord in"
                 placeholderTextColor="#9CA3AF"
                 secureTextEntry
                 autoCapitalize="none"
@@ -97,7 +97,7 @@ export default function LoginScreen() {
               disabled={loading}
             >
               <Text style={styles.buttonText}>
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? 'Inloggen...' : 'Inloggen'}
               </Text>
             </TouchableOpacity>
           </View>
