@@ -12,6 +12,7 @@ export default function TabLayout() {
   useEffect(() => {
     // If user becomes null (signed out), redirect to login
     if (!loading && !user) {
+      console.log('User is null, redirecting to login');
       router.replace('/login');
     }
   }, [user, loading]);
@@ -25,6 +26,7 @@ export default function TabLayout() {
   }
 
   if (!user) {
+    console.log('No user found, showing redirect');
     return <Redirect href="/login" />;
   }
 

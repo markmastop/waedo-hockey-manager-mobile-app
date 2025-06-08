@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,15 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      console.log('User already logged in, redirecting to tabs');
+      router.replace('/(tabs)');
+    }
+  }, [user]);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -28,9 +36,12 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
+      console.log('Attempting to sign in...');
       await signIn(email, password);
+      console.log('Sign in successful, redirecting to tabs');
       router.replace('/(tabs)');
     } catch (error: any) {
+      console.error('Sign in error:', error);
       Alert.alert('Error', error.message || 'Failed to sign in');
     } finally {
       setLoading(false);

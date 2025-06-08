@@ -20,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -48,19 +49,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clear local state immediately
+      console.log('Starting sign out process...');
+      
+      // Sign out from Supabase first
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Supabase sign out error:', error);
+        throw error;
+      }
+      
+      console.log('Sign out successful');
+      
+      // Clear local state (this should happen automatically via onAuthStateChange, but we'll do it explicitly too)
       setSession(null);
       setUser(null);
       
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Sign out error:', error);
-        throw error;
-      }
     } catch (error) {
       console.error('Error during sign out:', error);
-      // Even if there's an error, we should clear the local state
+      // Force clear local state even if Supabase sign out fails
       setSession(null);
       setUser(null);
       throw error;
