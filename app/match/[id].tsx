@@ -51,6 +51,40 @@ export default function LiveMatchScreen() {
   const [isSubstituting, setIsSubstituting] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const convertLineupObjectToArray = (lineupData: any): Player[] => {
+    if (!lineupData) return [];
+    
+    // If it's already an array, return it
+    if (Array.isArray(lineupData)) {
+      return lineupData;
+    }
+    
+    // If it's an object with position keys, convert to array
+    if (typeof lineupData === 'object') {
+      const players: Player[] = [];
+      
+      // Extract players from each position
+      Object.keys(lineupData).forEach(position => {
+        const playerData = lineupData[position];
+        if (playerData && typeof playerData === 'object') {
+          // Ensure the player has required fields
+          if (playerData.id && playerData.name) {
+            players.push({
+              id: playerData.id,
+              name: playerData.name,
+              number: playerData.number || 0,
+              position: playerData.position || position, // Use the position key if player.position is not set
+            });
+          }
+        }
+      });
+      
+      return players;
+    }
+    
+    return [];
+  };
+
   const fetchMatch = async () => {
     try {
       const { data, error } = await supabase
@@ -70,12 +104,16 @@ export default function LiveMatchScreen() {
       console.log('Lineup data:', data.lineup);
       console.log('Reserve players data:', data.reserve_players);
       
-      // Ensure JSONB fields are properly initialized as arrays
+      // Convert lineup object to array and ensure reserve_players is an array
+      const lineupArray = convertLineupObjectToArray(data.lineup);
+      const reservePlayersArray = Array.isArray(data.reserve_players) ? data.reserve_players : [];
+      const substitutionsArray = Array.isArray(data.substitutions) ? data.substitutions : [];
+      
       const matchData = {
         ...data,
-        lineup: Array.isArray(data.lineup) ? data.lineup : [],
-        reserve_players: Array.isArray(data.reserve_players) ? data.reserve_players : [],
-        substitutions: Array.isArray(data.substitutions) ? data.substitutions : [],
+        lineup: lineupArray,
+        reserve_players: reservePlayersArray,
+        substitutions: substitutionsArray,
       };
       
       console.log('Processed match data:', matchData);
@@ -253,8 +291,58 @@ export default function LiveMatchScreen() {
       case 'fwd':
       case 'aanvaller':
         return '#EA580C';
+      case 'striker':
+        return '#EA580C';
+      case 'sweeper':
+        return '#1E40AF';
+      case 'lastline':
+        return '#1E40AF';
+      case 'leftback':
+      case 'rightback':
+        return '#1E40AF';
+      case 'leftmid':
+      case 'rightmid':
+        return '#7C3AED';
       default:
         return '#6B7280';
+    }
+  };
+
+  const getPositionDisplayName = (position: string) => {
+    const safePosition = position?.toLowerCase() || '';
+    switch (safePosition) {
+      case 'striker':
+        return 'Aanvaller';
+      case 'sweeper':
+        return 'Libero';
+      case 'lastline':
+        return 'Laatste Lijn';
+      case 'leftback':
+        return 'Linksback';
+      case 'rightback':
+        return 'Rechtsback';
+      case 'leftmid':
+        return 'Linksmidden';
+      case 'rightmid':
+        return 'Rechtsmidden';
+      case 'goalkeeper':
+      case 'gk':
+      case 'keeper':
+        return 'Keeper';
+      case 'defender':
+      case 'def':
+      case 'verdediger':
+        return 'Verdediger';
+      case 'midfielder':
+      case 'mid':
+      case 'middenvelder':
+        return 'Middenvelder';
+      case 'forward':
+      case 'fwd':
+      case 'aanvaller':
+        return 'Aanvaller';
+      default:
+        return position || 'Onbekend';
     }
   };
 
@@ -409,7 +497,9 @@ export default function LiveMatchScreen() {
                           { backgroundColor: getPositionColor(player.position) },
                         ]}
                       >
-                        <Text style={styles.positionText}>{player.position || 'Onbekend'}</Text>
+                        <Text style={styles.positionText}>
+                          {getPositionDisplayName(player.position)}
+                        </Text>
                       </View>
                     </View>
                   </View>
@@ -458,7 +548,9 @@ export default function LiveMatchScreen() {
                           { backgroundColor: getPositionColor(player.position) },
                         ]}
                       >
-                        <Text style={styles.positionText}>{player.position || 'Onbekend'}</Text>
+                        <Text style={styles.positionText}>
+                          {getPositionDisplayName(player.position)}
+                        </Text>
                       </View>
                     </View>
                   </View>
