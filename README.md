@@ -1,4 +1,4 @@
-# Waedo Hockey Manager Mobile App
+# GoHockey Companion Mobile App
 
 This project is an Expo React Native application used for managing hockey teams and matches. It uses Supabase for authentication and data storage.
 

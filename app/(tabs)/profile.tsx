@@ -54,7 +54,7 @@ export default function ProfileScreen() {
             <User size={32} color="#16A34A" />
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>Coach</Text>
+            <Text style={styles.userName}>Companion Gebruiker</Text>
             <Text style={styles.userEmail}>{user?.email}</Text>
           </View>
         </View>
