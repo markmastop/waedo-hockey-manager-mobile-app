@@ -66,6 +66,10 @@ export default function LiveMatchScreen() {
 
       if (error) throw error;
       
+      console.log('Raw match data:', data);
+      console.log('Lineup data:', data.lineup);
+      console.log('Reserve players data:', data.reserve_players);
+      
       // Ensure JSONB fields are properly initialized as arrays
       const matchData = {
         ...data,
@@ -73,6 +77,10 @@ export default function LiveMatchScreen() {
         reserve_players: Array.isArray(data.reserve_players) ? data.reserve_players : [],
         substitutions: Array.isArray(data.substitutions) ? data.substitutions : [],
       };
+      
+      console.log('Processed match data:', matchData);
+      console.log('Final lineup:', matchData.lineup);
+      console.log('Final reserve players:', matchData.reserve_players);
       
       setMatch(matchData);
     } catch (error) {
@@ -388,10 +396,12 @@ export default function LiveMatchScreen() {
                   onPress={() => handlePlayerPress(player, true)}
                 >
                   <View style={styles.playerNumber}>
-                    <Text style={styles.playerNumberText}>#{player.number}</Text>
+                    <Text style={styles.playerNumberText}>
+                      #{player.number || '?'}
+                    </Text>
                   </View>
                   <View style={styles.playerInfo}>
-                    <Text style={styles.playerName}>{player.name}</Text>
+                    <Text style={styles.playerName}>{player.name || 'Onbekende speler'}</Text>
                     <View style={styles.positionContainer}>
                       <View
                         style={[
@@ -417,36 +427,45 @@ export default function LiveMatchScreen() {
             <Users size={20} color="#6B7280" />
             <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
           </View>
-          <View style={styles.playersList}>
-            {match.reserve_players.map((player) => (
-              <TouchableOpacity
-                key={player.id}
-                style={[
-                  styles.playerCard,
-                  styles.benchCard,
-                  selectedPlayer?.id === player.id && styles.selectedCard,
-                ]}
-                onPress={() => handlePlayerPress(player, false)}
-              >
-                <View style={styles.playerNumber}>
-                  <Text style={styles.playerNumberText}>#{player.number}</Text>
-                </View>
-                <View style={styles.playerInfo}>
-                  <Text style={styles.playerName}>{player.name}</Text>
-                  <View style={styles.positionContainer}>
-                    <View
-                      style={[
-                        styles.positionBadge,
-                        { backgroundColor: getPositionColor(player.position) },
-                      ]}
-                    >
-                      <Text style={styles.positionText}>{player.position || 'Onbekend'}</Text>
+          {match.reserve_players.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Users size={32} color="#9CA3AF" />
+              <Text style={styles.emptyText}>Geen reservespelers</Text>
+            </View>
+          ) : (
+            <View style={styles.playersList}>
+              {match.reserve_players.map((player) => (
+                <TouchableOpacity
+                  key={player.id}
+                  style={[
+                    styles.playerCard,
+                    styles.benchCard,
+                    selectedPlayer?.id === player.id && styles.selectedCard,
+                  ]}
+                  onPress={() => handlePlayerPress(player, false)}
+                >
+                  <View style={styles.playerNumber}>
+                    <Text style={styles.playerNumberText}>
+                      #{player.number || '?'}
+                    </Text>
+                  </View>
+                  <View style={styles.playerInfo}>
+                    <Text style={styles.playerName}>{player.name || 'Onbekende speler'}</Text>
+                    <View style={styles.positionContainer}>
+                      <View
+                        style={[
+                          styles.positionBadge,
+                          { backgroundColor: getPositionColor(player.position) },
+                        ]}
+                      >
+                        <Text style={styles.positionText}>{player.position || 'Onbekend'}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {match.substitutions.length > 0 && (
@@ -465,9 +484,13 @@ export default function LiveMatchScreen() {
                   </View>
                   <View style={styles.substitutionDetails}>
                     <Text style={styles.substitutionText}>
-                      <Text style={styles.playerOut}>#{sub.playerOut.number} {sub.playerOut.name}</Text>
+                      <Text style={styles.playerOut}>
+                        #{sub.playerOut.number || '?'} {sub.playerOut.name}
+                      </Text>
                       {' → '}
-                      <Text style={styles.playerIn}>#{sub.playerIn.number} {sub.playerIn.name}</Text>
+                      <Text style={styles.playerIn}>
+                        #{sub.playerIn.number || '?'} {sub.playerIn.name}
+                      </Text>
                     </Text>
                   </View>
                 </View>
@@ -669,6 +692,19 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     paddingHorizontal: 32,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 8,
   },
   playersList: {
     gap: 8,
