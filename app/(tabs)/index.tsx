@@ -35,7 +35,26 @@ export default function MatchesScreen() {
   const { user } = useAuth();
 
   const fetchMatches = async () => {
+    if (!user) return;
+
     try {
+      // First, get teams where the current user is a coach
+      const { data: userTeams, error: teamsError } = await supabase
+        .from('teams')
+        .select('id')
+        .contains('coaches', [{ id: user.id }]);
+
+      if (teamsError) throw teamsError;
+
+      if (!userTeams || userTeams.length === 0) {
+        setMatches([]);
+        return;
+      }
+
+      // Extract team IDs
+      const teamIds = userTeams.map(team => team.id);
+
+      // Then fetch matches for those teams
       const { data, error } = await supabase
         .from('matches')
         .select(`
@@ -44,6 +63,7 @@ export default function MatchesScreen() {
             name
           )
         `)
+        .in('team_id', teamIds)
         .in('status', ['upcoming', 'inProgress', 'paused'])
         .gte('date', new Date().toISOString().split('T')[0])
         .order('date', { ascending: true });
@@ -125,8 +145,8 @@ export default function MatchesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Today's Matches</Text>
-        <Text style={styles.subtitle}>Select a match to start coaching</Text>
+        <Text style={styles.title}>My Matches</Text>
+        <Text style={styles.subtitle}>Matches for teams you're coaching</Text>
       </View>
 
       <ScrollView
@@ -138,9 +158,9 @@ export default function MatchesScreen() {
         {matches.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Calendar size={48} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No matches today</Text>
+            <Text style={styles.emptyTitle}>No matches found</Text>
             <Text style={styles.emptySubtitle}>
-              Check back later or contact your team manager
+              You don't have any upcoming matches for teams you're coaching
             </Text>
           </View>
         ) : (

@@ -26,14 +26,26 @@ export default function TeamsScreen() {
   const { user } = useAuth();
 
   const fetchTeams = async () => {
+    if (!user) return;
+
     try {
+      // Only fetch teams where the current user is a coach
       const { data, error } = await supabase
         .from('teams')
         .select('*')
+        .contains('coaches', [{ id: user.id }])
         .order('name');
 
       if (error) throw error;
-      setTeams(data || []);
+      
+      // Ensure arrays are properly initialized
+      const teamsData = (data || []).map(team => ({
+        ...team,
+        players: Array.isArray(team.players) ? team.players : [],
+        coaches: Array.isArray(team.coaches) ? team.coaches : [],
+      }));
+      
+      setTeams(teamsData);
     } catch (error) {
       console.error('Error fetching teams:', error);
     } finally {
@@ -81,7 +93,7 @@ export default function TeamsScreen() {
             <Users size={48} color="#9CA3AF" />
             <Text style={styles.emptyTitle}>No teams found</Text>
             <Text style={styles.emptySubtitle}>
-              Contact your administrator to be added to teams
+              You're not currently assigned as a coach to any teams
             </Text>
           </View>
         ) : (
