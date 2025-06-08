@@ -52,41 +52,58 @@ export default function LiveMatchScreen() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const convertPlayersDataToArray = (playersData: any): Player[] => {
-    if (!playersData) return [];
+    console.log('Converting players data:', playersData);
+    
+    if (!playersData) {
+      console.log('No players data provided');
+      return [];
+    }
     
     // If it's already an array, filter and return it
     if (Array.isArray(playersData)) {
-      return playersData.filter(player => 
+      console.log('Players data is array with length:', playersData.length);
+      const filteredPlayers = playersData.filter(player => 
         player && 
         typeof player === 'object' && 
         player.id && 
         player.name
       );
+      console.log('Filtered players:', filteredPlayers);
+      return filteredPlayers;
     }
     
     // If it's an object with position keys, convert to array
     if (typeof playersData === 'object') {
+      console.log('Players data is object with keys:', Object.keys(playersData));
       const players: Player[] = [];
       
       // Extract players from each position
       Object.keys(playersData).forEach(position => {
         const playerData = playersData[position];
+        console.log(`Processing position ${position}:`, playerData);
+        
         if (playerData && typeof playerData === 'object') {
           // Ensure the player has required fields
           if (playerData.id && playerData.name) {
-            players.push({
+            const player = {
               id: playerData.id,
               name: playerData.name,
               number: playerData.number || 0,
               position: playerData.position || position,
-            });
+            };
+            console.log('Adding player:', player);
+            players.push(player);
+          } else {
+            console.log('Skipping invalid player data:', playerData);
           }
         }
       });
       
+      console.log('Final converted players array:', players);
       return players;
     }
     
+    console.log('Unknown players data format');
     return [];
   };
 
@@ -108,6 +125,8 @@ export default function LiveMatchScreen() {
       console.log('Raw match data:', data);
       console.log('Lineup data:', data.lineup);
       console.log('Reserve players data:', data.reserve_players);
+      console.log('Reserve players type:', typeof data.reserve_players);
+      console.log('Reserve players is array:', Array.isArray(data.reserve_players));
       
       // Convert both lineup and reserve_players to arrays
       const lineupArray = convertPlayersDataToArray(data.lineup);
@@ -168,6 +187,8 @@ export default function LiveMatchScreen() {
     if (!match) return;
 
     try {
+      console.log('Updating match with:', updates);
+      
       // Prepare the updates for the database
       const dbUpdates: any = {};
       
@@ -176,6 +197,7 @@ export default function LiveMatchScreen() {
         if (key === 'lineup' || key === 'reserve_players') {
           // Keep as arrays since the database expects JSONB arrays
           dbUpdates[key] = updates[key as keyof Match];
+          console.log(`Database update for ${key}:`, dbUpdates[key]);
         } else {
           dbUpdates[key] = updates[key as keyof Match];
         }
@@ -187,6 +209,8 @@ export default function LiveMatchScreen() {
         .eq('id', match.id);
 
       if (error) throw error;
+      
+      console.log('Match updated successfully');
       setMatch(prev => prev ? { ...prev, ...updates } : null);
     } catch (error) {
       console.error('Error updating match:', error);
@@ -228,6 +252,8 @@ export default function LiveMatchScreen() {
   };
 
   const handlePlayerPress = (player: Player, isOnField: boolean) => {
+    console.log('Player pressed:', player.name, 'isOnField:', isOnField);
+    
     if (isSubstituting) {
       makeSubstitution(player, isOnField);
     } else {
@@ -239,14 +265,26 @@ export default function LiveMatchScreen() {
   const makeSubstitution = (targetPlayer: Player, targetIsOnField: boolean) => {
     if (!match || !selectedPlayer) return;
 
+    console.log('Making substitution:', {
+      selected: selectedPlayer.name,
+      target: targetPlayer.name,
+      targetIsOnField
+    });
+
     const newLineup = [...match.lineup];
     const newReservePlayers = [...match.reserve_players];
     const selectedIsOnField = newLineup.some(p => p.id === selectedPlayer.id);
+
+    console.log('Current lineup:', newLineup.map(p => p.name));
+    console.log('Current reserves:', newReservePlayers.map(p => p.name));
+    console.log('Selected is on field:', selectedIsOnField);
 
     if (selectedIsOnField && !targetIsOnField) {
       // Move selected from field to bench, target from bench to field
       const selectedIndex = newLineup.findIndex(p => p.id === selectedPlayer.id);
       const targetIndex = newReservePlayers.findIndex(p => p.id === targetPlayer.id);
+      
+      console.log('Swapping field->bench:', { selectedIndex, targetIndex });
       
       if (selectedIndex !== -1 && targetIndex !== -1) {
         newLineup[selectedIndex] = targetPlayer;
@@ -256,6 +294,8 @@ export default function LiveMatchScreen() {
       // Move selected from bench to field, target from field to bench
       const selectedIndex = newReservePlayers.findIndex(p => p.id === selectedPlayer.id);
       const targetIndex = newLineup.findIndex(p => p.id === targetPlayer.id);
+      
+      console.log('Swapping bench->field:', { selectedIndex, targetIndex });
       
       if (selectedIndex !== -1 && targetIndex !== -1) {
         newReservePlayers[selectedIndex] = targetPlayer;
@@ -272,6 +312,9 @@ export default function LiveMatchScreen() {
     };
 
     const newSubstitutions = [...match.substitutions, substitution];
+
+    console.log('New lineup:', newLineup.map(p => p.name));
+    console.log('New reserves:', newReservePlayers.map(p => p.name));
 
     updateMatch({
       lineup: newLineup,
@@ -547,6 +590,9 @@ export default function LiveMatchScreen() {
             <View style={styles.emptyContainer}>
               <Users size={32} color="#9CA3AF" />
               <Text style={styles.emptyText}>Geen reservespelers</Text>
+              <Text style={styles.emptySubtext}>
+                Er zijn momenteel geen reservespelers ingesteld voor deze wedstrijd
+              </Text>
             </View>
           ) : (
             <View style={styles.playersList}>
@@ -820,9 +866,17 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6B7280',
     marginTop: 8,
+    fontWeight: '500',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 4,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   playersList: {
     gap: 8,
