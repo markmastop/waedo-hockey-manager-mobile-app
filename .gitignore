@@ -5,7 +5,7 @@ node_modules/
 .expo/
 dist/
 web-build/
-expo-env.d.ts
+# Allow TypeScript environment declaration files
 
 # native
 *.orig.*

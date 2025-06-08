@@ -16,7 +16,7 @@ interface Team {
   id: string;
   name: string;
   players: Player[];
-  coaches: Array<{ id: string; name: string }>;
+  coach: Array<{ id: string; name: string }>;
 }
 
 export default function TeamsScreen() {
@@ -33,7 +33,7 @@ export default function TeamsScreen() {
       const { data, error } = await supabase
         .from('teams')
         .select('*')
-        .or(`coaches.cs.{"id":"${user.id}"},coach.cs.{"id":"${user.id}"}`)
+        .contains('coach', [{ id: user.id }])
         .order('name');
 
       if (error) throw error;
@@ -42,7 +42,7 @@ export default function TeamsScreen() {
       const teamsData = (data || []).map(team => ({
         ...team,
         players: Array.isArray(team.players) ? team.players : [],
-        coaches: Array.isArray(team.coaches) ? team.coaches : (Array.isArray(team.coach) ? team.coach : []),
+        coach: Array.isArray(team.coach) ? team.coach : [],
       }));
       
       setTeams(teamsData);
@@ -107,7 +107,7 @@ export default function TeamsScreen() {
                   <View style={styles.teamInfo}>
                     <Text style={styles.teamName}>{team.name}</Text>
                     <Text style={styles.teamStats}>
-                      {team.players.length} players • {team.coaches.length} coaches
+                      {team.players.length} players • {team.coach.length} coaches
                     </Text>
                   </View>
                 </View>
@@ -134,7 +134,7 @@ export default function TeamsScreen() {
                 <View style={styles.coachesSection}>
                   <Text style={styles.sectionTitle}>Coaches</Text>
                   <View style={styles.coachesList}>
-                    {team.coaches.map((coach) => (
+                    {team.coach.map((coach) => (
                       <View key={coach.id} style={styles.coachItem}>
                         <User size={16} color="#6B7280" />
                         <Text style={styles.coachName}>{coach.name}</Text>

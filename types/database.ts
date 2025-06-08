@@ -6,21 +6,21 @@ export interface Database {
           id: string;
           name: string;
           players: Player[];
-          coaches: Coach[];
+          coach: Coach[];
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
           players: Player[];
-          coaches: Coach[];
+          coach: Coach[];
           created_at?: string;
         };
         Update: {
           id?: string;
           name?: string;
           players?: Player[];
-          coaches?: Coach[];
+          coach?: Coach[];
           created_at?: string;
         };
       };
