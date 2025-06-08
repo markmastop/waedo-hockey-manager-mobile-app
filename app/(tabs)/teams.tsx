@@ -33,7 +33,7 @@ export default function TeamsScreen() {
       const { data, error } = await supabase
         .from('teams')
         .select('*')
-        .contains('coach', [{ id: user.id }])
+        .contains('coach', JSON.stringify([{ id: user.id }]))
         .order('name');
 
       if (error) throw error;

@@ -42,7 +42,7 @@ export default function MatchesScreen() {
       const { data: userTeams, error: teamsError } = await supabase
         .from('teams')
         .select('id')
-        .contains('coach', [{ id: user.id }]);
+        .contains('coach', JSON.stringify([{ id: user.id }]));
 
       if (teamsError) throw teamsError;
 
