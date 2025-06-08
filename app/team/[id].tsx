@@ -67,7 +67,8 @@ export default function TeamDetailsScreen() {
   };
 
   const getPositionColor = (position: string) => {
-    switch (position.toLowerCase()) {
+    const safePosition = position?.toLowerCase() || '';
+    switch (safePosition) {
       case 'goalkeeper':
       case 'gk':
         return '#DC2626';
@@ -160,7 +161,7 @@ export default function TeamDetailsScreen() {
                           { backgroundColor: getPositionColor(player.position) },
                         ]}
                       >
-                        <Text style={styles.positionText}>{player.position}</Text>
+                        <Text style={styles.positionText}>{player.position || 'Unknown'}</Text>
                       </View>
                     </View>
                   </View>
