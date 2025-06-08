@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
@@ -56,8 +57,12 @@ export default function LoginScreen() {
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <LogIn size={40} color="#16A34A" />
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('@/assets/images/gohockey-small-shield-orange.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.title}>GoHockey Coach</Text>
             <Text style={styles.subtitle}>Log in om je wedstrijden te beheren</Text>
@@ -124,14 +129,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#F0FDF4',
-    borderRadius: 40,
+  logoContainer: {
+    width: 120,
+    height: 120,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  logo: {
+    width: 80,
+    height: 80,
   },
   title: {
     fontSize: 28,
