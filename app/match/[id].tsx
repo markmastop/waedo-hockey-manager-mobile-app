@@ -64,7 +64,16 @@ export default function LiveMatchScreen() {
         .single();
 
       if (error) throw error;
-      setMatch(data);
+      
+      // Ensure JSONB fields are properly initialized as arrays
+      const matchData = {
+        ...data,
+        lineup: Array.isArray(data.lineup) ? data.lineup : [],
+        reserve_players: Array.isArray(data.reserve_players) ? data.reserve_players : [],
+        substitutions: Array.isArray(data.substitutions) ? data.substitutions : [],
+      };
+      
+      setMatch(matchData);
     } catch (error) {
       console.error('Error fetching match:', error);
       Alert.alert('Error', 'Failed to load match data');
