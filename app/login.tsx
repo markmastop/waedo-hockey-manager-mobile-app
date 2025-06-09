@@ -70,7 +70,7 @@ export default function LoginScreen() {
                   resizeMode="contain"
                 />
               </View>
-              <Text style={styles.title}>doHockey Companion</Text>
+              <Text style={styles.title}>Companion</Text>
               <Text style={styles.subtitle}>De complete coaching app voor hockey</Text>
             </View>
 
