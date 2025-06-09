@@ -65,7 +65,7 @@ export default function LoginScreen() {
             <View style={styles.header}>
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('@/assets/images/gohockey-small-shield-orange.png')}
+                  source={require('@/assets/images/we-dohockey-orange-black-trans.png')}
                   style={styles.logo}
                   resizeMode="contain"
                 />
@@ -157,8 +157,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 80,
   },
   title: {
     fontSize: 28,
