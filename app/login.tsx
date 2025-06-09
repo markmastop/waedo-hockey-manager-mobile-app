@@ -115,7 +115,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.featuresSection}>
-              <Text style={styles.featuresTitle}>Wat je krijgt met doHockey:</Text>
+              <Text style={styles.featuresTitle}>Wat je krijgt met we.doHockey:</Text>
               <View style={styles.featuresList}>
                 <Text style={styles.featureItem}>• Compleet teambeheer</Text>
                 <Text style={styles.featureItem}>• Opstellingen op basis van voorkeursposities</Text>
