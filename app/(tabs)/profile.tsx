@@ -11,17 +11,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { 
-  User, 
-  LogOut, 
-  Settings, 
-  Bell,
-  Shield,
-  HelpCircle,
-  Star,
-  Award,
-  ChevronRight
-} from 'lucide-react-native';
+import { User, LogOut, Settings, Bell, Shield, CircleHelp as HelpCircle, Star, Award, ChevronRight } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
