@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Calendar, User } from 'lucide-react-native';
+import { Home, Calendar, Users, Settings } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { Redirect } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
@@ -10,7 +10,7 @@ export default function TabLayout() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Laden...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -23,7 +23,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#16A34A',
+        tabBarActiveTintColor: '#FF6B35',
         tabBarInactiveTintColor: '#6B7280',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
@@ -32,18 +32,32 @@ export default function TabLayout() {
           paddingBottom: 8,
           paddingTop: 8,
           height: 70,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 8,
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontFamily: 'Inter-SemiBold',
         },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Wedstrijden',
+          title: 'Dashboard',
           tabBarIcon: ({ size, color }) => (
             <Home size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="matches"
+        options={{
+          title: 'Matches',
+          tabBarIcon: ({ size, color }) => (
+            <Calendar size={size} color={color} />
           ),
         }}
       />
@@ -52,16 +66,16 @@ export default function TabLayout() {
         options={{
           title: 'Teams',
           tabBarIcon: ({ size, color }) => (
-            <Calendar size={size} color={color} />
+            <Users size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profiel',
+          title: 'Profile',
           tabBarIcon: ({ size, color }) => (
-            <User size={size} color={color} />
+            <Settings size={size} color={color} />
           ),
         }}
       />
@@ -74,11 +88,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8FAFC',
   },
   loadingText: {
     fontSize: 18,
     color: '#6B7280',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 });
