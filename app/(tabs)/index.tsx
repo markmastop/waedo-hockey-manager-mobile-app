@@ -133,7 +133,7 @@ export default function DashboardScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('nl-NL', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
@@ -160,11 +160,11 @@ export default function DashboardScreen() {
       case 'inProgress':
         return 'LIVE';
       case 'paused':
-        return 'PAUSED';
+        return 'GEPAUZEERD';
       case 'upcoming':
-        return 'UPCOMING';
+        return 'AANKOMEND';
       case 'completed':
-        return 'COMPLETED';
+        return 'AFGEROND';
       default:
         return status.toUpperCase();
     }
@@ -174,7 +174,7 @@ export default function DashboardScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
+          <Text style={styles.loadingText}>Dashboard laden...</Text>
         </View>
       </SafeAreaView>
     );
@@ -193,12 +193,13 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View>
-              <Text style={styles.welcomeText}>Welcome back</Text>
+              <Text style={styles.welcomeText}>Welkom terug</Text>
               <Text style={styles.userNameText}>Coach</Text>
             </View>
             <Image
-              source={{ uri: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&dpr=2' }}
-              style={styles.profileImage}
+              source={require('@/assets/images/we-dohockey-orange-black-trans.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
             />
           </View>
         </View>
@@ -208,7 +209,7 @@ export default function DashboardScreen() {
           <View style={styles.statsRow}>
             <View style={[styles.statCard, styles.primaryCard]}>
               <View style={styles.statIconContainer}>
-                <Users size={24} color="#FFFFFF" />
+                <Users size={20} color="#FFFFFF" />
               </View>
               <Text style={styles.statNumber}>{stats.totalTeams}</Text>
               <Text style={styles.statLabel}>Teams</Text>
@@ -216,17 +217,17 @@ export default function DashboardScreen() {
             
             <View style={[styles.statCard, styles.secondaryCard]}>
               <View style={[styles.statIconContainer, styles.secondaryIcon]}>
-                <Calendar size={24} color="#FF6B35" />
+                <Calendar size={20} color="#FF6B35" />
               </View>
               <Text style={[styles.statNumber, styles.darkText]}>{stats.upcomingMatches}</Text>
-              <Text style={[styles.statLabel, styles.darkLabel]}>Upcoming</Text>
+              <Text style={[styles.statLabel, styles.darkLabel]}>Aankomend</Text>
             </View>
           </View>
 
           <View style={styles.statsRow}>
             <View style={[styles.statCard, styles.secondaryCard]}>
               <View style={[styles.statIconContainer, styles.secondaryIcon]}>
-                <Play size={24} color="#10B981" />
+                <Play size={20} color="#10B981" />
               </View>
               <Text style={[styles.statNumber, styles.darkText]}>{stats.liveMatches}</Text>
               <Text style={[styles.statLabel, styles.darkLabel]}>Live</Text>
@@ -234,26 +235,26 @@ export default function DashboardScreen() {
             
             <View style={[styles.statCard, styles.secondaryCard]}>
               <View style={[styles.statIconContainer, styles.secondaryIcon]}>
-                <Trophy size={24} color="#8B5CF6" />
+                <Trophy size={20} color="#8B5CF6" />
               </View>
               <Text style={[styles.statNumber, styles.darkText]}>{stats.completedMatches}</Text>
-              <Text style={[styles.statLabel, styles.darkLabel]}>Completed</Text>
+              <Text style={[styles.statLabel, styles.darkLabel]}>Afgerond</Text>
             </View>
           </View>
         </View>
 
         {/* Quick Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Snelle Acties</Text>
           <View style={styles.quickActionsContainer}>
             <TouchableOpacity 
               style={styles.quickActionCard}
               onPress={() => router.push('/(tabs)/matches')}
             >
               <View style={styles.quickActionIcon}>
-                <Calendar size={24} color="#FF6B35" />
+                <Calendar size={20} color="#FF6B35" />
               </View>
-              <Text style={styles.quickActionText}>View Matches</Text>
+              <Text style={styles.quickActionText}>Bekijk Wedstrijden</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -261,9 +262,9 @@ export default function DashboardScreen() {
               onPress={() => router.push('/(tabs)/teams')}
             >
               <View style={styles.quickActionIcon}>
-                <Users size={24} color="#FF6B35" />
+                <Users size={20} color="#FF6B35" />
               </View>
-              <Text style={styles.quickActionText}>Manage Teams</Text>
+              <Text style={styles.quickActionText}>Beheer Teams</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -271,17 +272,17 @@ export default function DashboardScreen() {
         {/* Recent Matches */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Matches</Text>
+            <Text style={styles.sectionTitle}>Recente Wedstrijden</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/matches')}>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.seeAllText}>Bekijk Alles</Text>
             </TouchableOpacity>
           </View>
           
           {recentMatches.length === 0 ? (
             <View style={styles.emptyState}>
-              <Calendar size={48} color="#9CA3AF" />
-              <Text style={styles.emptyStateTitle}>No matches yet</Text>
-              <Text style={styles.emptyStateText}>Your recent matches will appear here</Text>
+              <Calendar size={40} color="#9CA3AF" />
+              <Text style={styles.emptyStateTitle}>Nog geen wedstrijden</Text>
+              <Text style={styles.emptyStateText}>Je recente wedstrijden verschijnen hier</Text>
             </View>
           ) : (
             <View style={styles.matchesList}>
@@ -308,7 +309,7 @@ export default function DashboardScreen() {
                         {getStatusText(match.status)}
                       </Text>
                     </View>
-                    <ChevronRight size={16} color="#9CA3AF" />
+                    <ChevronRight size={14} color="#9CA3AF" />
                   </View>
                   
                   <Text style={styles.matchTitle}>
@@ -318,13 +319,13 @@ export default function DashboardScreen() {
                   
                   <View style={styles.matchDetails}>
                     <View style={styles.matchDetailItem}>
-                      <Clock size={14} color="#6B7280" />
+                      <Clock size={12} color="#6B7280" />
                       <Text style={styles.matchDetailText}>
                         {formatDate(match.date)}
                       </Text>
                     </View>
                     <Text style={styles.homeIndicator}>
-                      {match.is_home ? 'Home' : 'Away'}
+                      {match.is_home ? 'Thuis' : 'Uit'}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -336,17 +337,17 @@ export default function DashboardScreen() {
         {/* Teams Overview */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Your Teams</Text>
+            <Text style={styles.sectionTitle}>Jouw Teams</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/teams')}>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.seeAllText}>Bekijk Alles</Text>
             </TouchableOpacity>
           </View>
           
           {teams.length === 0 ? (
             <View style={styles.emptyState}>
-              <Users size={48} color="#9CA3AF" />
-              <Text style={styles.emptyStateTitle}>No teams assigned</Text>
-              <Text style={styles.emptyStateText}>You're not coaching any teams yet</Text>
+              <Users size={40} color="#9CA3AF" />
+              <Text style={styles.emptyStateTitle}>Geen teams toegewezen</Text>
+              <Text style={styles.emptyStateText}>Je bent nog geen coach van teams</Text>
             </View>
           ) : (
             <View style={styles.teamsList}>
@@ -357,15 +358,15 @@ export default function DashboardScreen() {
                   onPress={() => router.push(`/team/${team.id}`)}
                 >
                   <View style={styles.teamIcon}>
-                    <Users size={20} color="#FF6B35" />
+                    <Users size={18} color="#FF6B35" />
                   </View>
                   <View style={styles.teamInfo}>
                     <Text style={styles.teamName}>{team.name}</Text>
                     <Text style={styles.teamPlayers}>
-                      {team.players?.length || 0} players
+                      {team.players?.length || 0} spelers
                     </Text>
                   </View>
-                  <ChevronRight size={16} color="#9CA3AF" />
+                  <ChevronRight size={14} color="#9CA3AF" />
                 </TouchableOpacity>
               ))}
             </View>
@@ -390,14 +391,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#6B7280',
     fontFamily: 'Inter-Medium',
   },
   header: {
     backgroundColor: '#FFFFFF',
     paddingTop: 20,
-    paddingBottom: 24,
+    paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
@@ -408,34 +409,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
     fontFamily: 'Inter-Regular',
   },
   userNameText: {
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
     marginTop: 4,
   },
-  profileImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  logoImage: {
+    width: 80,
+    height: 40,
   },
   statsContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    gap: 16,
+    paddingVertical: 20,
+    gap: 12,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
   },
   statCard: {
     flex: 1,
-    padding: 20,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
   },
   primaryCard: {
@@ -447,28 +447,28 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   secondaryIcon: {
     backgroundColor: '#F8FAFC',
   },
   statNumber: {
-    fontSize: 32,
+    fontSize: 24,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   darkText: {
     color: '#0F172A',
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: 'rgba(255, 255, 255, 0.8)',
   },
@@ -477,80 +477,80 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
   },
   seeAllText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#FF6B35',
   },
   quickActionsContainer: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
   },
   quickActionCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#FEF2F2',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   quickActionText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#0F172A',
     textAlign: 'center',
   },
   emptyState: {
     backgroundColor: '#FFFFFF',
-    padding: 40,
-    borderRadius: 16,
+    padding: 32,
+    borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   emptyStateTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#374151',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 6,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
     fontFamily: 'Inter-Regular',
   },
   matchesList: {
-    gap: 12,
+    gap: 8,
   },
   matchCard: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -558,35 +558,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   matchStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   matchTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   teamName: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748B',
     fontFamily: 'Inter-Medium',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   matchDetails: {
     flexDirection: 'row',
@@ -596,50 +596,55 @@ const styles = StyleSheet.create({
   matchDetailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   matchDetailText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     fontFamily: 'Inter-Regular',
   },
   homeIndicator: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-SemiBold',
     color: '#10B981',
     backgroundColor: '#ECFDF5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   teamsList: {
-    gap: 12,
+    gap: 8,
   },
   teamCard: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   teamIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#FEF2F2',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   teamInfo: {
     flex: 1,
   },
+  teamName: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#0F172A',
+  },
   teamPlayers: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#64748B',
     fontFamily: 'Inter-Regular',
-    marginTop: 2,
+    marginTop: 1,
   },
 });

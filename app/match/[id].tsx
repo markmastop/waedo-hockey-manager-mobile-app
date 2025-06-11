@@ -442,7 +442,7 @@ export default function LiveMatchScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <ArrowLeft size={24} color="#374151" />
+          <ArrowLeft size={20} color="#374151" />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.matchTitle}>
@@ -454,7 +454,7 @@ export default function LiveMatchScreen() {
 
       <View style={styles.matchStatus}>
         <View style={styles.timeDisplay}>
-          <Clock size={20} color="#374151" />
+          <Clock size={18} color="#374151" />
           <Text style={styles.timeText}>{formatTime(match.match_time)}</Text>
           <Text style={styles.quarterText}>K{match.current_quarter}</Text>
         </View>
@@ -476,7 +476,7 @@ export default function LiveMatchScreen() {
       <View style={styles.matchControls}>
         {match.status === 'upcoming' && (
           <TouchableOpacity style={styles.startButton} onPress={startMatch}>
-            <Play size={16} color="#FFFFFF" />
+            <Play size={14} color="#FFFFFF" />
             <Text style={styles.startButtonText}>Start Wedstrijd</Text>
           </TouchableOpacity>
         )}
@@ -484,17 +484,17 @@ export default function LiveMatchScreen() {
         {match.status === 'inProgress' && (
           <>
             <TouchableOpacity style={styles.controlButton} onPress={pauseMatch}>
-              <Pause size={16} color="#374151" />
+              <Pause size={14} color="#374151" />
               <Text style={styles.controlButtonText}>Pauzeren</Text>
             </TouchableOpacity>
             {match.current_quarter < 4 && (
               <TouchableOpacity style={styles.controlButton} onPress={nextQuarter}>
-                <SkipForward size={16} color="#374151" />
+                <SkipForward size={14} color="#374151" />
                 <Text style={styles.controlButtonText}>Volgend Kwart</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.endButton} onPress={endMatch}>
-              <Square size={16} color="#FFFFFF" />
+              <Square size={14} color="#FFFFFF" />
               <Text style={styles.endButtonText}>Beëindigen</Text>
             </TouchableOpacity>
           </>
@@ -503,11 +503,11 @@ export default function LiveMatchScreen() {
         {match.status === 'paused' && (
           <>
             <TouchableOpacity style={styles.startButton} onPress={resumeMatch}>
-              <Play size={16} color="#FFFFFF" />
+              <Play size={14} color="#FFFFFF" />
               <Text style={styles.startButtonText}>Hervatten</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.endButton} onPress={endMatch}>
-              <Square size={16} color="#FFFFFF" />
+              <Square size={14} color="#FFFFFF" />
               <Text style={styles.endButtonText}>Beëindigen</Text>
             </TouchableOpacity>
           </>
@@ -516,7 +516,7 @@ export default function LiveMatchScreen() {
 
       {isSubstituting && (
         <View style={styles.substitutionBanner}>
-          <ArrowUpDown size={16} color="#16A34A" />
+          <ArrowUpDown size={14} color="#16A34A" />
           <Text style={styles.substitutionText}>
             Selecteer een speler om te wisselen met {selectedPlayer?.name}
           </Text>
@@ -529,12 +529,12 @@ export default function LiveMatchScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Star size={20} color="#16A34A" />
+            <Star size={18} color="#16A34A" />
             <Text style={styles.sectionTitle}>Basisopstelling ({match.lineup.length})</Text>
           </View>
           {match.lineup.length === 0 ? (
             <View style={styles.emptyLineupContainer}>
-              <Users size={48} color="#9CA3AF" />
+              <Users size={40} color="#9CA3AF" />
               <Text style={styles.emptyTitle}>Geen basisopstelling ingesteld</Text>
               <Text style={styles.emptySubtitle}>
                 De basisopstelling is nog niet geconfigureerd voor deze wedstrijd
@@ -573,7 +573,7 @@ export default function LiveMatchScreen() {
                     </View>
                   </View>
                   <View style={styles.startingIndicator}>
-                    <Star size={16} color="#16A34A" fill="#16A34A" />
+                    <Star size={14} color="#16A34A" fill="#16A34A" />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -583,12 +583,12 @@ export default function LiveMatchScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Users size={20} color="#6B7280" />
+            <Users size={18} color="#6B7280" />
             <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
           </View>
           {match.reserve_players.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Users size={32} color="#9CA3AF" />
+              <Users size={28} color="#9CA3AF" />
               <Text style={styles.emptyText}>Geen reservespelers</Text>
               <Text style={styles.emptySubtext}>
                 Er zijn momenteel geen reservespelers ingesteld voor deze wedstrijd
@@ -635,7 +635,7 @@ export default function LiveMatchScreen() {
         {match.substitutions.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <ArrowUpDown size={20} color="#EA580C" />
+              <ArrowUpDown size={18} color="#EA580C" />
               <Text style={styles.sectionTitle}>Wissels ({match.substitutions.length})</Text>
             </View>
             <View style={styles.substitutionsList}>
@@ -677,24 +677,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    marginRight: 16,
+    marginRight: 12,
   },
   headerInfo: {
     flex: 1,
   },
   matchTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#111827',
   },
   teamName: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
   },
   loadingContainer: {
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -720,30 +720,30 @@ const styles = StyleSheet.create({
   timeDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   timeText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#111827',
   },
   quarterText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#6B7280',
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   statusBadge: {
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -751,70 +751,70 @@ const styles = StyleSheet.create({
   matchControls: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-    gap: 12,
+    gap: 8,
   },
   startButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 4,
   },
   startButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   controlButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 4,
   },
   controlButtonText: {
     color: '#374151',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   endButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DC2626',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 4,
   },
   endButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   substitutionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F0FDF4',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 8,
+    paddingVertical: 10,
+    gap: 6,
   },
   substitutionText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 12,
     color: '#16A34A',
     fontWeight: '500',
   },
   cancelText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#DC2626',
     fontWeight: '600',
   },
@@ -823,69 +823,69 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: 10,
+    gap: 6,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#111827',
   },
   emptyLineupContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 32,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#374151',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 6,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
-    marginTop: 8,
+    marginTop: 6,
     fontWeight: '500',
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#9CA3AF',
-    marginTop: 4,
+    marginTop: 3,
     textAlign: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   playersList: {
-    gap: 8,
+    gap: 6,
   },
   playerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: 'transparent',
   },
@@ -902,16 +902,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
   },
   playerNumber: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   playerNumberText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#16A34A',
   },
@@ -919,52 +919,52 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playerName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   positionContainer: {
     flexDirection: 'row',
   },
   positionBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   positionText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
     color: '#FFFFFF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   startingIndicator: {
-    marginLeft: 8,
+    marginLeft: 6,
   },
   substitutionsList: {
-    gap: 8,
+    gap: 6,
   },
   substitutionCard: {
     backgroundColor: '#FFFFFF',
-    padding: 12,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     borderLeftColor: '#EA580C',
   },
   substitutionTime: {
-    marginBottom: 4,
+    marginBottom: 3,
   },
   substitutionTimeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#6B7280',
   },
   substitutionDetails: {},
   substitutionText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#374151',
   },
   playerOut: {

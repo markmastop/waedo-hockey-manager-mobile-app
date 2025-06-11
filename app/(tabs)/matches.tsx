@@ -132,7 +132,7 @@ export default function MatchesScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('nl-NL', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -141,7 +141,7 @@ export default function MatchesScreen() {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString('nl-NL', {
       hour: 'numeric',
       minute: '2-digit',
     });
@@ -166,11 +166,11 @@ export default function MatchesScreen() {
       case 'inProgress':
         return 'LIVE';
       case 'paused':
-        return 'PAUSED';
+        return 'GEPAUZEERD';
       case 'upcoming':
-        return 'UPCOMING';
+        return 'AANKOMEND';
       case 'completed':
-        return 'COMPLETED';
+        return 'AFGEROND';
       default:
         return status.toUpperCase();
     }
@@ -193,7 +193,7 @@ export default function MatchesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading matches...</Text>
+          <Text style={styles.loadingText}>Wedstrijden laden...</Text>
         </View>
       </SafeAreaView>
     );
@@ -202,8 +202,8 @@ export default function MatchesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Matches</Text>
-        <Text style={styles.subtitle}>Manage your team matches</Text>
+        <Text style={styles.title}>Wedstrijden</Text>
+        <Text style={styles.subtitle}>Beheer je teamwedstrijden</Text>
       </View>
 
       {/* Filter Tabs */}
@@ -214,10 +214,10 @@ export default function MatchesScreen() {
           contentContainerStyle={styles.filterScrollContent}
         >
           {[
-            { key: 'all', label: 'All' },
-            { key: 'upcoming', label: 'Upcoming' },
+            { key: 'all', label: 'Alle' },
+            { key: 'upcoming', label: 'Aankomend' },
             { key: 'live', label: 'Live' },
-            { key: 'completed', label: 'Completed' },
+            { key: 'completed', label: 'Afgerond' },
           ].map((filter) => (
             <TouchableOpacity
               key={filter.key}
@@ -254,12 +254,12 @@ export default function MatchesScreen() {
       >
         {filteredMatches.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Calendar size={64} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No matches found</Text>
+            <Calendar size={48} color="#9CA3AF" />
+            <Text style={styles.emptyTitle}>Geen wedstrijden gevonden</Text>
             <Text style={styles.emptySubtitle}>
               {activeFilter === 'all' 
-                ? "You don't have any matches scheduled"
-                : `No ${activeFilter} matches found`
+                ? "Je hebt geen wedstrijden ingepland"
+                : `Geen ${activeFilter === 'upcoming' ? 'aankomende' : activeFilter === 'live' ? 'live' : 'afgeronde'} wedstrijden gevonden`
               }
             </Text>
           </View>
@@ -300,20 +300,20 @@ export default function MatchesScreen() {
                       styles.homeIndicator,
                       match.is_home ? styles.homeMatch : styles.awayMatch
                     ]}>
-                      {match.is_home ? 'HOME' : 'AWAY'}
+                      {match.is_home ? 'THUIS' : 'UIT'}
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.matchInfo}>
                   <View style={styles.infoRow}>
-                    <Clock size={16} color="#6B7280" />
+                    <Clock size={14} color="#6B7280" />
                     <Text style={styles.infoText}>
                       {formatDate(match.date)} • {formatTime(match.date)}
                     </Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <MapPin size={16} color="#6B7280" />
+                    <MapPin size={14} color="#6B7280" />
                     <Text style={styles.infoText}>
                       {match.location}
                       {match.field && ` • ${match.field}`}
@@ -324,8 +324,8 @@ export default function MatchesScreen() {
                 {(match.status === 'inProgress' || match.status === 'paused') && (
                   <View style={styles.liveActions}>
                     <View style={styles.liveButton}>
-                      <Play size={16} color="#10B981" />
-                      <Text style={styles.liveButtonText}>Manage Live</Text>
+                      <Play size={14} color="#10B981" />
+                      <Text style={styles.liveButtonText}>Beheer Live</Text>
                     </View>
                   </View>
                 )}
@@ -333,8 +333,8 @@ export default function MatchesScreen() {
                 {match.status === 'upcoming' && (
                   <View style={styles.upcomingActions}>
                     <View style={styles.upcomingButton}>
-                      <Users size={16} color="#FF6B35" />
-                      <Text style={styles.upcomingButtonText}>Prepare Team</Text>
+                      <Users size={14} color="#FF6B35" />
+                      <Text style={styles.upcomingButtonText}>Team Voorbereiden</Text>
                     </View>
                   </View>
                 )}
@@ -355,19 +355,19 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
     fontFamily: 'Inter-Regular',
   },
@@ -378,23 +378,23 @@ const styles = StyleSheet.create({
   },
   filterScrollContent: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 12,
+    paddingVertical: 12,
+    gap: 8,
   },
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     backgroundColor: '#F1F5F9',
-    gap: 8,
+    gap: 6,
   },
   activeFilterTab: {
     backgroundColor: '#FF6B35',
   },
   filterTabText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#64748B',
   },
@@ -403,14 +403,14 @@ const styles = StyleSheet.create({
   },
   filterBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 20,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
+    minWidth: 16,
     alignItems: 'center',
   },
   filterBadgeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-Bold',
     color: '#64748B',
   },
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#6B7280',
     fontFamily: 'Inter-Medium',
   },
@@ -431,31 +431,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 80,
     paddingHorizontal: 32,
   },
   emptyTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#374151',
-    marginTop: 24,
-    marginBottom: 8,
+    marginTop: 20,
+    marginBottom: 6,
   },
   emptySubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
     fontFamily: 'Inter-Regular',
-    lineHeight: 24,
+    lineHeight: 20,
   },
   matchList: {
     padding: 20,
-    gap: 16,
+    gap: 12,
   },
   matchCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -468,26 +468,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   matchStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   teamName: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#64748B',
   },
@@ -495,24 +495,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   matchTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
     flex: 1,
-    marginRight: 12,
+    marginRight: 10,
   },
   homeIndicatorContainer: {
     alignItems: 'flex-end',
   },
   homeIndicator: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-Bold',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -525,16 +525,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFBEB',
   },
   matchInfo: {
-    gap: 8,
-    marginBottom: 16,
+    gap: 6,
+    marginBottom: 12,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     fontFamily: 'Inter-Regular',
   },
@@ -544,14 +544,14 @@ const styles = StyleSheet.create({
   liveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: '#ECFDF5',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
   liveButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#10B981',
   },
@@ -561,14 +561,14 @@ const styles = StyleSheet.create({
   upcomingButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: '#FEF2F2',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
   upcomingButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#FF6B35',
   },

@@ -18,12 +18,12 @@ export default function ProfileScreen() {
 
   const handleSignOut = () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      'Uitloggen',
+      'Weet je zeker dat je wilt uitloggen?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Annuleren', style: 'cancel' },
         {
-          text: 'Sign Out',
+          text: 'Uitloggen',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -44,32 +44,32 @@ export default function ProfileScreen() {
   const menuItems = [
     {
       icon: Settings,
-      title: 'Account Settings',
-      subtitle: 'Manage your account preferences',
+      title: 'Account Instellingen',
+      subtitle: 'Beheer je account voorkeuren',
       onPress: () => {},
     },
     {
       icon: Bell,
-      title: 'Notifications',
-      subtitle: 'Configure notification preferences',
+      title: 'Meldingen',
+      subtitle: 'Configureer melding voorkeuren',
       onPress: () => {},
     },
     {
       icon: Shield,
-      title: 'Privacy & Security',
-      subtitle: 'Manage your privacy settings',
+      title: 'Privacy & Beveiliging',
+      subtitle: 'Beheer je privacy instellingen',
       onPress: () => {},
     },
     {
       icon: HelpCircle,
-      title: 'Help & Support',
-      subtitle: 'Get help and contact support',
+      title: 'Help & Ondersteuning',
+      subtitle: 'Krijg hulp en neem contact op',
       onPress: () => {},
     },
     {
       icon: Star,
-      title: 'Rate the App',
-      subtitle: 'Share your feedback with us',
+      title: 'Beoordeel de App',
+      subtitle: 'Deel je feedback met ons',
       onPress: () => {},
     },
   ];
@@ -77,8 +77,8 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Manage your account and preferences</Text>
+        <Text style={styles.title}>Profiel</Text>
+        <Text style={styles.subtitle}>Beheer je account en voorkeuren</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -98,8 +98,8 @@ export default function ProfileScreen() {
               <Text style={styles.userName}>Hockey Coach</Text>
               <Text style={styles.userEmail}>{user?.email}</Text>
               <View style={styles.coachBadge}>
-                <Award size={14} color="#FF6B35" />
-                <Text style={styles.coachBadgeText}>Certified Coach</Text>
+                <Award size={12} color="#FF6B35" />
+                <Text style={styles.coachBadgeText}>Gecertificeerde Coach</Text>
               </View>
             </View>
           </View>
@@ -112,18 +112,18 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>24</Text>
-              <Text style={styles.statLabel}>Matches</Text>
+              <Text style={styles.statLabel}>Wedstrijden</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>18</Text>
-              <Text style={styles.statLabel}>Wins</Text>
+              <Text style={styles.statLabel}>Overwinningen</Text>
             </View>
           </View>
         </View>
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          <Text style={styles.sectionTitle}>Instellingen</Text>
           <View style={styles.menuContainer}>
             {menuItems.map((item, index) => (
               <TouchableOpacity
@@ -136,14 +136,14 @@ export default function ProfileScreen() {
               >
                 <View style={styles.menuItemLeft}>
                   <View style={styles.menuIcon}>
-                    <item.icon size={20} color="#64748B" />
+                    <item.icon size={18} color="#64748B" />
                   </View>
                   <View style={styles.menuItemContent}>
                     <Text style={styles.menuItemTitle}>{item.title}</Text>
                     <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
                   </View>
                 </View>
-                <ChevronRight size={20} color="#CBD5E1" />
+                <ChevronRight size={18} color="#CBD5E1" />
               </TouchableOpacity>
             ))}
           </View>
@@ -151,10 +151,10 @@ export default function ProfileScreen() {
 
         {/* App Info */}
         <View style={styles.appInfoSection}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.sectionTitle}>Over</Text>
           <View style={styles.appInfoCard}>
             <View style={styles.appInfoItem}>
-              <Text style={styles.appInfoLabel}>Version</Text>
+              <Text style={styles.appInfoLabel}>Versie</Text>
               <Text style={styles.appInfoValue}>1.0.0</Text>
             </View>
             <View style={styles.appInfoDivider} />
@@ -168,8 +168,8 @@ export default function ProfileScreen() {
         {/* Sign Out Button */}
         <View style={styles.signOutSection}>
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <LogOut size={20} color="#EF4444" />
-            <Text style={styles.signOutText}>Sign Out</Text>
+            <LogOut size={18} color="#EF4444" />
+            <Text style={styles.signOutText}>Uitloggen</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -185,19 +185,19 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
     fontFamily: 'Inter-Regular',
   },
@@ -209,107 +209,107 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
   },
   statusBadge: {
     position: 'absolute',
     bottom: 2,
     right: 2,
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
   statusDot: {
-    width: 12,
-    height: 12,
+    width: 10,
+    height: 10,
     backgroundColor: '#10B981',
-    borderRadius: 6,
+    borderRadius: 5,
   },
   profileInfo: {
     alignItems: 'center',
   },
   userName: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   userEmail: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
     fontFamily: 'Inter-Regular',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   coachBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF2F2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+    gap: 4,
   },
   coachBadgeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-SemiBold',
     color: '#FF6B35',
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 16,
+    padding: 12,
+    borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-Medium',
     color: '#64748B',
   },
   menuSection: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   menuContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -317,8 +317,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -331,35 +331,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuIcon: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     backgroundColor: '#F8FAFC',
-    borderRadius: 20,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   menuItemContent: {
     flex: 1,
   },
   menuItemTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#0F172A',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   menuItemSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748B',
     fontFamily: 'Inter-Regular',
   },
   appInfoSection: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   appInfoCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -367,41 +367,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   appInfoDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginHorizontal: 20,
+    marginHorizontal: 16,
   },
   appInfoLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#64748B',
   },
   appInfoValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#0F172A',
   },
   signOutSection: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 32,
   },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#FEE2E2',
-    gap: 8,
+    gap: 6,
   },
   signOutText: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#EF4444',
   },

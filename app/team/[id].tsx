@@ -117,7 +117,7 @@ export default function TeamDetailsScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <ArrowLeft size={24} color="#374151" />
+          <ArrowLeft size={20} color="#374151" />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.teamName}>{team.name}</Text>
@@ -135,7 +135,7 @@ export default function TeamDetailsScreen() {
       >
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Users size={20} color="#16A34A" />
+            <Users size={18} color="#16A34A" />
             <Text style={styles.sectionTitle}>
               Spelers ({team.players.length})
             </Text>
@@ -143,7 +143,7 @@ export default function TeamDetailsScreen() {
 
           {team.players.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Users size={48} color="#9CA3AF" />
+              <Users size={40} color="#9CA3AF" />
               <Text style={styles.emptyTitle}>Geen spelers gevonden</Text>
               <Text style={styles.emptySubtitle}>
                 Dit team heeft nog geen spelers
@@ -177,7 +177,7 @@ export default function TeamDetailsScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <User size={20} color="#16A34A" />
+            <User size={18} color="#16A34A" />
             <Text style={styles.sectionTitle}>
               Coaches ({team.coach.length})
             </Text>
@@ -187,7 +187,7 @@ export default function TeamDetailsScreen() {
             {team.coach.map((coach) => (
               <View key={coach.id} style={styles.coachCard}>
                 <View style={styles.coachIcon}>
-                  <User size={20} color="#16A34A" />
+                  <User size={18} color="#16A34A" />
                 </View>
                 <Text style={styles.coachName}>{coach.name}</Text>
               </View>
@@ -209,25 +209,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    marginRight: 16,
+    marginRight: 12,
   },
   headerInfo: {
     flex: 1,
   },
   teamName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   teamStats: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
   },
   content: {
@@ -239,50 +239,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#6B7280',
     fontWeight: '500',
   },
   section: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: 12,
+    gap: 6,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#111827',
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 32,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#374151',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 6,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
   },
   playersList: {
-    gap: 12,
+    gap: 8,
   },
   playerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -292,16 +292,16 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   playerNumber: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     backgroundColor: '#F0FDF4',
-    borderRadius: 24,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   playerNumberText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#16A34A',
   },
@@ -309,35 +309,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playerName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   positionContainer: {
     flexDirection: 'row',
   },
   positionBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   positionText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#FFFFFF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   coachesList: {
-    gap: 12,
+    gap: 8,
   },
   coachCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -347,16 +347,16 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   coachIcon: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     backgroundColor: '#F0FDF4',
-    borderRadius: 20,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   coachName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#111827',
   },

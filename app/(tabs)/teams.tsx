@@ -137,7 +137,7 @@ export default function TeamsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading teams...</Text>
+          <Text style={styles.loadingText}>Teams laden...</Text>
         </View>
       </SafeAreaView>
     );
@@ -146,8 +146,8 @@ export default function TeamsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Teams</Text>
-        <Text style={styles.subtitle}>Teams you're coaching</Text>
+        <Text style={styles.title}>Mijn Teams</Text>
+        <Text style={styles.subtitle}>Teams waar je coach van bent</Text>
       </View>
 
       <ScrollView
@@ -159,10 +159,10 @@ export default function TeamsScreen() {
       >
         {teams.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Users size={64} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No teams assigned</Text>
+            <Users size={48} color="#9CA3AF" />
+            <Text style={styles.emptyTitle}>Geen teams toegewezen</Text>
             <Text style={styles.emptySubtitle}>
-              You're not currently assigned as a coach to any teams
+              Je bent momenteel geen coach van teams
             </Text>
           </View>
         ) : (
@@ -179,19 +179,19 @@ export default function TeamsScreen() {
                   <View style={styles.teamHeader}>
                     <View style={styles.teamIconContainer}>
                       <View style={styles.teamIcon}>
-                        <Users size={28} color="#FF6B35" />
+                        <Users size={24} color="#FF6B35" />
                       </View>
                       <View style={styles.teamBadge}>
-                        <Star size={12} color="#FFFFFF" fill="#FFFFFF" />
+                        <Star size={10} color="#FFFFFF" fill="#FFFFFF" />
                       </View>
                     </View>
                     <View style={styles.teamInfo}>
                       <Text style={styles.teamName}>{team.name}</Text>
                       <Text style={styles.teamStats}>
-                        {stats.totalPlayers} players • {team.coach.length} coaches
+                        {stats.totalPlayers} spelers • {team.coach.length} coaches
                       </Text>
                     </View>
-                    <ChevronRight size={20} color="#9CA3AF" />
+                    <ChevronRight size={18} color="#9CA3AF" />
                   </View>
 
                   {/* Team Stats */}
@@ -199,23 +199,23 @@ export default function TeamsScreen() {
                     <View style={styles.statsGrid}>
                       <View style={styles.statItem}>
                         <View style={[styles.statIcon, { backgroundColor: '#FEF2F2' }]}>
-                          <Shield size={16} color="#EF4444" />
+                          <Shield size={14} color="#EF4444" />
                         </View>
                         <Text style={styles.statNumber}>{stats.goalkeepers}</Text>
-                        <Text style={styles.statLabel}>GK</Text>
+                        <Text style={styles.statLabel}>KP</Text>
                       </View>
                       
                       <View style={styles.statItem}>
                         <View style={[styles.statIcon, { backgroundColor: '#EFF6FF' }]}>
-                          <User size={16} color="#3B82F6" />
+                          <User size={14} color="#3B82F6" />
                         </View>
                         <Text style={styles.statNumber}>{stats.defenders}</Text>
-                        <Text style={styles.statLabel}>DEF</Text>
+                        <Text style={styles.statLabel}>VER</Text>
                       </View>
                       
                       <View style={styles.statItem}>
                         <View style={[styles.statIcon, { backgroundColor: '#F3E8FF' }]}>
-                          <User size={16} color="#8B5CF6" />
+                          <User size={14} color="#8B5CF6" />
                         </View>
                         <Text style={styles.statNumber}>{stats.midfielders}</Text>
                         <Text style={styles.statLabel}>MID</Text>
@@ -223,17 +223,17 @@ export default function TeamsScreen() {
                       
                       <View style={styles.statItem}>
                         <View style={[styles.statIcon, { backgroundColor: '#FFFBEB' }]}>
-                          <User size={16} color="#F59E0B" />
+                          <User size={14} color="#F59E0B" />
                         </View>
                         <Text style={styles.statNumber}>{stats.forwards}</Text>
-                        <Text style={styles.statLabel}>FWD</Text>
+                        <Text style={styles.statLabel}>AAN</Text>
                       </View>
                     </View>
                   </View>
 
                   {/* Recent Players Preview */}
                   <View style={styles.playersPreview}>
-                    <Text style={styles.previewTitle}>Recent Players</Text>
+                    <Text style={styles.previewTitle}>Recente Spelers</Text>
                     <View style={styles.playersList}>
                       {team.players.slice(0, 6).map((player, index) => (
                         <View key={player.id} style={styles.playerChip}>
@@ -264,7 +264,7 @@ export default function TeamsScreen() {
 
                   {/* Coaches */}
                   <View style={styles.coachesSection}>
-                    <Text style={styles.previewTitle}>Coaching Staff</Text>
+                    <Text style={styles.previewTitle}>Coaching Staf</Text>
                     <View style={styles.coachesList}>
                       {team.coach.map((coach) => (
                         <View key={coach.id} style={styles.coachItem}>
@@ -281,12 +281,12 @@ export default function TeamsScreen() {
                   {/* Quick Actions */}
                   <View style={styles.quickActions}>
                     <TouchableOpacity style={styles.actionButton}>
-                      <Calendar size={16} color="#FF6B35" />
-                      <Text style={styles.actionButtonText}>View Matches</Text>
+                      <Calendar size={14} color="#FF6B35" />
+                      <Text style={styles.actionButtonText}>Bekijk Wedstrijden</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionButton}>
-                      <Trophy size={16} color="#FF6B35" />
-                      <Text style={styles.actionButtonText}>Formations</Text>
+                      <Trophy size={14} color="#FF6B35" />
+                      <Text style={styles.actionButtonText}>Formaties</Text>
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -307,19 +307,19 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
     fontFamily: 'Inter-Regular',
   },
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#6B7280',
     fontFamily: 'Inter-Medium',
   },
@@ -340,31 +340,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 80,
     paddingHorizontal: 32,
   },
   emptyTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#374151',
-    marginTop: 24,
-    marginBottom: 8,
+    marginTop: 20,
+    marginBottom: 6,
   },
   emptySubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
     fontFamily: 'Inter-Regular',
-    lineHeight: 24,
+    lineHeight: 20,
   },
   teamList: {
     padding: 20,
-    gap: 20,
+    gap: 16,
   },
   teamCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -376,28 +376,28 @@ const styles = StyleSheet.create({
   teamHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   teamIconContainer: {
     position: 'relative',
-    marginRight: 16,
+    marginRight: 12,
   },
   teamIcon: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     backgroundColor: '#FEF2F2',
-    borderRadius: 28,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   teamBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
+    top: -3,
+    right: -3,
+    width: 16,
+    height: 16,
     backgroundColor: '#FF6B35',
-    borderRadius: 10,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -407,18 +407,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   teamName: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   teamStats: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748B',
     fontFamily: 'Inter-Regular',
   },
   statsContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -429,101 +429,101 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   statNumber: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-Medium',
     color: '#64748B',
   },
   playersPreview: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   previewTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#374151',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   playersList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   playerChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
     maxWidth: '48%',
   },
   playerNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   playerNumberText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
   playerName: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#374151',
     fontFamily: 'Inter-Medium',
     flex: 1,
   },
   morePlayersChip: {
     backgroundColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   morePlayersText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#6B7280',
     fontFamily: 'Inter-SemiBold',
   },
   coachesSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   coachesList: {
-    gap: 8,
+    gap: 6,
   },
   coachItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   coachAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   coachName: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#374151',
     fontFamily: 'Inter-Medium',
   },
   quickActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   actionButton: {
     flex: 1,
@@ -531,13 +531,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FEF2F2',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 4,
   },
   actionButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#FF6B35',
   },

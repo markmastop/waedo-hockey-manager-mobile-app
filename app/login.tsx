@@ -33,7 +33,7 @@ export default function LoginScreen() {
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Fout', 'Vul alle velden in');
       return;
     }
 
@@ -45,7 +45,7 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Sign in error:', error);
-      Alert.alert('Error', error.message || 'Sign in failed');
+      Alert.alert('Fout', error.message || 'Inloggen mislukt');
     } finally {
       setLoading(false);
     }
@@ -67,27 +67,24 @@ export default function LoginScreen() {
             <View style={styles.header}>
               <View style={styles.logoContainer}>
                 <Image
-                  source={{ uri: 'https://images.pexels.com/photos/274422/pexels-photo-274422.jpeg?auto=compress&cs=tinysrgb&w=200&h=80&dpr=2' }}
+                  source={require('@/assets/images/we-dohockey-orange-black-trans.png')}
                   style={styles.logo}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
-                <View style={styles.logoOverlay}>
-                  <Text style={styles.logoText}>doHockey</Text>
-                </View>
               </View>
               <Text style={styles.title}>Companion</Text>
-              <Text style={styles.subtitle}>The complete coaching app for hockey teams</Text>
+              <Text style={styles.subtitle}>De complete coaching app voor hockey teams</Text>
             </View>
 
             {/* Login Form */}
             <View style={styles.form}>
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email Address</Text>
+                <Text style={styles.label}>E-mailadres</Text>
                 <TextInput
                   style={styles.input}
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="Enter your email address"
+                  placeholder="Voer je e-mailadres in"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -96,13 +93,13 @@ export default function LoginScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
+                <Text style={styles.label}>Wachtwoord</Text>
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={styles.passwordInput}
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="Enter your password"
+                    placeholder="Voer je wachtwoord in"
                     placeholderTextColor="#9CA3AF"
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
@@ -112,9 +109,9 @@ export default function LoginScreen() {
                     onPress={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff size={20} color="#9CA3AF" />
+                      <EyeOff size={18} color="#9CA3AF" />
                     ) : (
-                      <Eye size={20} color="#9CA3AF" />
+                      <Eye size={18} color="#9CA3AF" />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -125,40 +122,40 @@ export default function LoginScreen() {
                 onPress={handleSignIn}
                 disabled={loading}
               >
-                <LogIn size={20} color="#FFFFFF" />
+                <LogIn size={18} color="#FFFFFF" />
                 <Text style={styles.buttonText}>
-                  {loading ? 'Signing In...' : 'Sign In'}
+                  {loading ? 'Inloggen...' : 'Inloggen'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+                <Text style={styles.forgotPasswordText}>Wachtwoord vergeten?</Text>
               </TouchableOpacity>
             </View>
 
             {/* Features Section */}
             <View style={styles.featuresSection}>
-              <Text style={styles.featuresTitle}>What you get with doHockey:</Text>
+              <Text style={styles.featuresTitle}>Wat je krijgt met doHockey:</Text>
               <View style={styles.featuresList}>
                 <View style={styles.featureItem}>
                   <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Complete team management</Text>
+                  <Text style={styles.featureText}>Compleet team management</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Smart formation builder</Text>
+                  <Text style={styles.featureText}>Slimme formatie builder</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Live match coaching tools</Text>
+                  <Text style={styles.featureText}>Live wedstrijd coaching tools</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Player performance tracking</Text>
+                  <Text style={styles.featureText}>Speler prestatie tracking</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Automated substitution planning</Text>
+                  <Text style={styles.featureText}>Geautomatiseerde wissel planning</Text>
                 </View>
               </View>
             </View>
@@ -190,56 +187,39 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   logoContainer: {
-    position: 'relative',
-    marginBottom: 24,
-    borderRadius: 20,
+    marginBottom: 20,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   logo: {
-    width: 200,
-    height: 80,
-    borderRadius: 20,
-  },
-  logoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 107, 53, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: 24,
-    fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    width: 160,
+    height: 60,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
     color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
     textAlign: 'center',
     fontFamily: 'Inter-Regular',
-    lineHeight: 24,
+    lineHeight: 20,
   },
   form: {
-    gap: 24,
-    marginBottom: 40,
+    gap: 20,
+    marginBottom: 32,
   },
   inputContainer: {
-    gap: 8,
+    gap: 6,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#374151',
   },
@@ -247,10 +227,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: '#E2E8F0',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 16,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
     color: '#0F172A',
     fontFamily: 'Inter-Regular',
   },
@@ -260,29 +240,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: '#E2E8F0',
-    borderRadius: 16,
+    borderRadius: 12,
   },
   passwordInput: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
     color: '#0F172A',
     fontFamily: 'Inter-Regular',
   },
   eyeButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF6B35',
-    borderRadius: 16,
-    paddingVertical: 18,
-    marginTop: 8,
-    gap: 8,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 6,
+    gap: 6,
     shadowColor: '#FF6B35',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -294,14 +274,14 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-Bold',
   },
   forgotPassword: {
     alignItems: 'center',
   },
   forgotPasswordText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#FF6B35',
     fontFamily: 'Inter-SemiBold',
   },
@@ -309,31 +289,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   featuresTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     color: '#374151',
-    marginBottom: 20,
+    marginBottom: 16,
     textAlign: 'center',
   },
   featuresList: {
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 10,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   featureBullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: '#FF6B35',
   },
   featureText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     fontFamily: 'Inter-Regular',
-    lineHeight: 20,
+    lineHeight: 18,
   },
 });
