@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useColorScheme } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useFonts } from 'expo-font';
 import {
   Inter_400Regular,
@@ -34,17 +36,21 @@ export default function RootLayout() {
     return null;
   }
 
+  const scheme = useColorScheme();
+
   return (
-    <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="match/[id]" />
-        <Stack.Screen name="team/[id]" />
-        <Stack.Screen name="formation/[id]" />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="match/[id]" />
+          <Stack.Screen name="team/[id]" />
+          <Stack.Screen name="formation/[id]" />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

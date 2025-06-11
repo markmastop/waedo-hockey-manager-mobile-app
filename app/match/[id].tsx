@@ -11,6 +11,9 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Player, Substitution } from '@/types/database';
+import { Match } from '@/types/match';
+import { PlayerCard } from '@/components/PlayerCard';
+import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
 import {
   Play,
   Pause,
@@ -23,25 +26,6 @@ import {
   Star,
 } from 'lucide-react-native';
 
-interface Match {
-  id: string;
-  team_id: string;
-  date: string;
-  home_team: string;
-  away_team: string;
-  location: string;
-  field: string;
-  lineup: Player[];
-  reserve_players: Player[];
-  substitutions: Substitution[];
-  match_time: number;
-  current_quarter: number;
-  status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
-  is_home: boolean;
-  teams: {
-    name: string;
-  };
-}
 
 export default function LiveMatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -337,83 +321,6 @@ export default function LiveMatchScreen() {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const getPositionColor = (position: string) => {
-    const safePosition = position?.toLowerCase() || '';
-    switch (safePosition) {
-      case 'goalkeeper':
-      case 'gk':
-      case 'keeper':
-        return '#DC2626';
-      case 'defender':
-      case 'def':
-      case 'verdediger':
-      case 'sweeper':
-      case 'lastline':
-      case 'leftback':
-      case 'rightback':
-        return '#1E40AF';
-      case 'midfielder':
-      case 'mid':
-      case 'middenvelder':
-      case 'leftmidfield':
-      case 'rightmidfield':
-      case 'centermidfield':
-        return '#7C3AED';
-      case 'forward':
-      case 'fwd':
-      case 'aanvaller':
-      case 'striker':
-      case 'leftforward':
-      case 'rightforward':
-        return '#EA580C';
-      default:
-        return '#6B7280';
-    }
-  };
-
-  const getPositionDisplayName = (position: string) => {
-    const safePosition = position?.toLowerCase() || '';
-    switch (safePosition) {
-      case 'striker':
-        return 'Aanvaller';
-      case 'sweeper':
-        return 'Libero';
-      case 'lastline':
-        return 'Laatste Lijn';
-      case 'leftback':
-        return 'Linksback';
-      case 'rightback':
-        return 'Rechtsback';
-      case 'leftmidfield':
-        return 'Linksmidden';
-      case 'rightmidfield':
-        return 'Rechtsmidden';
-      case 'centermidfield':
-        return 'Middenmidden';
-      case 'leftforward':
-        return 'Linksvoorwaarts';
-      case 'rightforward':
-        return 'Rechtsvoorwaarts';
-      case 'goalkeeper':
-      case 'gk':
-      case 'keeper':
-        return 'Keeper';
-      case 'defender':
-      case 'def':
-      case 'verdediger':
-        return 'Verdediger';
-      case 'midfielder':
-      case 'mid':
-      case 'middenvelder':
-        return 'Middenvelder';
-      case 'forward':
-      case 'fwd':
-      case 'aanvaller':
-        return 'Aanvaller';
-      default:
-        return position || 'Onbekend';
-    }
-  };
 
   if (loading) {
     return (
@@ -543,39 +450,13 @@ export default function LiveMatchScreen() {
           ) : (
             <View style={styles.playersList}>
               {match.lineup.map((player) => (
-                <TouchableOpacity
+                <PlayerCard
                   key={player.id}
-                  style={[
-                    styles.playerCard,
-                    styles.startingPlayerCard,
-                    selectedPlayer?.id === player.id && styles.selectedCard,
-                  ]}
+                  player={player}
+                  showStar
+                  selected={selectedPlayer?.id === player.id}
                   onPress={() => handlePlayerPress(player, true)}
-                >
-                  <View style={styles.playerNumber}>
-                    <Text style={styles.playerNumberText}>
-                      #{player.number || '?'}
-                    </Text>
-                  </View>
-                  <View style={styles.playerInfo}>
-                    <Text style={styles.playerName}>{player.name || 'Onbekende speler'}</Text>
-                    <View style={styles.positionContainer}>
-                      <View
-                        style={[
-                          styles.positionBadge,
-                          { backgroundColor: getPositionColor(player.position) },
-                        ]}
-                      >
-                        <Text style={styles.positionText}>
-                          {getPositionDisplayName(player.position)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.startingIndicator}>
-                    <Star size={14} color="#16A34A" fill="#16A34A" />
-                  </View>
-                </TouchableOpacity>
+                />
               ))}
             </View>
           )}
@@ -597,36 +478,12 @@ export default function LiveMatchScreen() {
           ) : (
             <View style={styles.playersList}>
               {match.reserve_players.map((player) => (
-                <TouchableOpacity
+                <PlayerCard
                   key={player.id}
-                  style={[
-                    styles.playerCard,
-                    styles.benchCard,
-                    selectedPlayer?.id === player.id && styles.selectedCard,
-                  ]}
+                  player={player}
+                  selected={selectedPlayer?.id === player.id}
                   onPress={() => handlePlayerPress(player, false)}
-                >
-                  <View style={styles.playerNumber}>
-                    <Text style={styles.playerNumberText}>
-                      #{player.number || '?'}
-                    </Text>
-                  </View>
-                  <View style={styles.playerInfo}>
-                    <Text style={styles.playerName}>{player.name || 'Onbekende speler'}</Text>
-                    <View style={styles.positionContainer}>
-                      <View
-                        style={[
-                          styles.positionBadge,
-                          { backgroundColor: getPositionColor(player.position) },
-                        ]}
-                      >
-                        <Text style={styles.positionText}>
-                          {getPositionDisplayName(player.position)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
+                />
               ))}
             </View>
           )}
@@ -880,67 +737,6 @@ const styles = StyleSheet.create({
   },
   playersList: {
     gap: 6,
-  },
-  playerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  startingPlayerCard: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#16A34A',
-    borderWidth: 1,
-  },
-  benchCard: {
-    backgroundColor: '#F9FAFB',
-  },
-  selectedCard: {
-    borderColor: '#16A34A',
-    backgroundColor: '#F0FDF4',
-  },
-  playerNumber: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  playerNumberText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#16A34A',
-  },
-  playerInfo: {
-    flex: 1,
-  },
-  playerName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 3,
-  },
-  positionContainer: {
-    flexDirection: 'row',
-  },
-  positionBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  positionText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  startingIndicator: {
-    marginLeft: 6,
   },
   substitutionsList: {
     gap: 6,

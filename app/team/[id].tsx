@@ -12,6 +12,8 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Player } from '@/types/database';
 import { ArrowLeft, Users, User } from 'lucide-react-native';
+import { PlayerCard } from '@/components/PlayerCard';
+import { getPositionColor } from '@/lib/playerPositions';
 
 interface Team {
   id: string;
@@ -66,29 +68,6 @@ export default function TeamDetailsScreen() {
     fetchTeam();
   };
 
-  const getPositionColor = (position: string) => {
-    const safePosition = position?.toLowerCase() || '';
-    switch (safePosition) {
-      case 'goalkeeper':
-      case 'gk':
-      case 'keeper':
-        return '#DC2626';
-      case 'defender':
-      case 'def':
-      case 'verdediger':
-        return '#1E40AF';
-      case 'midfielder':
-      case 'mid':
-      case 'middenvelder':
-        return '#7C3AED';
-      case 'forward':
-      case 'fwd':
-      case 'aanvaller':
-        return '#EA580C';
-      default:
-        return '#6B7280';
-    }
-  };
 
   if (loading) {
     return (
@@ -152,24 +131,7 @@ export default function TeamDetailsScreen() {
           ) : (
             <View style={styles.playersList}>
               {team.players.map((player) => (
-                <View key={player.id} style={styles.playerCard}>
-                  <View style={styles.playerNumber}>
-                    <Text style={styles.playerNumberText}>#{player.number}</Text>
-                  </View>
-                  <View style={styles.playerInfo}>
-                    <Text style={styles.playerName}>{player.name}</Text>
-                    <View style={styles.positionContainer}>
-                      <View
-                        style={[
-                          styles.positionBadge,
-                          { backgroundColor: getPositionColor(player.position) },
-                        ]}
-                      >
-                        <Text style={styles.positionText}>{player.position || 'Onbekend'}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
+                <PlayerCard key={player.id} player={player} />
               ))}
             </View>
           )}
@@ -276,58 +238,6 @@ const styles = StyleSheet.create({
   },
   playersList: {
     gap: 8,
-  },
-  playerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  playerNumber: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#F0FDF4',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  playerNumberText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#16A34A',
-  },
-  playerInfo: {
-    flex: 1,
-  },
-  playerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 6,
-  },
-  positionContainer: {
-    flexDirection: 'row',
-  },
-  positionBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  positionText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   coachesList: {
     gap: 8,
