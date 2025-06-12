@@ -18,10 +18,16 @@ import { MatchEventLogger } from '@/components/MatchEventLogger';
 import { PositionCard } from '../../components/PositionCard';
 import { ArrowLeft, Users, ArrowUpDown, Star, Activity, ChartBar as BarChart3, Target, TriangleAlert as AlertTriangle, Grid3x3 as Grid3X3 } from 'lucide-react-native';
 
+interface Formation {
+  id: string;
+  name: string;
+  positions: FormationPosition[];
+}
+
 export default function LiveMatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
-  const [formations, setFormations] = useState<any[]>([]);
+  const [formation, setFormation] = useState<Formation | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
   const [isSubstituting, setIsSubstituting] = useState(false);
@@ -70,17 +76,34 @@ export default function LiveMatchScreen() {
     }));
   };
 
-  const fetchFormations = async () => {
+  const fetchFormation = async (formationKey: string) => {
+    if (!formationKey) return;
+    
     try {
       const { data, error } = await supabase
         .from('formations')
         .select('*')
-        .order('id');
+        .eq('id', formationKey)
+        .single();
 
-      if (error) throw error;
-      setFormations(data || []);
+      if (error) {
+        console.error('Error fetching formation:', error);
+        return;
+      }
+      
+      if (data) {
+        // Ensure positions are sorted by order
+        const sortedPositions = Array.isArray(data.positions) 
+          ? data.positions.sort((a: FormationPosition, b: FormationPosition) => a.order - b.order)
+          : [];
+          
+        setFormation({
+          ...data,
+          positions: sortedPositions
+        });
+      }
     } catch (error) {
-      console.error('Error fetching formations:', error);
+      console.error('Error fetching formation:', error);
     }
   };
 
@@ -124,6 +147,11 @@ export default function LiveMatchScreen() {
       setMatch(matchData);
       setPlayerStats(statsArray);
       setMatchEvents(eventsArray);
+      
+      // Fetch formation if formation key exists
+      if (data.formation) {
+        await fetchFormation(data.formation);
+      }
     } catch (error) {
       console.error('Error fetching match:', error);
       Alert.alert('Fout', 'Kon wedstrijdgegevens niet laden');
@@ -134,7 +162,6 @@ export default function LiveMatchScreen() {
 
   useEffect(() => {
     if (id) {
-      fetchFormations();
       fetchMatch();
     }
   }, [id]);
@@ -424,10 +451,22 @@ export default function LiveMatchScreen() {
         };
 
         const newSubstitutions = [...match.substitutions, substitution];
+        
+        // Update substitution stats
+        const updatedStats = playerStats.map(stat => {
+          if (stat.playerId === player.id || stat.playerId === currentPositionPlayer.id) {
+            return { ...stat, substitutions: stat.substitutions + 1 };
+          }
+          return stat;
+        });
+        
+        updatePlayerStats(updatedStats);
+        
         updateMatch({
           lineup: newLineup,
           reserve_players: newReservePlayers,
           substitutions: newSubstitutions,
+          player_stats: updatedStats,
         });
       }
     }
@@ -437,22 +476,16 @@ export default function LiveMatchScreen() {
   };
 
   const getPlayerInPosition = (positionId: string): Player | null => {
-    if (!match) return null;
-    const positionName = getPositionName(positionId);
-    return match.lineup.find(player => player.position === positionName) || null;
+    if (!match || !formation) return null;
+    const position = formation.positions.find(p => p.id === positionId);
+    if (!position) return null;
+    return match.lineup.find(player => player.position === position.dutch_name) || null;
   };
 
   const getPositionName = (positionId: string): string => {
-    const formation = formations.find(f => f.id === match?.formation);
     if (!formation) return '';
-    const position = formation.positions.find((p: FormationPosition) => p.id === positionId);
+    const position = formation.positions.find(p => p.id === positionId);
     return position?.dutch_name || '';
-  };
-
-  const getFormationPositions = (): FormationPosition[] => {
-    if (!match?.formation) return [];
-    const formation = formations.find(f => f.id === match.formation);
-    return formation?.positions.sort((a: FormationPosition, b: FormationPosition) => a.order - b.order) || [];
   };
 
   const cancelSubstitution = () => {
@@ -491,7 +524,6 @@ export default function LiveMatchScreen() {
   }
 
   const allPlayers = [...match.lineup, ...match.reserve_players];
-  const formationPositions = getFormationPositions();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -597,10 +629,12 @@ export default function LiveMatchScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Grid3X3 size={18} color="#16A34A" />
-              <Text style={styles.sectionTitle}>Formatie Posities</Text>
+              <Text style={styles.sectionTitle}>
+                Formatie Posities {formation ? `(${formation.name})` : ''}
+              </Text>
             </View>
             
-            {formationPositions.length === 0 ? (
+            {!formation || formation.positions.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Grid3X3 size={40} color="#9CA3AF" />
                 <Text style={styles.emptyTitle}>Geen formatie ingesteld</Text>
@@ -610,7 +644,7 @@ export default function LiveMatchScreen() {
               </View>
             ) : (
               <View style={styles.positionsList}>
-                {formationPositions.map((position) => {
+                {formation.positions.map((position) => {
                   const player = getPlayerInPosition(position.id);
                   return (
                     <PositionCard
