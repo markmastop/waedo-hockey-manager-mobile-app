@@ -20,7 +20,8 @@ import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, Play, Pause, S
 
 interface Formation {
   id: string;
-  name: string;
+  key: string;
+  name_translations: Record<string, string>;
   positions: FormationPosition[];
 }
 
@@ -59,6 +60,7 @@ export default function MatchScreen() {
     try {
       let query = supabase.from('formations').select('*');
       
+      // Use the key column instead of id for non-UUID formation keys
       if (isValidUUID(formationKey)) {
         query = query.eq('id', formationKey);
       } else {
@@ -73,6 +75,7 @@ export default function MatchScreen() {
       }
       
       if (data) {
+        // Ensure positions are sorted by order and have proper structure
         const sortedPositions = Array.isArray(data.positions) 
           ? data.positions.sort((a: FormationPosition, b: FormationPosition) => a.order - b.order)
           : [];
@@ -128,6 +131,7 @@ export default function MatchScreen() {
       setPlayerStats(statsArray);
       setMatchEvents(eventsArray);
       
+      // Use formation_key first, then fall back to formation
       const formationKey = data.formation_key || data.formation;
       if (formationKey) {
         await fetchFormation(formationKey);
@@ -313,6 +317,14 @@ export default function MatchScreen() {
     return playerStats.find(stat => stat.playerId === playerId);
   };
 
+  const getFormationDisplayName = (): string => {
+    if (!formation) return '';
+    
+    // Try to get Dutch name from translations, fall back to English, then key
+    const nameTranslations = formation.name_translations || {};
+    return nameTranslations.nl || nameTranslations.en || formation.key || '';
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -424,7 +436,7 @@ export default function MatchScreen() {
             <View style={styles.sectionHeader}>
               <Grid3X3 size={18} color="#16A34A" />
               <Text style={styles.sectionTitle}>
-                Formatie {formation ? `(${formation.name})` : ''}
+                Formatie {formation ? `(${getFormationDisplayName()})` : ''}
               </Text>
             </View>
             
