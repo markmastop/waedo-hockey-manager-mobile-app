@@ -10,11 +10,12 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { Player, Substitution, MatchEvent, PlayerStats } from '@/types/database';
+import { Player, Substitution, MatchEvent, PlayerStats, FormationPosition } from '@/types/database';
 import { Match } from '@/types/match';
 import { LivePlayerCard } from '@/components/LivePlayerCard';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import { MatchEventLogger } from '@/components/MatchEventLogger';
+import { PositionCard } from '@/components/PositionCard';
 import {
   ArrowLeft,
   Users,
@@ -24,17 +25,19 @@ import {
   BarChart3,
   Target,
   AlertTriangle,
+  Grid3X3,
 } from 'lucide-react-native';
 
 export default function LiveMatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
+  const [formations, setFormations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
-  const [activeTab, setActiveTab] = useState<'lineup' | 'events' | 'stats'>('lineup');
+  const [activeTab, setActiveTab] = useState<'positions' | 'lineup' | 'events' | 'stats'>('positions');
 
   const convertPlayersDataToArray = (playersData: any): Player[] => {
     if (!playersData) return [];
@@ -77,6 +80,20 @@ export default function LiveMatchScreen() {
     }));
   };
 
+  const fetchFormations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('formations')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setFormations(data || []);
+    } catch (error) {
+      console.error('Error fetching formations:', error);
+    }
+  };
+
   const fetchMatch = async () => {
     try {
       const { data, error } = await supabase
@@ -110,6 +127,8 @@ export default function LiveMatchScreen() {
         quarter_times: quarterTimesArray,
         home_score: data.home_score || 0,
         away_score: data.away_score || 0,
+        formation: data.formation || '',
+        substitution_schedule: data.substitution_schedule || {},
       };
       
       setMatch(matchData);
@@ -125,6 +144,7 @@ export default function LiveMatchScreen() {
 
   useEffect(() => {
     if (id) {
+      fetchFormations();
       fetchMatch();
     }
   }, [id]);
@@ -333,95 +353,120 @@ export default function LiveMatchScreen() {
     }
   };
 
-  const handlePlayerPress = (player: Player, isOnField: boolean) => {
+  const handlePositionPress = (position: FormationPosition) => {
     if (isSubstituting) {
-      makeSubstitution(player, isOnField);
+      makePositionSubstitution(position);
     } else {
-      setSelectedPlayer(player);
+      setSelectedPosition(position.id);
       setIsSubstituting(true);
     }
   };
 
-  const makeSubstitution = (targetPlayer: Player, targetIsOnField: boolean) => {
-    if (!match || !selectedPlayer) return;
+  const handlePlayerPress = (player: Player, isOnField: boolean) => {
+    if (isSubstituting && selectedPosition) {
+      makePlayerToPositionSubstitution(player, isOnField);
+    } else {
+      setSelectedPosition(null);
+      setIsSubstituting(true);
+    }
+  };
 
-    const newLineup = [...match.lineup];
-    const newReservePlayers = [...match.reserve_players];
-    const selectedIsOnField = newLineup.some(p => p.id === selectedPlayer.id);
+  const makePositionSubstitution = (targetPosition: FormationPosition) => {
+    if (!match || !selectedPosition) return;
 
-    if (selectedIsOnField && !targetIsOnField) {
-      const selectedIndex = newLineup.findIndex(p => p.id === selectedPlayer.id);
-      const targetIndex = newReservePlayers.findIndex(p => p.id === targetPlayer.id);
-      
-      if (selectedIndex !== -1 && targetIndex !== -1) {
-        newLineup[selectedIndex] = targetPlayer;
-        newReservePlayers[targetIndex] = selectedPlayer;
-      }
-    } else if (!selectedIsOnField && targetIsOnField) {
-      const selectedIndex = newReservePlayers.findIndex(p => p.id === selectedPlayer.id);
-      const targetIndex = newLineup.findIndex(p => p.id === targetPlayer.id);
-      
-      if (selectedIndex !== -1 && targetIndex !== -1) {
-        newReservePlayers[selectedIndex] = targetPlayer;
-        newLineup[targetIndex] = selectedPlayer;
-      }
+    // Find current player in selected position
+    const currentPlayer = getPlayerInPosition(selectedPosition);
+    const targetPlayer = getPlayerInPosition(targetPosition.id);
+
+    if (currentPlayer && targetPlayer) {
+      // Swap positions
+      const newLineup = match.lineup.map(player => {
+        if (player.id === currentPlayer.id) {
+          return { ...player, position: targetPosition.dutch_name };
+        }
+        if (player.id === targetPlayer.id) {
+          return { ...player, position: getPositionName(selectedPosition) };
+        }
+        return player;
+      });
+
+      updateMatch({ lineup: newLineup });
     }
 
-    const substitution: Substitution = {
-      time: match.match_time,
-      quarter: match.current_quarter,
-      playerIn: selectedIsOnField ? targetPlayer : selectedPlayer,
-      playerOut: selectedIsOnField ? selectedPlayer : targetPlayer,
-      timestamp: new Date().toISOString(),
-    };
-
-    const substitutionEvent: MatchEvent = {
-      id: Date.now().toString(),
-      type: 'substitution',
-      time: match.match_time,
-      quarter: match.current_quarter,
-      player: substitution.playerIn,
-      details: `${substitution.playerOut.name} → ${substitution.playerIn.name}`,
-      timestamp: new Date().toISOString(),
-    };
-
-    const newSubstitutions = [...match.substitutions, substitution];
-    const newEvents = [...matchEvents, substitutionEvent];
-
-    // Update player stats
-    const updatedStats = playerStats.map(stat => {
-      if (stat.playerId === substitution.playerIn.id) {
-        return {
-          ...stat,
-          substitutions: stat.substitutions + 1,
-          quartersPlayed: stat.quartersPlayed.includes(match.current_quarter) 
-            ? stat.quartersPlayed 
-            : [...stat.quartersPlayed, match.current_quarter]
-        };
-      }
-      if (stat.playerId === substitution.playerOut.id) {
-        return { ...stat, substitutions: stat.substitutions + 1 };
-      }
-      return stat;
-    });
-
-    setMatchEvents(newEvents);
-    updatePlayerStats(updatedStats);
-
-    updateMatch({
-      lineup: newLineup,
-      reserve_players: newReservePlayers,
-      substitutions: newSubstitutions,
-      match_events: newEvents,
-      player_stats: updatedStats,
-    });
-
-    setSelectedPlayer(null);
+    setSelectedPosition(null);
     setIsSubstituting(false);
   };
 
+  const makePlayerToPositionSubstitution = (player: Player, isOnField: boolean) => {
+    if (!match || !selectedPosition) return;
+
+    const newLineup = [...match.lineup];
+    const newReservePlayers = [...match.reserve_players];
+    const currentPositionPlayer = getPlayerInPosition(selectedPosition);
+
+    if (isOnField && currentPositionPlayer) {
+      // Swap field players
+      const playerIndex = newLineup.findIndex(p => p.id === player.id);
+      const currentIndex = newLineup.findIndex(p => p.id === currentPositionPlayer.id);
+      
+      if (playerIndex !== -1 && currentIndex !== -1) {
+        const tempPosition = newLineup[playerIndex].position;
+        newLineup[playerIndex] = { ...newLineup[playerIndex], position: newLineup[currentIndex].position };
+        newLineup[currentIndex] = { ...newLineup[currentIndex], position: tempPosition };
+      }
+    } else if (!isOnField && currentPositionPlayer) {
+      // Substitute bench player for field player
+      const reserveIndex = newReservePlayers.findIndex(p => p.id === player.id);
+      const fieldIndex = newLineup.findIndex(p => p.id === currentPositionPlayer.id);
+      
+      if (reserveIndex !== -1 && fieldIndex !== -1) {
+        const positionName = getPositionName(selectedPosition);
+        newLineup[fieldIndex] = { ...player, position: positionName };
+        newReservePlayers[reserveIndex] = currentPositionPlayer;
+
+        // Log substitution
+        const substitution: Substitution = {
+          time: match.match_time,
+          quarter: match.current_quarter,
+          playerIn: player,
+          playerOut: currentPositionPlayer,
+          timestamp: new Date().toISOString(),
+        };
+
+        const newSubstitutions = [...match.substitutions, substitution];
+        updateMatch({
+          lineup: newLineup,
+          reserve_players: newReservePlayers,
+          substitutions: newSubstitutions,
+        });
+      }
+    }
+
+    setSelectedPosition(null);
+    setIsSubstituting(false);
+  };
+
+  const getPlayerInPosition = (positionId: string): Player | null => {
+    if (!match) return null;
+    const positionName = getPositionName(positionId);
+    return match.lineup.find(player => player.position === positionName) || null;
+  };
+
+  const getPositionName = (positionId: string): string => {
+    const formation = formations.find(f => f.id === match?.formation);
+    if (!formation) return '';
+    const position = formation.positions.find((p: FormationPosition) => p.id === positionId);
+    return position?.dutch_name || '';
+  };
+
+  const getFormationPositions = (): FormationPosition[] => {
+    if (!match?.formation) return [];
+    const formation = formations.find(f => f.id === match.formation);
+    return formation?.positions.sort((a: FormationPosition, b: FormationPosition) => a.order - b.order) || [];
+  };
+
   const cancelSubstitution = () => {
-    setSelectedPlayer(null);
+    setSelectedPosition(null);
     setIsSubstituting(false);
   };
 
@@ -456,6 +501,7 @@ export default function LiveMatchScreen() {
   }
 
   const allPlayers = [...match.lineup, ...match.reserve_players];
+  const formationPositions = getFormationPositions();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -503,7 +549,10 @@ export default function LiveMatchScreen() {
         <View style={styles.substitutionBanner}>
           <ArrowUpDown size={14} color="#16A34A" />
           <Text style={styles.substitutionText}>
-            Selecteer een speler om te wisselen met {selectedPlayer?.name}
+            {selectedPosition 
+              ? `Selecteer een speler voor positie ${getPositionName(selectedPosition)}`
+              : 'Selecteer een positie of speler om te wisselen'
+            }
           </Text>
           <TouchableOpacity onPress={cancelSubstitution}>
             <Text style={styles.cancelText}>Annuleren</Text>
@@ -512,6 +561,16 @@ export default function LiveMatchScreen() {
       )}
 
       <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'positions' && styles.activeTab]}
+          onPress={() => setActiveTab('positions')}
+        >
+          <Grid3X3 size={16} color={activeTab === 'positions' ? '#10B981' : '#6B7280'} />
+          <Text style={[styles.tabText, activeTab === 'positions' && styles.activeTabText]}>
+            Posities
+          </Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity
           style={[styles.tab, activeTab === 'lineup' && styles.activeTab]}
           onPress={() => setActiveTab('lineup')}
@@ -544,6 +603,70 @@ export default function LiveMatchScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {activeTab === 'positions' && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Grid3X3 size={18} color="#16A34A" />
+              <Text style={styles.sectionTitle}>Formatie Posities</Text>
+            </View>
+            
+            {formationPositions.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Grid3X3 size={40} color="#9CA3AF" />
+                <Text style={styles.emptyTitle}>Geen formatie ingesteld</Text>
+                <Text style={styles.emptySubtitle}>
+                  Er is geen formatie geselecteerd voor deze wedstrijd
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.positionsList}>
+                {formationPositions.map((position) => {
+                  const player = getPlayerInPosition(position.id);
+                  return (
+                    <PositionCard
+                      key={position.id}
+                      position={position}
+                      player={player}
+                      stats={player ? getPlayerStats(player.id) : undefined}
+                      isSelected={selectedPosition === position.id}
+                      isSubstituting={isSubstituting}
+                      onPress={() => handlePositionPress(position)}
+                    />
+                  );
+                })}
+              </View>
+            )}
+
+            {/* Reserve Players for Position Substitutions */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Users size={18} color="#6B7280" />
+                <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
+              </View>
+              {match.reserve_players.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Users size={28} color="#9CA3AF" />
+                  <Text style={styles.emptyText}>Geen reservespelers</Text>
+                </View>
+              ) : (
+                <View style={styles.playersList}>
+                  {match.reserve_players.map((player) => (
+                    <LivePlayerCard
+                      key={player.id}
+                      player={player}
+                      stats={getPlayerStats(player.id)}
+                      isOnField={false}
+                      isSelected={false}
+                      isSubstituting={isSubstituting}
+                      onPress={() => handlePlayerPress(player, false)}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {activeTab === 'lineup' && (
           <>
             <View style={styles.section}>
@@ -564,7 +687,7 @@ export default function LiveMatchScreen() {
                       player={player}
                       stats={getPlayerStats(player.id)}
                       isOnField={true}
-                      isSelected={selectedPlayer?.id === player.id}
+                      isSelected={false}
                       isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, true)}
                     />
@@ -591,7 +714,7 @@ export default function LiveMatchScreen() {
                       player={player}
                       stats={getPlayerStats(player.id)}
                       isOnField={false}
-                      isSelected={selectedPlayer?.id === player.id}
+                      isSelected={false}
                       isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, false)}
                     />
@@ -876,11 +999,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    fontFamily: 'Inter-Regular',
+  },
   emptyText: {
     fontSize: 14,
     color: '#6B7280',
     marginTop: 6,
     fontFamily: 'Inter-Medium',
+  },
+  positionsList: {
+    gap: 8,
   },
   playersList: {
     gap: 6,

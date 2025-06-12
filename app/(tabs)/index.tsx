@@ -16,12 +16,14 @@ import {
   Calendar, 
   Users, 
   Trophy, 
-  TrendingUp, 
   Clock,
   MapPin,
   Play,
   ChevronRight,
-  Star
+  Star,
+  Target,
+  UserCheck,
+  ArrowUpDown
 } from 'lucide-react-native';
 
 interface DashboardStats {
@@ -38,6 +40,10 @@ interface RecentMatch {
   away_team: string;
   status: string;
   is_home: boolean;
+  lineup: any[];
+  reserve_players: any[];
+  substitution_schedule: any;
+  formation: string;
   teams: { name: string };
 }
 
@@ -84,12 +90,35 @@ export default function DashboardScreen() {
             teams (name)
           `)
           .in('team_id', teamIds)
-          .order('date', { ascending: false })
-          .limit(5);
+          .order('date', { ascending: true });
 
         if (matchesError) throw matchesError;
 
-        setRecentMatches(matches || []);
+        // Sort matches: upcoming first, then live, then completed
+        const sortedMatches = (matches || []).sort((a, b) => {
+          const now = new Date();
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          
+          // Priority order: upcoming -> live -> completed
+          const getPriority = (match: any) => {
+            if (match.status === 'inProgress' || match.status === 'paused') return 1;
+            if (match.status === 'upcoming' && dateA > now) return 2;
+            return 3;
+          };
+          
+          const priorityA = getPriority(a);
+          const priorityB = getPriority(b);
+          
+          if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+          }
+          
+          // Within same priority, sort by date
+          return dateA.getTime() - dateB.getTime();
+        });
+
+        setRecentMatches(sortedMatches.slice(0, 5));
 
         // Calculate stats
         const now = new Date();
@@ -170,6 +199,20 @@ export default function DashboardScreen() {
     }
   };
 
+  const getMatchInfo = (match: RecentMatch) => {
+    const lineupCount = Array.isArray(match.lineup) ? match.lineup.length : 0;
+    const reserveCount = Array.isArray(match.reserve_players) ? match.reserve_players.length : 0;
+    const totalPlayers = lineupCount + reserveCount;
+    const hasSubSchedule = match.substitution_schedule && Object.keys(match.substitution_schedule).length > 0;
+    
+    return {
+      formation: match.formation || 'Geen formatie',
+      playerCount: totalPlayers,
+      hasSubSchedule,
+      lineupSet: lineupCount > 0
+    };
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -204,75 +247,37 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Stats Cards */}
+        {/* Compact Stats Cards */}
         <View style={styles.statsContainer}>
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, styles.primaryCard]}>
-              <View style={styles.statIconContainer}>
-                <Users size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.statNumber}>{stats.totalTeams}</Text>
-              <Text style={styles.statLabel}>Teams</Text>
-            </View>
-            
-            <View style={[styles.statCard, styles.secondaryCard]}>
-              <View style={[styles.statIconContainer, styles.secondaryIcon]}>
-                <Calendar size={20} color="#FF6B35" />
-              </View>
-              <Text style={[styles.statNumber, styles.darkText]}>{stats.upcomingMatches}</Text>
-              <Text style={[styles.statLabel, styles.darkLabel]}>Aankomend</Text>
-            </View>
+          <View style={styles.statCard}>
+            <Users size={16} color="#FF6B35" />
+            <Text style={styles.statNumber}>{stats.totalTeams}</Text>
+            <Text style={styles.statLabel}>Teams</Text>
+          </View>
+          
+          <View style={styles.statCard}>
+            <Calendar size={16} color="#F59E0B" />
+            <Text style={styles.statNumber}>{stats.upcomingMatches}</Text>
+            <Text style={styles.statLabel}>Aankomend</Text>
           </View>
 
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, styles.secondaryCard]}>
-              <View style={[styles.statIconContainer, styles.secondaryIcon]}>
-                <Play size={20} color="#10B981" />
-              </View>
-              <Text style={[styles.statNumber, styles.darkText]}>{stats.liveMatches}</Text>
-              <Text style={[styles.statLabel, styles.darkLabel]}>Live</Text>
-            </View>
-            
-            <View style={[styles.statCard, styles.secondaryCard]}>
-              <View style={[styles.statIconContainer, styles.secondaryIcon]}>
-                <Trophy size={20} color="#8B5CF6" />
-              </View>
-              <Text style={[styles.statNumber, styles.darkText]}>{stats.completedMatches}</Text>
-              <Text style={[styles.statLabel, styles.darkLabel]}>Afgerond</Text>
-            </View>
+          <View style={styles.statCard}>
+            <Play size={16} color="#10B981" />
+            <Text style={styles.statNumber}>{stats.liveMatches}</Text>
+            <Text style={styles.statLabel}>Live</Text>
           </View>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Snelle Acties</Text>
-          <View style={styles.quickActionsContainer}>
-            <TouchableOpacity 
-              style={styles.quickActionCard}
-              onPress={() => router.push('/(tabs)/matches')}
-            >
-              <View style={styles.quickActionIcon}>
-                <Calendar size={20} color="#FF6B35" />
-              </View>
-              <Text style={styles.quickActionText}>Bekijk Wedstrijden</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.quickActionCard}
-              onPress={() => router.push('/(tabs)/teams')}
-            >
-              <View style={styles.quickActionIcon}>
-                <Users size={20} color="#FF6B35" />
-              </View>
-              <Text style={styles.quickActionText}>Beheer Teams</Text>
-            </TouchableOpacity>
+          
+          <View style={styles.statCard}>
+            <Trophy size={16} color="#8B5CF6" />
+            <Text style={styles.statNumber}>{stats.completedMatches}</Text>
+            <Text style={styles.statLabel}>Afgerond</Text>
           </View>
         </View>
 
         {/* Recent Matches */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recente Wedstrijden</Text>
+            <Text style={styles.sectionTitle}>Wedstrijden</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/matches')}>
               <Text style={styles.seeAllText}>Bekijk Alles</Text>
             </TouchableOpacity>
@@ -286,50 +291,92 @@ export default function DashboardScreen() {
             </View>
           ) : (
             <View style={styles.matchesList}>
-              {recentMatches.map((match) => (
-                <TouchableOpacity
-                  key={match.id}
-                  style={styles.matchCard}
-                  onPress={() => router.push(`/match/${match.id}`)}
-                >
-                  <View style={styles.matchHeader}>
-                    <View style={styles.matchStatus}>
-                      <View
-                        style={[
-                          styles.statusDot,
-                          { backgroundColor: getStatusColor(match.status) },
-                        ]}
-                      />
-                      <Text
-                        style={[
-                          styles.statusText,
-                          { color: getStatusColor(match.status) },
-                        ]}
-                      >
-                        {getStatusText(match.status)}
-                      </Text>
+              {recentMatches.map((match) => {
+                const matchInfo = getMatchInfo(match);
+                return (
+                  <TouchableOpacity
+                    key={match.id}
+                    style={styles.matchCard}
+                    onPress={() => router.push(`/match/${match.id}`)}
+                  >
+                    <View style={styles.matchHeader}>
+                      <View style={styles.matchStatus}>
+                        <View
+                          style={[
+                            styles.statusDot,
+                            { backgroundColor: getStatusColor(match.status) },
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            styles.statusText,
+                            { color: getStatusColor(match.status) },
+                          ]}
+                        >
+                          {getStatusText(match.status)}
+                        </Text>
+                      </View>
+                      <ChevronRight size={14} color="#9CA3AF" />
                     </View>
-                    <ChevronRight size={14} color="#9CA3AF" />
-                  </View>
-                  
-                  <Text style={styles.matchTitle}>
-                    {match.home_team} vs {match.away_team}
-                  </Text>
-                  <Text style={styles.teamName}>{match.teams.name}</Text>
-                  
-                  <View style={styles.matchDetails}>
-                    <View style={styles.matchDetailItem}>
-                      <Clock size={12} color="#6B7280" />
-                      <Text style={styles.matchDetailText}>
-                        {formatDate(match.date)}
-                      </Text>
-                    </View>
-                    <Text style={styles.homeIndicator}>
-                      {match.is_home ? 'Thuis' : 'Uit'}
+                    
+                    <Text style={styles.matchTitle}>
+                      {match.home_team} vs {match.away_team}
                     </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                    <Text style={styles.teamName}>{match.teams.name}</Text>
+                    
+                    <View style={styles.matchDetails}>
+                      <View style={styles.matchDetailItem}>
+                        <Clock size={12} color="#6B7280" />
+                        <Text style={styles.matchDetailText}>
+                          {formatDate(match.date)}
+                        </Text>
+                      </View>
+                      <Text style={styles.homeIndicator}>
+                        {match.is_home ? 'Thuis' : 'Uit'}
+                      </Text>
+                    </View>
+
+                    {/* Match Preparation Info */}
+                    <View style={styles.preparationInfo}>
+                      <View style={styles.preparationRow}>
+                        <View style={styles.preparationItem}>
+                          <Target size={12} color="#6B7280" />
+                          <Text style={styles.preparationText}>
+                            {matchInfo.formation}
+                          </Text>
+                        </View>
+                        <View style={styles.preparationItem}>
+                          <Users size={12} color="#6B7280" />
+                          <Text style={styles.preparationText}>
+                            {matchInfo.playerCount} spelers
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.preparationRow}>
+                        <View style={styles.preparationItem}>
+                          <UserCheck size={12} color={matchInfo.lineupSet ? "#10B981" : "#9CA3AF"} />
+                          <Text style={[
+                            styles.preparationText,
+                            { color: matchInfo.lineupSet ? "#10B981" : "#9CA3AF" }
+                          ]}>
+                            {matchInfo.lineupSet ? 'Opstelling klaar' : 'Opstelling ontbreekt'}
+                          </Text>
+                        </View>
+                        <View style={styles.preparationItem}>
+                          <ArrowUpDown size={12} color={matchInfo.hasSubSchedule ? "#10B981" : "#9CA3AF"} />
+                          <Text style={[
+                            styles.preparationText,
+                            { color: matchInfo.hasSubSchedule ? "#10B981" : "#9CA3AF" }
+                          ]}>
+                            {matchInfo.hasSubSchedule ? 'Wisselschema klaar' : 'Geen wisselschema'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </View>
@@ -424,55 +471,29 @@ const styles = StyleSheet.create({
     height: 40,
   },
   statsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 12,
-  },
-  statsRow: {
     flexDirection: 'row',
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 8,
   },
   statCard: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryCard: {
-    backgroundColor: '#FF6B35',
-  },
-  secondaryCard: {
     backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-  },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  secondaryIcon: {
-    backgroundColor: '#F8FAFC',
+    gap: 4,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 18,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  darkText: {
     color: '#0F172A',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter-Medium',
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  darkLabel: {
     color: '#64748B',
   },
   section: {
@@ -494,34 +515,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#FF6B35',
-  },
-  quickActionsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickActionCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  quickActionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FEF2F2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  quickActionText: {
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
-    color: '#0F172A',
-    textAlign: 'center',
   },
   emptyState: {
     backgroundColor: '#FFFFFF',
@@ -549,7 +542,7 @@ const styles = StyleSheet.create({
   },
   matchCard: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -558,7 +551,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   matchStatus: {
     flexDirection: 'row',
@@ -592,6 +585,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   matchDetailItem: {
     flexDirection: 'row',
@@ -611,6 +605,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+  },
+  preparationInfo: {
+    backgroundColor: '#F8FAFC',
+    padding: 8,
+    borderRadius: 6,
+    gap: 4,
+  },
+  preparationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  preparationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
+  preparationText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
   },
   teamsList: {
     gap: 8,

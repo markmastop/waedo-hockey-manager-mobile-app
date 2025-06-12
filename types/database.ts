@@ -33,9 +33,11 @@ export interface Database {
           away_team: string;
           location: string;
           field: string;
+          formation: string;
           lineup: Player[];
           reserve_players: Player[];
           substitutions: Substitution[];
+          substitution_schedule: any;
           match_events: MatchEvent[];
           player_stats: PlayerStats[];
           match_time: number;
@@ -55,9 +57,11 @@ export interface Database {
           away_team: string;
           location: string;
           field: string;
+          formation?: string;
           lineup?: Player[];
           reserve_players?: Player[];
           substitutions?: Substitution[];
+          substitution_schedule?: any;
           match_events?: MatchEvent[];
           player_stats?: PlayerStats[];
           match_time?: number;
@@ -77,9 +81,11 @@ export interface Database {
           away_team?: string;
           location?: string;
           field?: string;
+          formation?: string;
           lineup?: Player[];
           reserve_players?: Player[];
           substitutions?: Substitution[];
+          substitution_schedule?: any;
           match_events?: MatchEvent[];
           player_stats?: PlayerStats[];
           match_time?: number;
@@ -89,6 +95,26 @@ export interface Database {
           is_home?: boolean;
           home_score?: number;
           away_score?: number;
+          created_at?: string;
+        };
+      };
+      formations: {
+        Row: {
+          id: string;
+          name: string;
+          positions: FormationPosition[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          positions: FormationPosition[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          positions?: FormationPosition[];
           created_at?: string;
         };
       };
@@ -134,4 +160,13 @@ export interface PlayerStats {
   goals?: number;
   assists?: number;
   cards?: number;
+}
+
+export interface FormationPosition {
+  id: string;
+  name: string;
+  dutch_name: string;
+  order: number;
+  x: number;
+  y: number;
 }
