@@ -44,6 +44,7 @@ interface RecentMatch {
   reserve_players: any[];
   substitution_schedule: any;
   formation: string;
+  formation_key?: string;
   formation_name?: string | null;
   teams: { name: string };
 }
@@ -98,7 +99,11 @@ export default function DashboardScreen() {
         const matchList = matches || [];
 
         const formationIds = Array.from(
-          new Set(matchList.map(m => m.formation).filter(Boolean))
+          new Set(
+            matchList
+              .map(m => m.formation_key || m.formation)
+              .filter(Boolean)
+          )
         );
 
         let formationsMap: Record<string, string> = {};
@@ -119,11 +124,13 @@ export default function DashboardScreen() {
         const processedMatches = matchList.map(match => {
           const lineupArr = convertPlayersDataToArray(match.lineup);
           const reserveArr = convertPlayersDataToArray(match.reserve_players);
+          const formationKey = match.formation_key || match.formation;
           return {
             ...match,
+            formation: formationKey,
             lineup: lineupArr,
             reserve_players: reserveArr,
-            formation_name: formationsMap[match.formation] || 'Geen formatie',
+            formation_name: formationsMap[formationKey] || 'Geen formatie',
           } as RecentMatch;
         });
 
@@ -264,8 +271,9 @@ export default function DashboardScreen() {
     const totalPlayers = lineupCount + reserveCount;
     const hasSubSchedule = match.substitution_schedule && Object.keys(match.substitution_schedule).length > 0;
 
+    const formationKey = match.formation_key || match.formation;
     return {
-      formation: match.formation_name || match.formation || 'Geen formatie',
+      formation: match.formation_name || formationKey || 'Geen formatie',
       playerCount: totalPlayers,
       hasSubSchedule,
       lineupSet: lineupCount > 0
