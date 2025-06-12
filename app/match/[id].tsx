@@ -134,40 +134,74 @@ export default function MatchScreen() {
   };
 
   const fetchFormation = async (formationIdentifier: string) => {
-    if (!formationIdentifier) return;
+    console.log('🔍 fetchFormation called with:', formationIdentifier);
+    
+    if (!formationIdentifier) {
+      console.log('❌ No formationIdentifier provided');
+      return;
+    }
     
     try {
       let query = supabase.from('formations').select('*');
       
       if (isValidUUID(formationIdentifier)) {
+        console.log('📋 Using UUID query for formation ID:', formationIdentifier);
         query = query.eq('id', formationIdentifier);
       } else {
+        console.log('🔑 Using key query for formation key:', formationIdentifier);
         query = query.eq('key', formationIdentifier);
       }
       
+      console.log('🚀 Executing Supabase query...');
       const { data, error } = await query.single();
 
       if (error) {
-        console.error('Error fetching formation:', error);
+        console.error('❌ Error fetching formation:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         return;
       }
       
+      console.log('✅ Formation data received:', data);
+      
       if (data) {
+        console.log('📊 Processing formation data...');
+        console.log('- Formation ID:', data.id);
+        console.log('- Formation key:', data.key);
+        console.log('- Name translations:', data.name_translations);
+        console.log('- Raw positions:', data.positions);
+        console.log('- Positions is array:', Array.isArray(data.positions));
+        console.log('- Positions length:', data.positions?.length || 0);
+        
         const sortedPositions = Array.isArray(data.positions) 
           ? data.positions.sort((a: FormationPosition, b: FormationPosition) => a.order - b.order)
           : [];
           
-        setFormation({
+        console.log('📋 Sorted positions:', sortedPositions);
+        
+        const formationObject = {
           ...data,
           positions: sortedPositions
-        });
+        };
+        
+        console.log('🎯 Final formation object:', formationObject);
+        setFormation(formationObject);
+        console.log('✅ Formation state updated');
+      } else {
+        console.log('⚠️ No formation data returned from query');
       }
     } catch (error) {
-      console.error('Error fetching formation:', error);
+      console.error('💥 Exception in fetchFormation:', error);
     }
   };
 
   const fetchMatch = async () => {
+    console.log('🏒 fetchMatch called for match ID:', id);
+    
     try {
       const { data, error } = await supabase
         .from('matches')
@@ -181,6 +215,10 @@ export default function MatchScreen() {
         .single();
 
       if (error) throw error;
+      
+      console.log('📊 Match data received:', data);
+      console.log('- Formation key:', data.formation_key);
+      console.log('- Formation (legacy):', data.formation);
       
       const lineupArray = convertPlayersDataToArray(data.lineup);
       const reservePlayersArray = convertPlayersDataToArray(data.reserve_players);
@@ -204,27 +242,49 @@ export default function MatchScreen() {
         substitution_schedule: data.substitution_schedule || {},
       };
       
+      console.log('🎯 Processed match data:', matchData);
       setMatch(matchData);
       setPlayerStats(statsArray);
       setMatchEvents(eventsArray);
       
       const formationIdentifier = data.formation_key || data.formation;
+      console.log('🔍 Formation identifier to fetch:', formationIdentifier);
+      
       if (formationIdentifier) {
+        console.log('📋 Calling fetchFormation with:', formationIdentifier);
         await fetchFormation(formationIdentifier);
+      } else {
+        console.log('⚠️ No formation identifier found in match data');
       }
     } catch (error) {
-      console.error('Error fetching match:', error);
+      console.error('💥 Error fetching match:', error);
       Alert.alert('Fout', 'Kon wedstrijdgegevens niet laden');
     } finally {
       setLoading(false);
+      console.log('✅ fetchMatch completed, loading set to false');
     }
   };
 
   useEffect(() => {
+    console.log('🔄 useEffect triggered with match ID:', id);
     if (id) {
       fetchMatch();
     }
   }, [id]);
+
+  // Add debug logging for formation state changes
+  useEffect(() => {
+    console.log('🎯 Formation state changed:', formation);
+    if (formation) {
+      console.log('- Formation has positions:', formation.positions?.length || 0);
+      console.log('- Formation positions array:', formation.positions);
+    }
+  }, [formation]);
+
+  // Add debug logging for viewMode changes
+  useEffect(() => {
+    console.log('👁️ View mode changed to:', viewMode);
+  }, [viewMode]);
 
   const updateMatch = async (updates: Partial<Match>) => {
     if (!match) return;
@@ -400,7 +460,16 @@ export default function MatchScreen() {
     return nameTranslations.nl || nameTranslations.en || formation.key || '';
   };
 
+  // Add debug logging for render conditions
+  console.log('🎨 Render conditions check:');
+  console.log('- loading:', loading);
+  console.log('- match exists:', !!match);
+  console.log('- formation exists:', !!formation);
+  console.log('- formation positions length:', formation?.positions?.length || 0);
+  console.log('- viewMode:', viewMode);
+
   if (loading) {
+    console.log('⏳ Rendering loading state');
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -411,6 +480,7 @@ export default function MatchScreen() {
   }
 
   if (!match) {
+    console.log('❌ Rendering no match found state');
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -419,6 +489,8 @@ export default function MatchScreen() {
       </SafeAreaView>
     );
   }
+
+  console.log('✅ Rendering main match screen');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -485,7 +557,10 @@ export default function MatchScreen() {
       <View style={styles.viewModeContainer}>
         <TouchableOpacity
           style={[styles.viewModeButton, viewMode === 'formation' && styles.activeViewMode]}
-          onPress={() => setViewMode('formation')}
+          onPress={() => {
+            console.log('🔄 Switching to formation view');
+            setViewMode('formation');
+          }}
         >
           <Grid3X3 size={16} color={viewMode === 'formation' ? '#FFFFFF' : '#6B7280'} />
           <Text style={[styles.viewModeText, viewMode === 'formation' && styles.activeViewModeText]}>
@@ -495,7 +570,10 @@ export default function MatchScreen() {
         
         <TouchableOpacity
           style={[styles.viewModeButton, viewMode === 'list' && styles.activeViewMode]}
-          onPress={() => setViewMode('list')}
+          onPress={() => {
+            console.log('🔄 Switching to list view');
+            setViewMode('list');
+          }}
         >
           <Users size={16} color={viewMode === 'list' ? '#FFFFFF' : '#6B7280'} />
           <Text style={[styles.viewModeText, viewMode === 'list' && styles.activeViewModeText]}>
@@ -515,22 +593,35 @@ export default function MatchScreen() {
               </Text>
             </View>
             
-            {!formation || formation.positions.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Grid3X3 size={40} color="#9CA3AF" />
-                <Text style={styles.emptyTitle}>Geen formatie ingesteld</Text>
-                <Text style={styles.emptySubtitle}>
-                  Er is geen formatie geselecteerd voor deze wedstrijd
-                </Text>
-              </View>
-            ) : (
-              <FieldView
-                positions={formation.positions}
-                lineup={match.lineup}
-                highlightPosition={selectedPosition}
-                onPositionPress={handlePositionPress}
-              />
-            )}
+            {(() => {
+              console.log('🎯 Formation view render check:');
+              console.log('- formation exists:', !!formation);
+              console.log('- formation positions:', formation?.positions);
+              console.log('- positions length:', formation?.positions?.length || 0);
+              
+              if (!formation || formation.positions.length === 0) {
+                console.log('❌ Rendering empty formation state');
+                return (
+                  <View style={styles.emptyContainer}>
+                    <Grid3X3 size={40} color="#9CA3AF" />
+                    <Text style={styles.emptyTitle}>Geen formatie ingesteld</Text>
+                    <Text style={styles.emptySubtitle}>
+                      Er is geen formatie geselecteerd voor deze wedstrijd
+                    </Text>
+                  </View>
+                );
+              } else {
+                console.log('✅ Rendering FieldView with formation');
+                return (
+                  <FieldView
+                    positions={formation.positions}
+                    lineup={match.lineup}
+                    highlightPosition={selectedPosition}
+                    onPositionPress={handlePositionPress}
+                  />
+                );
+              }
+            })()}
 
             {/* Reserve Players */}
             <View style={styles.reserveSection}>
