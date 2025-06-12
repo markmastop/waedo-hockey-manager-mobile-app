@@ -484,11 +484,22 @@ export default function MatchScreen() {
     if (!position) return null;
     
     const dutchName = getDutchPositionName(position);
-    return match.lineup.find(player => 
-      player.position === dutchName || 
-      player.position === position.dutch_name || 
-      player.position === position.name
-    ) || null;
+    
+    // Try multiple matching strategies to find the player
+    let foundPlayer = match.lineup.find(player => player.position === dutchName);
+    
+    if (!foundPlayer) {
+      // Fallback: try dutch_name
+      foundPlayer = match.lineup.find(player => player.position === position.dutch_name);
+    }
+    
+    if (!foundPlayer) {
+      // Fallback: try name
+      foundPlayer = match.lineup.find(player => player.position === position.name);
+    }
+    
+    console.log(`🔍 Looking for player in position ${positionId} (${dutchName}): ${foundPlayer?.name || 'not found'}`);
+    return foundPlayer || null;
   };
 
   const getPositionName = (positionId: string): string => {
