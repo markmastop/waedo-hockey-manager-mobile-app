@@ -44,6 +44,7 @@ interface RecentMatch {
   reserve_players: any[];
   substitution_schedule: any;
   formation: string;
+  formation_name?: string | null;
   teams: { name: string };
 }
 
@@ -94,27 +95,57 @@ export default function DashboardScreen() {
 
         if (matchesError) throw matchesError;
 
+        const matchList = matches || [];
+
+        const formationIds = Array.from(
+          new Set(matchList.map(m => m.formation).filter(Boolean))
+        );
+
+        let formationsMap: Record<string, string> = {};
+        if (formationIds.length > 0) {
+          const { data: formationsData } = await supabase
+            .from('formations')
+            .select('id, name')
+            .in('id', formationIds);
+
+          if (formationsData) {
+            formationsMap = formationsData.reduce((acc: Record<string, string>, f) => {
+              acc[f.id] = f.name;
+              return acc;
+            }, {});
+          }
+        }
+
+        const processedMatches = matchList.map(match => {
+          const lineupArr = convertPlayersDataToArray(match.lineup);
+          const reserveArr = convertPlayersDataToArray(match.reserve_players);
+          return {
+            ...match,
+            lineup: lineupArr,
+            reserve_players: reserveArr,
+            formation_name: formationsMap[match.formation] || 'Geen formatie',
+          } as RecentMatch;
+        });
+
         // Sort matches: upcoming first, then live, then completed
-        const sortedMatches = (matches || []).sort((a, b) => {
+        const sortedMatches = processedMatches.sort((a, b) => {
           const now = new Date();
           const dateA = new Date(a.date);
           const dateB = new Date(b.date);
-          
-          // Priority order: upcoming -> live -> completed
+
           const getPriority = (match: any) => {
             if (match.status === 'inProgress' || match.status === 'paused') return 1;
             if (match.status === 'upcoming' && dateA > now) return 2;
             return 3;
           };
-          
+
           const priorityA = getPriority(a);
           const priorityB = getPriority(b);
-          
+
           if (priorityA !== priorityB) {
             return priorityA - priorityB;
           }
-          
-          // Within same priority, sort by date
+
           return dateA.getTime() - dateB.getTime();
         });
 
@@ -199,14 +230,42 @@ export default function DashboardScreen() {
     }
   };
 
+  const convertPlayersDataToArray = (playersData: any): any[] => {
+    if (!playersData) return [];
+
+    if (Array.isArray(playersData)) {
+      return playersData.filter(
+        player => player && typeof player === 'object' && player.id && player.name
+      );
+    }
+
+    if (typeof playersData === 'object') {
+      const players: any[] = [];
+      Object.keys(playersData).forEach(position => {
+        const playerData = playersData[position];
+        if (playerData && typeof playerData === 'object' && playerData.id && playerData.name) {
+          players.push({
+            id: playerData.id,
+            name: playerData.name,
+            number: playerData.number || 0,
+            position: playerData.position || position,
+          });
+        }
+      });
+      return players;
+    }
+
+    return [];
+  };
+
   const getMatchInfo = (match: RecentMatch) => {
     const lineupCount = Array.isArray(match.lineup) ? match.lineup.length : 0;
     const reserveCount = Array.isArray(match.reserve_players) ? match.reserve_players.length : 0;
     const totalPlayers = lineupCount + reserveCount;
     const hasSubSchedule = match.substitution_schedule && Object.keys(match.substitution_schedule).length > 0;
-    
+
     return {
-      formation: match.formation || 'Geen formatie',
+      formation: match.formation_name || match.formation || 'Geen formatie',
       playerCount: totalPlayers,
       hasSubSchedule,
       lineupSet: lineupCount > 0
