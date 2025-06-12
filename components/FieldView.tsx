@@ -27,6 +27,20 @@ export default function FieldView({
     return '#6B7280'; // Gray for empty
   };
 
+  // Adjust Y position to prevent goalkeeper from falling off the field
+  const getAdjustedPosition = (pos: FormationPosition) => {
+    let adjustedY = pos.y;
+    
+    // Ensure positions stay within field bounds (5% margin from edges)
+    if (adjustedY < 8) adjustedY = 8;
+    if (adjustedY > 92) adjustedY = 92;
+    
+    return {
+      x: pos.x,
+      y: adjustedY
+    };
+  };
+
   return (
     <View style={styles.container}>
       <View style={[styles.field, fieldType === 'indoor' ? styles.indoor : styles.outdoor]}>
@@ -54,6 +68,7 @@ export default function FieldView({
           const player = getPlayerInPosition(pos);
           const highlighted = highlightPosition === pos.id;
           const dotColor = getPositionColor(pos, player);
+          const adjustedPos = getAdjustedPosition(pos);
           
           return (
             <TouchableOpacity
@@ -61,8 +76,8 @@ export default function FieldView({
               style={[
                 styles.positionDot,
                 {
-                  left: `${pos.x}%`,
-                  top: `${pos.y}%`,
+                  left: `${adjustedPos.x}%`,
+                  top: `${adjustedPos.y}%`,
                   backgroundColor: dotColor,
                 },
                 highlighted && styles.highlightedDot,
@@ -76,7 +91,7 @@ export default function FieldView({
                 </Text>
               )}
               
-              {/* Position label */}
+              {/* Position label - use Dutch name from formation */}
               <View style={[
                 styles.positionLabel,
                 highlighted && styles.highlightedLabel
@@ -85,7 +100,7 @@ export default function FieldView({
                   styles.positionText,
                   highlighted && styles.highlightedText
                 ]}>
-                  {pos.dutch_name}
+                  {pos.dutch_name || pos.name}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -118,8 +133,8 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   field: {
-    width: 280,
-    height: 180,
+    width: 300,
+    height: 200,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#FFFFFF',
@@ -172,14 +187,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.6)',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
   },
   topGoalArea: {
     top: 0,
     borderTopWidth: 0,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
   },
   bottomGoalArea: {
     bottom: 0,
     borderBottomWidth: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   cornerArc: {
     position: 'absolute',
@@ -215,12 +235,12 @@ const styles = StyleSheet.create({
   },
   positionDot: {
     position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
-    transform: [{ translateX: -10 }, { translateY: -10 }],
+    transform: [{ translateX: -11 }, { translateY: -11 }],
     borderWidth: 2,
     borderColor: '#FFFFFF',
     shadowColor: '#000',
@@ -230,10 +250,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   highlightedDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    transform: [{ translateX: -12 }, { translateY: -12 }],
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    transform: [{ translateX: -13 }, { translateY: -13 }],
     borderWidth: 3,
     borderColor: '#FFFFFF',
     shadowOpacity: 0.5,
@@ -241,26 +261,29 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   playerNumber: {
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
   positionLabel: {
     position: 'absolute',
-    top: 24,
+    top: 26,
     left: '50%',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
     transform: [{ translateX: -50 }],
-    minWidth: 40,
+    minWidth: 50,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   highlightedLabel: {
     backgroundColor: 'rgba(239, 68, 68, 0.9)',
-    top: 28,
+    top: 30,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   positionText: {
     fontSize: 8,
@@ -270,27 +293,34 @@ const styles = StyleSheet.create({
   },
   highlightedText: {
     color: '#FFFFFF',
+    fontSize: 9,
   },
   legend: {
     flexDirection: 'row',
-    marginTop: 12,
-    gap: 16,
+    marginTop: 16,
+    gap: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: '#FFFFFF',
   },
   legendText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
-    color: '#6B7280',
+    color: '#374151',
   },
 });
