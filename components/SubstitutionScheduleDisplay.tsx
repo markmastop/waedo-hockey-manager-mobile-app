@@ -122,6 +122,10 @@ export function SubstitutionScheduleDisplay({
     });
   };
 
+  // Calculate timeline progress
+  const maxTime = timeKeys.length > 0 ? Number(timeKeys[timeKeys.length - 1]) : 1;
+  const timelineProgress = Math.min((currentTime / maxTime) * 100, 100);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -136,14 +140,20 @@ export function SubstitutionScheduleDisplay({
       {/* Timeline Progress Bar */}
       <View style={styles.timelineContainer}>
         <View style={styles.timelineBar}>
+          <View style={styles.timelineTrack} />
+          <View style={[styles.timelineProgress, { width: `${timelineProgress}%` }]} />
+          
           {timeKeys.map((timeKey, index) => {
             const scheduleTime = Number(timeKey);
             const status = getTimeStatus(timeKey);
             const statusColor = getStatusColor(status);
-            const progress = Math.min(currentTime / scheduleTime, 1);
+            const position = (scheduleTime / maxTime) * 100;
             
             return (
-              <View key={timeKey} style={styles.timelinePoint}>
+              <View 
+                key={timeKey} 
+                style={[styles.timelinePoint, { left: `${position}%` }]}
+              >
                 <View style={[styles.timelineDot, { backgroundColor: statusColor }]} />
                 <Text style={[styles.timelineLabel, { color: statusColor }]}>
                   {formatTime(scheduleTime)}
@@ -151,12 +161,12 @@ export function SubstitutionScheduleDisplay({
               </View>
             );
           })}
-        </View>
-        <View style={styles.currentTimeIndicator} style={{
-          left: `${Math.min((currentTime / (Number(timeKeys[timeKeys.length - 1]) || 1)) * 100, 100)}%`
-        }}>
-          <View style={styles.currentTimeLine} />
-          <Text style={styles.currentTimeLabel}>Nu</Text>
+          
+          {/* Current time indicator */}
+          <View style={[styles.currentTimeIndicator, { left: `${timelineProgress}%` }]}>
+            <View style={styles.currentTimeLine} />
+            <Text style={styles.currentTimeLabel}>Nu</Text>
+          </View>
         </View>
       </View>
 
@@ -253,45 +263,70 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   timelineContainer: {
-    position: 'relative',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 20,
     backgroundColor: '#F9FAFB',
   },
   timelineBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    height: 40,
+    position: 'relative',
+    height: 60,
+    marginHorizontal: 20,
+  },
+  timelineTrack: {
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+  },
+  timelineProgress: {
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    height: 4,
+    backgroundColor: '#10B981',
+    borderRadius: 2,
   },
   timelinePoint: {
+    position: 'absolute',
     alignItems: 'center',
+    transform: [{ translateX: -6 }],
   },
   timelineDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    marginTop: 16,
     marginBottom: 4,
   },
   timelineLabel: {
     fontSize: 10,
     fontFamily: 'Inter-SemiBold',
+    textAlign: 'center',
   },
   currentTimeIndicator: {
     position: 'absolute',
-    top: 12,
     alignItems: 'center',
+    transform: [{ translateX: -1 }],
   },
   currentTimeLine: {
     width: 2,
-    height: 20,
+    height: 24,
     backgroundColor: '#EF4444',
+    marginTop: 10,
   },
   currentTimeLabel: {
     fontSize: 8,
     fontFamily: 'Inter-Bold',
     color: '#EF4444',
     marginTop: 2,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 4,
+    borderRadius: 2,
   },
   emptyContainer: {
     alignItems: 'center',
