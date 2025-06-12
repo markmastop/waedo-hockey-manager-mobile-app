@@ -10,22 +10,21 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { Player, Substitution } from '@/types/database';
+import { Player, Substitution, MatchEvent, PlayerStats } from '@/types/database';
 import { Match } from '@/types/match';
-import { PlayerCard } from '@/components/PlayerCard';
-import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
+import { LivePlayerCard } from '@/components/LivePlayerCard';
+import { LiveMatchTimer } from '@/components/LiveMatchTimer';
+import { MatchEventLogger } from '@/components/MatchEventLogger';
 import {
-  Play,
-  Pause,
-  Square,
-  SkipForward,
   ArrowLeft,
-  Clock,
   Users,
   ArrowUpDown,
   Star,
+  Activity,
+  BarChart3,
+  Target,
+  AlertTriangle,
 } from 'lucide-react-native';
-
 
 export default function LiveMatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,62 +32,49 @@ export default function LiveMatchScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isSubstituting, setIsSubstituting] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
+  const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
+  const [activeTab, setActiveTab] = useState<'lineup' | 'events' | 'stats'>('lineup');
 
   const convertPlayersDataToArray = (playersData: any): Player[] => {
-    console.log('Converting players data:', playersData);
+    if (!playersData) return [];
     
-    if (!playersData) {
-      console.log('No players data provided');
-      return [];
-    }
-    
-    // If it's already an array, filter and return it
     if (Array.isArray(playersData)) {
-      console.log('Players data is array with length:', playersData.length);
-      const filteredPlayers = playersData.filter(player => 
-        player && 
-        typeof player === 'object' && 
-        player.id && 
-        player.name
+      return playersData.filter(player => 
+        player && typeof player === 'object' && player.id && player.name
       );
-      console.log('Filtered players:', filteredPlayers);
-      return filteredPlayers;
     }
     
-    // If it's an object with position keys, convert to array
     if (typeof playersData === 'object') {
-      console.log('Players data is object with keys:', Object.keys(playersData));
       const players: Player[] = [];
-      
-      // Extract players from each position
       Object.keys(playersData).forEach(position => {
         const playerData = playersData[position];
-        console.log(`Processing position ${position}:`, playerData);
-        
-        if (playerData && typeof playerData === 'object') {
-          // Ensure the player has required fields
-          if (playerData.id && playerData.name) {
-            const player = {
-              id: playerData.id,
-              name: playerData.name,
-              number: playerData.number || 0,
-              position: playerData.position || position,
-            };
-            console.log('Adding player:', player);
-            players.push(player);
-          } else {
-            console.log('Skipping invalid player data:', playerData);
-          }
+        if (playerData && typeof playerData === 'object' && playerData.id && playerData.name) {
+          players.push({
+            id: playerData.id,
+            name: playerData.name,
+            number: playerData.number || 0,
+            position: playerData.position || position,
+          });
         }
       });
-      
-      console.log('Final converted players array:', players);
       return players;
     }
     
-    console.log('Unknown players data format');
     return [];
+  };
+
+  const initializePlayerStats = (lineup: Player[], reserves: Player[]): PlayerStats[] => {
+    const allPlayers = [...lineup, ...reserves];
+    return allPlayers.map(player => ({
+      playerId: player.id,
+      timeOnField: lineup.some(p => p.id === player.id) ? 0 : 0,
+      quartersPlayed: [],
+      substitutions: 0,
+      goals: 0,
+      assists: 0,
+      cards: 0,
+    }));
   };
 
   const fetchMatch = async () => {
@@ -106,29 +92,29 @@ export default function LiveMatchScreen() {
 
       if (error) throw error;
       
-      console.log('Raw match data:', data);
-      console.log('Lineup data:', data.lineup);
-      console.log('Reserve players data:', data.reserve_players);
-      console.log('Reserve players type:', typeof data.reserve_players);
-      console.log('Reserve players is array:', Array.isArray(data.reserve_players));
-      
-      // Convert both lineup and reserve_players to arrays
       const lineupArray = convertPlayersDataToArray(data.lineup);
       const reservePlayersArray = convertPlayersDataToArray(data.reserve_players);
       const substitutionsArray = Array.isArray(data.substitutions) ? data.substitutions : [];
+      const eventsArray = Array.isArray(data.match_events) ? data.match_events : [];
+      const statsArray = Array.isArray(data.player_stats) ? data.player_stats : 
+        initializePlayerStats(lineupArray, reservePlayersArray);
+      const quarterTimesArray = Array.isArray(data.quarter_times) ? data.quarter_times : [0, 0, 0, 0];
       
       const matchData = {
         ...data,
         lineup: lineupArray,
         reserve_players: reservePlayersArray,
         substitutions: substitutionsArray,
+        match_events: eventsArray,
+        player_stats: statsArray,
+        quarter_times: quarterTimesArray,
+        home_score: data.home_score || 0,
+        away_score: data.away_score || 0,
       };
       
-      console.log('Processed match data:', matchData);
-      console.log('Final lineup:', matchData.lineup);
-      console.log('Final reserve players:', matchData.reserve_players);
-      
       setMatch(matchData);
+      setPlayerStats(statsArray);
+      setMatchEvents(eventsArray);
     } catch (error) {
       console.error('Error fetching match:', error);
       Alert.alert('Fout', 'Kon wedstrijdgegevens niet laden');
@@ -143,48 +129,54 @@ export default function LiveMatchScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    if (match?.status === 'inProgress') {
-      timerRef.current = setInterval(() => {
-        setMatch(prev => {
-          if (prev) {
-            return { ...prev, match_time: prev.match_time + 1 };
-          }
-          return prev;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+  const updatePlayerStats = (newStats: PlayerStats[]) => {
+    setPlayerStats(newStats);
+    if (match) {
+      updateMatch({ player_stats: newStats });
+    }
+  };
+
+  const addMatchEvent = (event: Omit<MatchEvent, 'id' | 'timestamp'>) => {
+    const newEvent: MatchEvent = {
+      ...event,
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+    };
+
+    const updatedEvents = [...matchEvents, newEvent];
+    setMatchEvents(updatedEvents);
+
+    // Update player stats based on event
+    if (event.player && event.type === 'goal') {
+      const updatedStats = playerStats.map(stat => 
+        stat.playerId === event.player!.id 
+          ? { ...stat, goals: (stat.goals || 0) + 1 }
+          : stat
+      );
+      updatePlayerStats(updatedStats);
     }
 
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [match?.status]);
+    if (event.player && event.type === 'card') {
+      const updatedStats = playerStats.map(stat => 
+        stat.playerId === event.player!.id 
+          ? { ...stat, cards: (stat.cards || 0) + 1 }
+          : stat
+      );
+      updatePlayerStats(updatedStats);
+    }
+
+    if (match) {
+      updateMatch({ match_events: updatedEvents });
+    }
+  };
 
   const updateMatch = async (updates: Partial<Match>) => {
     if (!match) return;
 
     try {
-      console.log('Updating match with:', updates);
-      
-      // Prepare the updates for the database
       const dbUpdates: any = {};
-      
-      // Convert arrays back to the format expected by the database if needed
       Object.keys(updates).forEach(key => {
-        if (key === 'lineup' || key === 'reserve_players') {
-          // Keep as arrays since the database expects JSONB arrays
-          dbUpdates[key] = updates[key as keyof Match];
-          console.log(`Database update for ${key}:`, dbUpdates[key]);
-        } else {
-          dbUpdates[key] = updates[key as keyof Match];
-        }
+        dbUpdates[key] = updates[key as keyof Match];
       });
 
       const { error } = await supabase
@@ -194,7 +186,6 @@ export default function LiveMatchScreen() {
 
       if (error) throw error;
       
-      console.log('Match updated successfully');
       setMatch(prev => prev ? { ...prev, ...updates } : null);
     } catch (error) {
       console.error('Error updating match:', error);
@@ -203,7 +194,39 @@ export default function LiveMatchScreen() {
   };
 
   const startMatch = () => {
-    updateMatch({ status: 'inProgress' });
+    const startEvent: MatchEvent = {
+      id: Date.now().toString(),
+      type: 'match_start',
+      time: 0,
+      quarter: 1,
+      timestamp: new Date().toISOString(),
+    };
+
+    const quarterStartEvent: MatchEvent = {
+      id: (Date.now() + 1).toString(),
+      type: 'quarter_start',
+      time: 0,
+      quarter: 1,
+      timestamp: new Date().toISOString(),
+    };
+
+    const newEvents = [...matchEvents, startEvent, quarterStartEvent];
+    setMatchEvents(newEvents);
+
+    // Mark all starting players as playing in quarter 1
+    const updatedStats = playerStats.map(stat => {
+      const isStarting = match?.lineup.some(p => p.id === stat.playerId);
+      return isStarting 
+        ? { ...stat, quartersPlayed: [1] }
+        : stat;
+    });
+    updatePlayerStats(updatedStats);
+
+    updateMatch({ 
+      status: 'inProgress',
+      match_events: newEvents,
+      player_stats: updatedStats,
+    });
   };
 
   const pauseMatch = () => {
@@ -223,7 +246,23 @@ export default function LiveMatchScreen() {
         {
           text: 'Beëindigen',
           style: 'destructive',
-          onPress: () => updateMatch({ status: 'completed' }),
+          onPress: () => {
+            const endEvent: MatchEvent = {
+              id: Date.now().toString(),
+              type: 'match_end',
+              time: match?.match_time || 0,
+              quarter: match?.current_quarter || 1,
+              timestamp: new Date().toISOString(),
+            };
+
+            const newEvents = [...matchEvents, endEvent];
+            setMatchEvents(newEvents);
+
+            updateMatch({ 
+              status: 'completed',
+              match_events: newEvents,
+            });
+          },
         },
       ]
     );
@@ -231,13 +270,70 @@ export default function LiveMatchScreen() {
 
   const nextQuarter = () => {
     if (match && match.current_quarter < 4) {
-      updateMatch({ current_quarter: match.current_quarter + 1 });
+      const newQuarter = match.current_quarter + 1;
+      const currentQuarterTime = match.match_time - match.quarter_times.slice(0, match.current_quarter - 1).reduce((sum, time) => sum + time, 0);
+      
+      const quarterEndEvent: MatchEvent = {
+        id: Date.now().toString(),
+        type: 'quarter_end',
+        time: match.match_time,
+        quarter: match.current_quarter,
+        timestamp: new Date().toISOString(),
+      };
+
+      const quarterStartEvent: MatchEvent = {
+        id: (Date.now() + 1).toString(),
+        type: 'quarter_start',
+        time: match.match_time,
+        quarter: newQuarter,
+        timestamp: new Date().toISOString(),
+      };
+
+      const newEvents = [...matchEvents, quarterEndEvent, quarterStartEvent];
+      setMatchEvents(newEvents);
+
+      // Update quarter times
+      const newQuarterTimes = [...match.quarter_times];
+      newQuarterTimes[match.current_quarter - 1] = currentQuarterTime;
+
+      // Mark all current field players as playing in the new quarter
+      const updatedStats = playerStats.map(stat => {
+        const isOnField = match.lineup.some(p => p.id === stat.playerId);
+        return isOnField && !stat.quartersPlayed.includes(newQuarter)
+          ? { ...stat, quartersPlayed: [...stat.quartersPlayed, newQuarter] }
+          : stat;
+      });
+
+      updatePlayerStats(updatedStats);
+
+      updateMatch({ 
+        current_quarter: newQuarter,
+        quarter_times: newQuarterTimes,
+        match_events: newEvents,
+        player_stats: updatedStats,
+      });
+    }
+  };
+
+  const handleTimeUpdate = (newTime: number) => {
+    if (match) {
+      // Update time on field for current players
+      const updatedStats = playerStats.map(stat => {
+        const isOnField = match.lineup.some(p => p.id === stat.playerId);
+        return isOnField 
+          ? { ...stat, timeOnField: stat.timeOnField + 1 }
+          : stat;
+      });
+      setPlayerStats(updatedStats);
+      
+      updateMatch({ 
+        match_time: newTime,
+        player_stats: updatedStats,
+      });
     }
   };
 
   const handlePlayerPress = (player: Player, isOnField: boolean) => {
-    console.log('Player pressed:', player.name, 'isOnField:', isOnField);
-    
     if (isSubstituting) {
       makeSubstitution(player, isOnField);
     } else {
@@ -249,37 +345,21 @@ export default function LiveMatchScreen() {
   const makeSubstitution = (targetPlayer: Player, targetIsOnField: boolean) => {
     if (!match || !selectedPlayer) return;
 
-    console.log('Making substitution:', {
-      selected: selectedPlayer.name,
-      target: targetPlayer.name,
-      targetIsOnField
-    });
-
     const newLineup = [...match.lineup];
     const newReservePlayers = [...match.reserve_players];
     const selectedIsOnField = newLineup.some(p => p.id === selectedPlayer.id);
 
-    console.log('Current lineup:', newLineup.map(p => p.name));
-    console.log('Current reserves:', newReservePlayers.map(p => p.name));
-    console.log('Selected is on field:', selectedIsOnField);
-
     if (selectedIsOnField && !targetIsOnField) {
-      // Move selected from field to bench, target from bench to field
       const selectedIndex = newLineup.findIndex(p => p.id === selectedPlayer.id);
       const targetIndex = newReservePlayers.findIndex(p => p.id === targetPlayer.id);
-      
-      console.log('Swapping field->bench:', { selectedIndex, targetIndex });
       
       if (selectedIndex !== -1 && targetIndex !== -1) {
         newLineup[selectedIndex] = targetPlayer;
         newReservePlayers[targetIndex] = selectedPlayer;
       }
     } else if (!selectedIsOnField && targetIsOnField) {
-      // Move selected from bench to field, target from field to bench
       const selectedIndex = newReservePlayers.findIndex(p => p.id === selectedPlayer.id);
       const targetIndex = newLineup.findIndex(p => p.id === targetPlayer.id);
-      
-      console.log('Swapping bench->field:', { selectedIndex, targetIndex });
       
       if (selectedIndex !== -1 && targetIndex !== -1) {
         newReservePlayers[selectedIndex] = targetPlayer;
@@ -295,15 +375,45 @@ export default function LiveMatchScreen() {
       timestamp: new Date().toISOString(),
     };
 
-    const newSubstitutions = [...match.substitutions, substitution];
+    const substitutionEvent: MatchEvent = {
+      id: Date.now().toString(),
+      type: 'substitution',
+      time: match.match_time,
+      quarter: match.current_quarter,
+      player: substitution.playerIn,
+      details: `${substitution.playerOut.name} → ${substitution.playerIn.name}`,
+      timestamp: new Date().toISOString(),
+    };
 
-    console.log('New lineup:', newLineup.map(p => p.name));
-    console.log('New reserves:', newReservePlayers.map(p => p.name));
+    const newSubstitutions = [...match.substitutions, substitution];
+    const newEvents = [...matchEvents, substitutionEvent];
+
+    // Update player stats
+    const updatedStats = playerStats.map(stat => {
+      if (stat.playerId === substitution.playerIn.id) {
+        return {
+          ...stat,
+          substitutions: stat.substitutions + 1,
+          quartersPlayed: stat.quartersPlayed.includes(match.current_quarter) 
+            ? stat.quartersPlayed 
+            : [...stat.quartersPlayed, match.current_quarter]
+        };
+      }
+      if (stat.playerId === substitution.playerOut.id) {
+        return { ...stat, substitutions: stat.substitutions + 1 };
+      }
+      return stat;
+    });
+
+    setMatchEvents(newEvents);
+    updatePlayerStats(updatedStats);
 
     updateMatch({
       lineup: newLineup,
       reserve_players: newReservePlayers,
       substitutions: newSubstitutions,
+      match_events: newEvents,
+      player_stats: updatedStats,
     });
 
     setSelectedPlayer(null);
@@ -315,12 +425,15 @@ export default function LiveMatchScreen() {
     setIsSubstituting(false);
   };
 
+  const getPlayerStats = (playerId: string): PlayerStats | undefined => {
+    return playerStats.find(stat => stat.playerId === playerId);
+  };
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
-
 
   if (loading) {
     return (
@@ -342,6 +455,8 @@ export default function LiveMatchScreen() {
     );
   }
 
+  const allPlayers = [...match.lineup, ...match.reserve_players];
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -359,67 +474,30 @@ export default function LiveMatchScreen() {
         </View>
       </View>
 
-      <View style={styles.matchStatus}>
-        <View style={styles.timeDisplay}>
-          <Clock size={18} color="#374151" />
-          <Text style={styles.timeText}>{formatTime(match.match_time)}</Text>
-          <Text style={styles.quarterText}>K{match.current_quarter}</Text>
+      <View style={styles.scoreBoard}>
+        <View style={styles.scoreContainer}>
+          <Text style={styles.teamScore}>{match.home_team}</Text>
+          <Text style={styles.score}>{match.home_score}</Text>
         </View>
-        <View style={styles.statusBadge}>
-          <Text
-            style={[
-              styles.statusText,
-              { color: match.status === 'inProgress' ? '#059669' : '#EA580C' },
-            ]}
-          >
-            {match.status === 'inProgress' ? 'LIVE' : 
-             match.status === 'paused' ? 'GEPAUZEERD' :
-             match.status === 'upcoming' ? 'AANKOMEND' :
-             match.status.toUpperCase()}
-          </Text>
+        <Text style={styles.scoreSeparator}>-</Text>
+        <View style={styles.scoreContainer}>
+          <Text style={styles.score}>{match.away_score}</Text>
+          <Text style={styles.teamScore}>{match.away_team}</Text>
         </View>
       </View>
 
-      <View style={styles.matchControls}>
-        {match.status === 'upcoming' && (
-          <TouchableOpacity style={styles.startButton} onPress={startMatch}>
-            <Play size={14} color="#FFFFFF" />
-            <Text style={styles.startButtonText}>Start Wedstrijd</Text>
-          </TouchableOpacity>
-        )}
-        
-        {match.status === 'inProgress' && (
-          <>
-            <TouchableOpacity style={styles.controlButton} onPress={pauseMatch}>
-              <Pause size={14} color="#374151" />
-              <Text style={styles.controlButtonText}>Pauzeren</Text>
-            </TouchableOpacity>
-            {match.current_quarter < 4 && (
-              <TouchableOpacity style={styles.controlButton} onPress={nextQuarter}>
-                <SkipForward size={14} color="#374151" />
-                <Text style={styles.controlButtonText}>Volgend Kwart</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={styles.endButton} onPress={endMatch}>
-              <Square size={14} color="#FFFFFF" />
-              <Text style={styles.endButtonText}>Beëindigen</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        
-        {match.status === 'paused' && (
-          <>
-            <TouchableOpacity style={styles.startButton} onPress={resumeMatch}>
-              <Play size={14} color="#FFFFFF" />
-              <Text style={styles.startButtonText}>Hervatten</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.endButton} onPress={endMatch}>
-              <Square size={14} color="#FFFFFF" />
-              <Text style={styles.endButtonText}>Beëindigen</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+      <LiveMatchTimer
+        matchTime={match.match_time}
+        currentQuarter={match.current_quarter}
+        quarterTimes={match.quarter_times}
+        status={match.status}
+        onStart={startMatch}
+        onPause={pauseMatch}
+        onResume={resumeMatch}
+        onEnd={endMatch}
+        onNextQuarter={nextQuarter}
+        onTimeUpdate={handleTimeUpdate}
+      />
 
       {isSubstituting && (
         <View style={styles.substitutionBanner}>
@@ -433,89 +511,215 @@ export default function LiveMatchScreen() {
         </View>
       )}
 
-      <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Star size={18} color="#16A34A" />
-            <Text style={styles.sectionTitle}>Basisopstelling ({match.lineup.length})</Text>
-          </View>
-          {match.lineup.length === 0 ? (
-            <View style={styles.emptyLineupContainer}>
-              <Users size={40} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>Geen basisopstelling ingesteld</Text>
-              <Text style={styles.emptySubtitle}>
-                De basisopstelling is nog niet geconfigureerd voor deze wedstrijd
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.playersList}>
-              {match.lineup.map((player) => (
-                <PlayerCard
-                  key={player.id}
-                  player={player}
-                  showStar
-                  selected={selectedPlayer?.id === player.id}
-                  onPress={() => handlePlayerPress(player, true)}
-                />
-              ))}
-            </View>
-          )}
-        </View>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'lineup' && styles.activeTab]}
+          onPress={() => setActiveTab('lineup')}
+        >
+          <Users size={16} color={activeTab === 'lineup' ? '#10B981' : '#6B7280'} />
+          <Text style={[styles.tabText, activeTab === 'lineup' && styles.activeTabText]}>
+            Opstelling
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => setActiveTab('events')}
+        >
+          <Activity size={16} color={activeTab === 'events' ? '#10B981' : '#6B7280'} />
+          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
+            Gebeurtenissen
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'stats' && styles.activeTab]}
+          onPress={() => setActiveTab('stats')}
+        >
+          <BarChart3 size={16} color={activeTab === 'stats' ? '#10B981' : '#6B7280'} />
+          <Text style={[styles.tabText, activeTab === 'stats' && styles.activeTabText]}>
+            Statistieken
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Users size={18} color="#6B7280" />
-            <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
-          </View>
-          {match.reserve_players.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Users size={28} color="#9CA3AF" />
-              <Text style={styles.emptyText}>Geen reservespelers</Text>
-              <Text style={styles.emptySubtext}>
-                Er zijn momenteel geen reservespelers ingesteld voor deze wedstrijd
-              </Text>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {activeTab === 'lineup' && (
+          <>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Star size={18} color="#16A34A" />
+                <Text style={styles.sectionTitle}>Basisopstelling ({match.lineup.length})</Text>
+              </View>
+              {match.lineup.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Users size={40} color="#9CA3AF" />
+                  <Text style={styles.emptyTitle}>Geen basisopstelling ingesteld</Text>
+                </View>
+              ) : (
+                <View style={styles.playersList}>
+                  {match.lineup.map((player) => (
+                    <LivePlayerCard
+                      key={player.id}
+                      player={player}
+                      stats={getPlayerStats(player.id)}
+                      isOnField={true}
+                      isSelected={selectedPlayer?.id === player.id}
+                      isSubstituting={isSubstituting}
+                      onPress={() => handlePlayerPress(player, true)}
+                    />
+                  ))}
+                </View>
+              )}
             </View>
-          ) : (
-            <View style={styles.playersList}>
-              {match.reserve_players.map((player) => (
-                <PlayerCard
-                  key={player.id}
-                  player={player}
-                  selected={selectedPlayer?.id === player.id}
-                  onPress={() => handlePlayerPress(player, false)}
-                />
-              ))}
-            </View>
-          )}
-        </View>
 
-        {match.substitutions.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Users size={18} color="#6B7280" />
+                <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
+              </View>
+              {match.reserve_players.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Users size={28} color="#9CA3AF" />
+                  <Text style={styles.emptyText}>Geen reservespelers</Text>
+                </View>
+              ) : (
+                <View style={styles.playersList}>
+                  {match.reserve_players.map((player) => (
+                    <LivePlayerCard
+                      key={player.id}
+                      player={player}
+                      stats={getPlayerStats(player.id)}
+                      isOnField={false}
+                      isSelected={selectedPlayer?.id === player.id}
+                      isSubstituting={isSubstituting}
+                      onPress={() => handlePlayerPress(player, false)}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+
+        {activeTab === 'events' && (
+          <>
+            {(match.status === 'inProgress' || match.status === 'paused') && (
+              <MatchEventLogger
+                players={allPlayers}
+                onAddEvent={addMatchEvent}
+                currentTime={match.match_time}
+                currentQuarter={match.current_quarter}
+              />
+            )}
+
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Activity size={18} color="#EA580C" />
+                <Text style={styles.sectionTitle}>Wedstrijd Gebeurtenissen ({matchEvents.length})</Text>
+              </View>
+              
+              {matchEvents.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Activity size={40} color="#9CA3AF" />
+                  <Text style={styles.emptyTitle}>Nog geen gebeurtenissen</Text>
+                </View>
+              ) : (
+                <View style={styles.eventsList}>
+                  {matchEvents.slice().reverse().map((event) => (
+                    <View key={event.id} style={styles.eventCard}>
+                      <View style={styles.eventHeader}>
+                        <View style={styles.eventTime}>
+                          <Text style={styles.eventTimeText}>
+                            {formatTime(event.time)} - K{event.quarter}
+                          </Text>
+                        </View>
+                        <View style={styles.eventIcon}>
+                          {event.type === 'goal' && <Target size={14} color="#10B981" />}
+                          {event.type === 'card' && <AlertTriangle size={14} color="#F59E0B" />}
+                          {event.type === 'substitution' && <ArrowUpDown size={14} color="#6B7280" />}
+                          {(event.type === 'quarter_start' || event.type === 'quarter_end' || 
+                            event.type === 'match_start' || event.type === 'match_end') && 
+                            <Activity size={14} color="#6B7280" />}
+                        </View>
+                      </View>
+                      
+                      <View style={styles.eventContent}>
+                        <Text style={styles.eventType}>
+                          {event.type === 'goal' && 'Goal'}
+                          {event.type === 'card' && 'Kaart'}
+                          {event.type === 'substitution' && 'Wissel'}
+                          {event.type === 'quarter_start' && 'Kwart Start'}
+                          {event.type === 'quarter_end' && 'Kwart Einde'}
+                          {event.type === 'match_start' && 'Wedstrijd Start'}
+                          {event.type === 'match_end' && 'Wedstrijd Einde'}
+                        </Text>
+                        
+                        {event.player && (
+                          <Text style={styles.eventPlayer}>
+                            #{event.player.number || '?'} {event.player.name}
+                          </Text>
+                        )}
+                        
+                        {event.details && (
+                          <Text style={styles.eventDetails}>{event.details}</Text>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+
+        {activeTab === 'stats' && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <ArrowUpDown size={18} color="#EA580C" />
-              <Text style={styles.sectionTitle}>Wissels ({match.substitutions.length})</Text>
+              <BarChart3 size={18} color="#8B5CF6" />
+              <Text style={styles.sectionTitle}>Speler Statistieken</Text>
             </View>
-            <View style={styles.substitutionsList}>
-              {match.substitutions.map((sub, index) => (
-                <View key={index} style={styles.substitutionCard}>
-                  <View style={styles.substitutionTime}>
-                    <Text style={styles.substitutionTimeText}>
-                      {formatTime(sub.time)} - K{sub.quarter}
-                    </Text>
-                  </View>
-                  <View style={styles.substitutionDetails}>
-                    <Text style={styles.substitutionText}>
-                      <Text style={styles.playerOut}>
-                        #{sub.playerOut.number || '?'} {sub.playerOut.name}
-                      </Text>
-                      {' → '}
-                      <Text style={styles.playerIn}>
-                        #{sub.playerIn.number || '?'} {sub.playerIn.name}
-                      </Text>
-                    </Text>
-                  </View>
-                </View>
-              ))}
+            
+            <View style={styles.statsList}>
+              {playerStats
+                .filter(stat => stat.timeOnField > 0 || stat.quartersPlayed.length > 0)
+                .sort((a, b) => b.timeOnField - a.timeOnField)
+                .map((stat) => {
+                  const player = allPlayers.find(p => p.id === stat.playerId);
+                  if (!player) return null;
+                  
+                  return (
+                    <View key={stat.playerId} style={styles.statCard}>
+                      <View style={styles.statHeader}>
+                        <Text style={styles.statPlayerName}>
+                          #{player.number || '?'} {player.name}
+                        </Text>
+                        <Text style={styles.statTime}>
+                          {formatTime(stat.timeOnField)}
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.statDetails}>
+                        <Text style={styles.statDetail}>
+                          Kwarten: {stat.quartersPlayed.join(', ') || 'Geen'}
+                        </Text>
+                        <Text style={styles.statDetail}>
+                          Wissels: {stat.substitutions}
+                        </Text>
+                        {(stat.goals || 0) > 0 && (
+                          <Text style={[styles.statDetail, { color: '#10B981' }]}>
+                            Goals: {stat.goals}
+                          </Text>
+                        )}
+                        {(stat.cards || 0) > 0 && (
+                          <Text style={[styles.statDetail, { color: '#F59E0B' }]}>
+                            Kaarten: {stat.cards}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
             </View>
           </View>
         )}
@@ -547,12 +751,42 @@ const styles = StyleSheet.create({
   },
   matchTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
   },
   teamName: {
     fontSize: 12,
     color: '#6B7280',
+    fontFamily: 'Inter-Regular',
+  },
+  scoreBoard: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    gap: 20,
+  },
+  scoreContainer: {
+    alignItems: 'center',
+  },
+  teamScore: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  score: {
+    fontSize: 32,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+  },
+  scoreSeparator: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    color: '#9CA3AF',
   },
   loadingContainer: {
     flex: 1,
@@ -562,99 +796,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#6B7280',
-    fontWeight: '500',
-  },
-  matchStatus: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  timeDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  timeText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  quarterText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  statusBadge: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  matchControls: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    gap: 8,
-  },
-  startButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#059669',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    gap: 4,
-  },
-  startButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  controlButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    gap: 4,
-  },
-  controlButtonText: {
-    color: '#374151',
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  endButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#DC2626',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    gap: 4,
-  },
-  endButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 12,
+    fontFamily: 'Inter-Medium',
   },
   substitutionBanner: {
     flexDirection: 'row',
@@ -668,12 +810,38 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     color: '#16A34A',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   cancelText: {
     fontSize: 12,
     color: '#DC2626',
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#10B981',
+  },
+  tabText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+  },
+  activeTabText: {
+    color: '#10B981',
   },
   content: {
     flex: 1,
@@ -690,10 +858,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
   },
-  emptyLineupContainer: {
+  emptyContainer: {
     alignItems: 'center',
     paddingVertical: 32,
     backgroundColor: '#FFFFFF',
@@ -703,72 +871,95 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#374151',
     marginTop: 12,
     marginBottom: 6,
-  },
-  emptySubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   emptyText: {
     fontSize: 14,
     color: '#6B7280',
     marginTop: 6,
-    fontWeight: '500',
-  },
-  emptySubtext: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 3,
-    textAlign: 'center',
-    paddingHorizontal: 16,
+    fontFamily: 'Inter-Medium',
   },
   playersList: {
     gap: 6,
   },
-  substitutionsList: {
-    gap: 6,
+  eventsList: {
+    gap: 8,
   },
-  substitutionCard: {
+  eventCard: {
     backgroundColor: '#FFFFFF',
-    padding: 10,
-    borderRadius: 6,
+    padding: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderLeftWidth: 3,
-    borderLeftColor: '#EA580C',
   },
-  substitutionTime: {
-    marginBottom: 3,
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
-  substitutionTimeText: {
+  eventTime: {},
+  eventTimeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#6B7280',
   },
-  substitutionDetails: {},
-  substitutionText: {
+  eventIcon: {},
+  eventContent: {},
+  eventType: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    marginBottom: 2,
+  },
+  eventPlayer: {
     fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  eventDetails: {
+    fontSize: 11,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+  },
+  statsList: {
+    gap: 8,
+  },
+  statCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  statHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  statPlayerName: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
     color: '#374151',
   },
-  playerOut: {
-    color: '#DC2626',
-    fontWeight: '500',
+  statTime: {
+    fontSize: 14,
+    fontFamily: 'Inter-Bold',
+    color: '#10B981',
   },
-  playerIn: {
-    color: '#16A34A',
-    fontWeight: '500',
+  statDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statDetail: {
+    fontSize: 11,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
   },
 });
