@@ -26,6 +26,8 @@ export default function RootLayout() {
     'Inter-Bold': Inter_700Bold,
   });
 
+  const scheme = useColorScheme();
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
@@ -35,8 +37,6 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) {
     return null;
   }
-
-  const scheme = useColorScheme();
 
   return (
     <ThemeProvider>
