@@ -7,7 +7,6 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
-  Image,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -16,22 +15,7 @@ import { Match } from '@/types/match';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import FieldView from '@/components/FieldView';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
-import { 
-  ArrowLeft, 
-  Users, 
-  ArrowUpDown, 
-  Star, 
-  Grid3x3 as Grid3X3, 
-  User, 
-  Target, 
-  Clock,
-  Trophy,
-  MapPin,
-  Calendar,
-  Zap,
-  Shield,
-  Activity
-} from 'lucide-react-native';
+import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, User, Target, Clock } from 'lucide-react-native';
 import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
 
 interface Formation {
@@ -77,49 +61,44 @@ function CompactPlayerCard({
       onPress={onPress}
       disabled={!onPress}
     >
-      <View style={styles.playerCardContent}>
-        <View style={styles.playerMainInfo}>
-          <View style={[
-            styles.playerNumberBadge,
-            { backgroundColor: getPositionColor(player.position) }
-          ]}>
-            <Text style={styles.playerNumberText}>{player.number || '?'}</Text>
-          </View>
-          
-          <View style={styles.playerDetails}>
-            <Text style={styles.playerName} numberOfLines={1}>{player.name}</Text>
-            <View style={styles.playerMeta}>
-              <Text style={[
-                styles.positionText,
-                { color: getPositionColor(player.position) }
-              ]}>
-                {getPositionDisplayName(player.position)}
-              </Text>
-              {stats && stats.timeOnField > 0 && (
-                <>
-                  <View style={styles.metaDivider} />
-                  <Clock size={10} color="#6B7280" />
-                  <Text style={styles.timeText}>{formatTime(stats.timeOnField)}</Text>
-                </>
-              )}
-            </View>
+      <View style={styles.playerRow}>
+        <View style={[
+          styles.playerNumberBadge,
+          { backgroundColor: getPositionColor(player.position) }
+        ]}>
+          <Text style={styles.playerNumberText}>#{player.number || '?'}</Text>
+        </View>
+        
+        <View style={styles.playerInfo}>
+          <Text style={styles.playerName} numberOfLines={1}>{player.name}</Text>
+          <View style={styles.playerMeta}>
+            <Text style={[
+              styles.positionText,
+              { color: getPositionColor(player.position) }
+            ]}>
+              {getPositionDisplayName(player.position)}
+            </Text>
+            {stats && stats.timeOnField > 0 && (
+              <>
+                <Text style={styles.metaSeparator}>•</Text>
+                <Text style={styles.timeText}>{formatTime(stats.timeOnField)}</Text>
+              </>
+            )}
+            {stats && stats.goals && stats.goals > 0 && (
+              <>
+                <Text style={styles.metaSeparator}>•</Text>
+                <View style={styles.statBadge}>
+                  <Target size={8} color="#10B981" />
+                  <Text style={styles.statText}>{stats.goals}</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
-        <View style={styles.playerStatus}>
-          {isOnField && (
-            <View style={styles.onFieldIndicator}>
-              <Star size={10} color="#10B981" fill="#10B981" />
-            </View>
-          )}
-          
-          {stats && stats.goals && stats.goals > 0 && (
-            <View style={styles.goalBadge}>
-              <Target size={8} color="#FFFFFF" />
-              <Text style={styles.goalText}>{stats.goals}</Text>
-            </View>
-          )}
-        </View>
+        {isOnField && (
+          <Star size={12} color="#10B981" fill="#10B981" />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -421,51 +400,10 @@ export default function MatchScreen() {
     return nameTranslations.nl || nameTranslations.en || formation.key || '';
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('nl-NL', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'inProgress':
-      case 'paused':
-        return '#10B981';
-      case 'upcoming':
-        return '#F59E0B';
-      case 'completed':
-        return '#6B7280';
-      default:
-        return '#6B7280';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'inProgress':
-        return 'LIVE';
-      case 'paused':
-        return 'GEPAUZEERD';
-      case 'upcoming':
-        return 'AANKOMEND';
-      case 'completed':
-        return 'AFGEROND';
-      default:
-        return status.toUpperCase();
-    }
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Activity size={32} color="#FF6B35" />
           <Text style={styles.loadingText}>Wedstrijd laden...</Text>
         </View>
       </SafeAreaView>
@@ -484,108 +422,66 @@ export default function MatchScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Enhanced Header */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <ArrowLeft size={20} color="#FFFFFF" />
+          <ArrowLeft size={20} color="#374151" />
         </TouchableOpacity>
-        
-        <View style={styles.headerContent}>
-          <View style={styles.matchInfo}>
-            <Text style={styles.matchTitle}>
-              {match.home_team} vs {match.away_team}
-            </Text>
-            <View style={styles.matchMeta}>
-              <MapPin size={12} color="rgba(255, 255, 255, 0.8)" />
-              <Text style={styles.matchLocation}>{match.location}</Text>
-              <View style={styles.metaDivider} />
-              <Calendar size={12} color="rgba(255, 255, 255, 0.8)" />
-              <Text style={styles.matchDate}>{formatDate(match.date)}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.statusBadge}>
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: getStatusColor(match.status) },
-              ]}
-            />
-            <Text style={styles.statusText}>
-              {getStatusText(match.status)}
-            </Text>
-          </View>
+        <View style={styles.headerInfo}>
+          <Text style={styles.matchTitle}>
+            {match.home_team} vs {match.away_team}
+          </Text>
+          <Text style={styles.teamName}>{match.teams.name}</Text>
         </View>
       </View>
 
-      {/* Enhanced Score Board */}
+      {/* Score Board */}
       <View style={styles.scoreBoard}>
-        <View style={styles.scoreSection}>
-          <View style={styles.teamContainer}>
-            <View style={styles.teamInfo}>
-              <Text style={styles.teamName}>{match.home_team}</Text>
-              <Text style={styles.teamLabel}>Thuis</Text>
-            </View>
-            <View style={styles.scoreContainer}>
-              <Text style={styles.score}>{match.home_score}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.scoreDivider}>
-            <Text style={styles.scoreSeparator}>-</Text>
-            <Text style={styles.teamNameSmall}>{match.teams.name}</Text>
-          </View>
-          
-          <View style={styles.teamContainer}>
-            <View style={styles.scoreContainer}>
-              <Text style={styles.score}>{match.away_score}</Text>
-            </View>
-            <View style={styles.teamInfo}>
-              <Text style={styles.teamName}>{match.away_team}</Text>
-              <Text style={styles.teamLabel}>Uit</Text>
-            </View>
-          </View>
+        <View style={styles.scoreContainer}>
+          <Text style={styles.teamScore}>{match.home_team}</Text>
+          <Text style={styles.score}>{match.home_score}</Text>
+        </View>
+        <Text style={styles.scoreSeparator}>-</Text>
+        <View style={styles.scoreContainer}>
+          <Text style={styles.score}>{match.away_score}</Text>
+          <Text style={styles.teamScore}>{match.away_team}</Text>
         </View>
       </View>
 
       {/* Match Timer */}
-      <View style={styles.timerSection}>
-        <LiveMatchTimer
-          matchTime={match.match_time}
-          currentQuarter={match.current_quarter}
-          quarterTimes={match.quarter_times}
-          status={match.status}
-          onStart={startMatch}
-          onPause={pauseMatch}
-          onResume={resumeMatch}
-          onEnd={endMatch}
-          onNextQuarter={() => {}}
-          onTimeUpdate={handleTimeUpdate}
-        />
-      </View>
+      <LiveMatchTimer
+        matchTime={match.match_time}
+        currentQuarter={match.current_quarter}
+        quarterTimes={match.quarter_times}
+        status={match.status}
+        onStart={startMatch}
+        onPause={pauseMatch}
+        onResume={resumeMatch}
+        onEnd={endMatch}
+        onNextQuarter={() => {}}
+        onTimeUpdate={handleTimeUpdate}
+      />
 
       {/* Substitution Banner */}
       {isSubstituting && (
         <View style={styles.substitutionBanner}>
-          <View style={styles.substitutionContent}>
-            <Zap size={16} color="#16A34A" />
-            <Text style={styles.substitutionText}>
-              {selectedPosition 
-                ? `Selecteer een speler voor positie ${getPositionName(selectedPosition)}`
-                : 'Selecteer een positie of speler om te wisselen'
-              }
-            </Text>
-          </View>
-          <TouchableOpacity onPress={cancelSubstitution} style={styles.cancelButton}>
+          <ArrowUpDown size={14} color="#16A34A" />
+          <Text style={styles.substitutionText}>
+            {selectedPosition 
+              ? `Selecteer een speler voor positie ${getPositionName(selectedPosition)}`
+              : 'Selecteer een positie of speler om te wisselen'
+            }
+          </Text>
+          <TouchableOpacity onPress={cancelSubstitution}>
             <Text style={styles.cancelText}>Annuleren</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Enhanced View Mode Toggle */}
+      {/* View Mode Toggle */}
       <View style={styles.viewModeContainer}>
         <TouchableOpacity
           style={[styles.viewModeButton, viewMode === 'formation' && styles.activeViewMode]}
@@ -610,20 +506,18 @@ export default function MatchScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {viewMode === 'formation' ? (
-          /* Enhanced Formation View */
+          /* Formation View */
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <Grid3X3 size={20} color="#16A34A" />
-                <Text style={styles.sectionTitle}>
-                  Formatie {formation ? `(${getFormationDisplayName()})` : ''}
-                </Text>
-              </View>
+              <Grid3X3 size={18} color="#16A34A" />
+              <Text style={styles.sectionTitle}>
+                Formatie {formation ? `(${getFormationDisplayName()})` : ''}
+              </Text>
             </View>
             
             {!formation || formation.positions.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Grid3X3 size={48} color="#9CA3AF" />
+                <Grid3X3 size={40} color="#9CA3AF" />
                 <Text style={styles.emptyTitle}>Geen formatie ingesteld</Text>
                 <Text style={styles.emptySubtitle}>
                   Er is geen formatie geselecteerd voor deze wedstrijd
@@ -638,21 +532,15 @@ export default function MatchScreen() {
               />
             )}
 
-            {/* Enhanced Reserve Players */}
+            {/* Reserve Players */}
             <View style={styles.reserveSection}>
               <View style={styles.sectionHeader}>
-                <View style={styles.sectionTitleContainer}>
-                  <Users size={20} color="#6B7280" />
-                  <Text style={styles.sectionTitle}>Bank</Text>
-                  <View style={styles.countBadge}>
-                    <Text style={styles.countText}>{match.reserve_players.length}</Text>
-                  </View>
-                </View>
+                <Users size={18} color="#6B7280" />
+                <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
               </View>
-              
               {match.reserve_players.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Users size={32} color="#9CA3AF" />
+                  <Users size={28} color="#9CA3AF" />
                   <Text style={styles.emptyText}>Geen reservespelers</Text>
                 </View>
               ) : (
@@ -673,15 +561,13 @@ export default function MatchScreen() {
             </View>
           </View>
         ) : (
-          /* Enhanced Two-Column List View */
+          /* Two-Column List View */
           <View style={styles.twoColumnContainer}>
             {/* Left Column - Lineup */}
             <View style={styles.column}>
               <View style={styles.columnHeader}>
-                <View style={styles.columnTitleContainer}>
-                  <Star size={16} color="#16A34A" />
-                  <Text style={styles.columnTitle}>Basisopstelling</Text>
-                </View>
+                <Star size={16} color="#16A34A" />
+                <Text style={styles.columnTitle}>Basisopstelling</Text>
                 <View style={styles.countBadge}>
                   <Text style={styles.countText}>{match.lineup.length}</Text>
                 </View>
@@ -689,7 +575,7 @@ export default function MatchScreen() {
               
               {match.lineup.length === 0 ? (
                 <View style={styles.emptyColumnContainer}>
-                  <User size={28} color="#9CA3AF" />
+                  <User size={24} color="#9CA3AF" />
                   <Text style={styles.emptyColumnText}>Geen opstelling</Text>
                 </View>
               ) : (
@@ -712,10 +598,8 @@ export default function MatchScreen() {
             {/* Right Column - Reserves */}
             <View style={styles.column}>
               <View style={styles.columnHeader}>
-                <View style={styles.columnTitleContainer}>
-                  <Users size={16} color="#6B7280" />
-                  <Text style={styles.columnTitle}>Bank</Text>
-                </View>
+                <Users size={16} color="#6B7280" />
+                <Text style={styles.columnTitle}>Bank</Text>
                 <View style={[styles.countBadge, styles.reserveCountBadge]}>
                   <Text style={[styles.countText, styles.reserveCountText]}>{match.reserve_players.length}</Text>
                 </View>
@@ -723,7 +607,7 @@ export default function MatchScreen() {
               
               {match.reserve_players.length === 0 ? (
                 <View style={styles.emptyColumnContainer}>
-                  <Users size={28} color="#9CA3AF" />
+                  <Users size={24} color="#9CA3AF" />
                   <Text style={styles.emptyColumnText}>Geen reserves</Text>
                 </View>
               ) : (
@@ -752,168 +636,67 @@ export default function MatchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F9FAFB',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
-    backgroundColor: 'linear-gradient(135deg, #FF6B35 0%, #F56500 100%)',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
-  headerContent: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  matchInfo: {
+  headerInfo: {
     flex: 1,
   },
   matchTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  matchMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  matchLocation: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontFamily: 'Inter-Medium',
-  },
-  matchDate: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontFamily: 'Inter-Medium',
-  },
-  metaDivider: {
-    width: 2,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
-    fontSize: 10,
-    fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  scoreBoard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: -12,
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  scoreSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  teamContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  teamInfo: {
-    alignItems: 'center',
-    flex: 1,
+    color: '#111827',
   },
   teamName: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
-    textAlign: 'center',
-    marginBottom: 2,
-  },
-  teamLabel: {
-    fontSize: 10,
-    fontFamily: 'Inter-Medium',
+    fontSize: 12,
     color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: 'Inter-Regular',
   },
-  scoreContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F3F4F6',
+  scoreBoard: {
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 12,
+    paddingVertical: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    gap: 24,
+  },
+  scoreContainer: {
+    alignItems: 'center',
+  },
+  teamScore: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    marginBottom: 6,
   },
   score: {
-    fontSize: 28,
+    fontSize: 36,
     fontFamily: 'Inter-Bold',
     color: '#111827',
   },
-  scoreDivider: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
   scoreSeparator: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
     color: '#9CA3AF',
-    marginBottom: 4,
-  },
-  teamNameSmall: {
-    fontSize: 10,
-    fontFamily: 'Inter-SemiBold',
-    color: '#FF6B35',
-    textAlign: 'center',
-  },
-  timerSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
   },
   loadingText: {
     fontSize: 16,
@@ -926,16 +709,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    marginHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    marginBottom: 16,
-  },
-  substitutionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
     gap: 8,
   },
   substitutionText: {
@@ -944,14 +717,8 @@ const styles = StyleSheet.create({
     color: '#16A34A',
     fontFamily: 'Inter-Medium',
   },
-  cancelButton: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
   cancelText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#DC2626',
     fontFamily: 'Inter-SemiBold',
   },
@@ -959,34 +726,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 16,
+    marginVertical: 16,
+    borderRadius: 12,
     padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   viewModeButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
   },
   activeViewMode: {
-    backgroundColor: '#FF6B35',
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: '#16A34A',
   },
   viewModeText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-SemiBold',
     color: '#6B7280',
   },
@@ -1001,114 +760,106 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   reserveSection: {
-    paddingTop: 24,
+    paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    marginTop: 24,
+    marginTop: 20,
   },
   sectionHeader: {
-    marginBottom: 16,
-  },
-  sectionTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
     gap: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Inter-Bold',
     color: '#111827',
-    flex: 1,
-  },
-  countBadge: {
-    backgroundColor: '#16A34A',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    minWidth: 28,
-    alignItems: 'center',
-  },
-  countText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 48,
+    paddingVertical: 40,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#374151',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 6,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
     textAlign: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     fontFamily: 'Inter-Regular',
-    lineHeight: 20,
   },
   emptyText: {
     fontSize: 14,
     color: '#6B7280',
-    marginTop: 12,
+    marginTop: 8,
     fontFamily: 'Inter-Medium',
+  },
+  positionsList: {
+    gap: 10,
   },
   // Two-column layout styles
   twoColumnContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingBottom: 20,
-    gap: 16,
+    gap: 12,
   },
   column: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     overflow: 'hidden',
   },
   columnHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: '#F9FAFB',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-  },
-  columnTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
   },
   columnTitle: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
+    flex: 1,
+  },
+  countBadge: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
   },
   reserveCountBadge: {
     backgroundColor: '#6B7280',
+  },
+  countText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
   },
   reserveCountText: {
     color: '#FFFFFF',
   },
   emptyColumnContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 32,
     paddingHorizontal: 16,
   },
   emptyColumnText: {
@@ -1120,32 +871,23 @@ const styles = StyleSheet.create({
   },
   // Compact player card styles
   compactPlayersList: {
-    padding: 12,
-    gap: 8,
+    padding: 8,
+    gap: 4,
   },
   compactPlayerCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    padding: 8,
   },
   selectedPlayerCard: {
     borderColor: '#10B981',
     backgroundColor: '#F0FDF4',
-    shadowColor: '#10B981',
-    shadowOpacity: 0.2,
   },
   substitutingPlayerCard: {
     borderColor: '#FF6B35',
     backgroundColor: '#FEF2F2',
-    shadowColor: '#FF6B35',
-    shadowOpacity: 0.2,
   },
   onFieldPlayerCard: {
     borderColor: '#10B981',
@@ -1155,43 +897,32 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     backgroundColor: '#F9FAFB',
   },
-  playerCardContent: {
+  playerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  playerMainInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    gap: 8,
   },
   playerNumberBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
   },
   playerNumberText: {
-    fontSize: 12,
+    fontSize: 9,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
-  playerDetails: {
+  playerInfo: {
     flex: 1,
     minWidth: 0,
   },
   playerName: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   playerMeta: {
     flexDirection: 'row',
@@ -1199,41 +930,29 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   positionText: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Inter-Medium',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  metaSeparator: {
+    fontSize: 8,
+    color: '#D1D5DB',
+    fontFamily: 'Inter-Regular',
+  },
   timeText: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
   },
-  playerStatus: {
+  statBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  onFieldIndicator: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#F0FDF4',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  goalBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#10B981',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
     gap: 2,
   },
-  goalText: {
-    fontSize: 10,
+  statText: {
+    fontSize: 8,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#10B981',
   },
 });
