@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { Player } from '@/types/database';
+import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { router } from 'expo-router';
 import { 
   Calendar, 
@@ -40,17 +42,19 @@ interface RecentMatch {
   away_team: string;
   status: string;
   is_home: boolean;
-  lineup: any[];
-  reserve_players: any[];
-  substitution_schedule: any;
+  lineup: Player[];
+  reserve_players: Player[];
+  substitution_schedule: Record<string, any>;
   formation: string;
+  formation_key?: string;
+  formation_name?: string | null;
   teams: { name: string };
 }
 
 interface Team {
   id: string;
   name: string;
-  players: any[];
+  players: Player[];
 }
 
 export default function DashboardScreen() {
@@ -94,27 +98,66 @@ export default function DashboardScreen() {
 
         if (matchesError) throw matchesError;
 
+        const matchList = matches || [];
+
+        const formationIds = Array.from(
+          new Set(
+            matchList
+              .map(m => m.formation_key || m.formation)
+              .filter(Boolean)
+          )
+        );
+
+        let formationsMap: Record<string, string> = {};
+        if (formationIds.length > 0) {
+          const { data: formationsData } = await supabase
+            .from('formations')
+            .select('key, name_translations')
+            .in('key', formationIds);
+
+          if (formationsData) {
+            formationsMap = formationsData.reduce((acc: Record<string, string>, f) => {
+              // Extract Dutch name from name_translations JSONB
+              const nameTranslations = f.name_translations as any;
+              const dutchName = nameTranslations?.nl || nameTranslations?.en || f.key;
+              acc[f.key] = dutchName;
+              return acc;
+            }, {});
+          }
+        }
+
+        const processedMatches = matchList.map(match => {
+          const lineupArr = convertPlayersDataToArray(match.lineup);
+          const reserveArr = convertPlayersDataToArray(match.reserve_players);
+          const formationKey = match.formation_key || match.formation;
+          return {
+            ...match,
+            formation: formationKey,
+            lineup: lineupArr,
+            reserve_players: reserveArr,
+            formation_name: formationsMap[formationKey] || 'Geen formatie',
+          } as RecentMatch;
+        });
+
         // Sort matches: upcoming first, then live, then completed
-        const sortedMatches = (matches || []).sort((a, b) => {
+        const sortedMatches = processedMatches.sort((a, b) => {
           const now = new Date();
           const dateA = new Date(a.date);
           const dateB = new Date(b.date);
-          
-          // Priority order: upcoming -> live -> completed
-          const getPriority = (match: any) => {
+
+          const getPriority = (match: RecentMatch) => {
             if (match.status === 'inProgress' || match.status === 'paused') return 1;
             if (match.status === 'upcoming' && dateA > now) return 2;
             return 3;
           };
-          
+
           const priorityA = getPriority(a);
           const priorityB = getPriority(b);
-          
+
           if (priorityA !== priorityB) {
             return priorityA - priorityB;
           }
-          
-          // Within same priority, sort by date
+
           return dateA.getTime() - dateB.getTime();
         });
 
@@ -199,14 +242,16 @@ export default function DashboardScreen() {
     }
   };
 
+
   const getMatchInfo = (match: RecentMatch) => {
     const lineupCount = Array.isArray(match.lineup) ? match.lineup.length : 0;
     const reserveCount = Array.isArray(match.reserve_players) ? match.reserve_players.length : 0;
     const totalPlayers = lineupCount + reserveCount;
     const hasSubSchedule = match.substitution_schedule && Object.keys(match.substitution_schedule).length > 0;
-    
+
+    const formationKey = match.formation_key || match.formation;
     return {
-      formation: match.formation || 'Geen formatie',
+      formation: match.formation_name || formationKey || 'Geen formatie',
       playerCount: totalPlayers,
       hasSubSchedule,
       lineupSet: lineupCount > 0
