@@ -12,17 +12,96 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Player, Substitution, MatchEvent, PlayerStats, FormationPosition } from '@/types/database';
 import { Match } from '@/types/match';
-import { LivePlayerCard } from '@/components/LivePlayerCard';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import { PositionCard } from '../../components/PositionCard';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
-import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, Play, Pause, Square } from 'lucide-react-native';
+import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, User, Target, Clock } from 'lucide-react-native';
+import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
 
 interface Formation {
   id: string;
   key: string;
   name_translations: Record<string, string>;
   positions: FormationPosition[];
+}
+
+interface CompactPlayerCardProps {
+  player: Player;
+  stats?: PlayerStats;
+  isOnField: boolean;
+  isSelected?: boolean;
+  isSubstituting?: boolean;
+  onPress?: () => void;
+}
+
+function CompactPlayerCard({
+  player,
+  stats,
+  isOnField,
+  isSelected,
+  isSubstituting,
+  onPress,
+}: CompactPlayerCardProps) {
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getCardStyle = () => {
+    if (isSelected) return styles.selectedPlayerCard;
+    if (isSubstituting) return styles.substitutingPlayerCard;
+    if (isOnField) return styles.onFieldPlayerCard;
+    return styles.benchPlayerCard;
+  };
+
+  return (
+    <TouchableOpacity
+      style={[styles.compactPlayerCard, getCardStyle()]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      <View style={styles.playerRow}>
+        <View style={[
+          styles.playerNumberBadge,
+          { backgroundColor: getPositionColor(player.position) }
+        ]}>
+          <Text style={styles.playerNumberText}>#{player.number || '?'}</Text>
+        </View>
+        
+        <View style={styles.playerInfo}>
+          <Text style={styles.playerName} numberOfLines={1}>{player.name}</Text>
+          <View style={styles.playerMeta}>
+            <Text style={[
+              styles.positionText,
+              { color: getPositionColor(player.position) }
+            ]}>
+              {getPositionDisplayName(player.position)}
+            </Text>
+            {stats && stats.timeOnField > 0 && (
+              <>
+                <Text style={styles.metaSeparator}>•</Text>
+                <Text style={styles.timeText}>{formatTime(stats.timeOnField)}</Text>
+              </>
+            )}
+            {stats && stats.goals && stats.goals > 0 && (
+              <>
+                <Text style={styles.metaSeparator}>•</Text>
+                <View style={styles.statBadge}>
+                  <Target size={8} color="#10B981" />
+                  <Text style={styles.statText}>{stats.goals}</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {isOnField && (
+          <Star size={12} color="#10B981" fill="#10B981" />
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 }
 
 export default function MatchScreen() {
@@ -34,7 +113,7 @@ export default function MatchScreen() {
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
-  const [viewMode, setViewMode] = useState<'formation' | 'list'>('formation');
+  const [viewMode, setViewMode] = useState<'formation' | 'list'>('list');
 
   const initializePlayerStats = (lineup: Player[], reserves: Player[]): PlayerStats[] => {
     const allPlayers = [...lineup, ...reserves];
@@ -60,7 +139,6 @@ export default function MatchScreen() {
     try {
       let query = supabase.from('formations').select('*');
       
-      // Check if it's a UUID (use id field) or a key (use key field)
       if (isValidUUID(formationIdentifier)) {
         query = query.eq('id', formationIdentifier);
       } else {
@@ -75,7 +153,6 @@ export default function MatchScreen() {
       }
       
       if (data) {
-        // Ensure positions are sorted by order and have proper structure
         const sortedPositions = Array.isArray(data.positions) 
           ? data.positions.sort((a: FormationPosition, b: FormationPosition) => a.order - b.order)
           : [];
@@ -131,7 +208,6 @@ export default function MatchScreen() {
       setPlayerStats(statsArray);
       setMatchEvents(eventsArray);
       
-      // Use formation_key first, then fall back to formation
       const formationIdentifier = data.formation_key || data.formation;
       if (formationIdentifier) {
         await fetchFormation(formationIdentifier);
@@ -320,7 +396,6 @@ export default function MatchScreen() {
   const getFormationDisplayName = (): string => {
     if (!formation) return '';
     
-    // Try to get Dutch name from translations, fall back to English, then key
     const nameTranslations = formation.name_translations || {};
     return nameTranslations.nl || nameTranslations.en || formation.key || '';
   };
@@ -424,7 +499,7 @@ export default function MatchScreen() {
         >
           <Users size={16} color={viewMode === 'list' ? '#FFFFFF' : '#6B7280'} />
           <Text style={[styles.viewModeText, viewMode === 'list' && styles.activeViewModeText]}>
-            Lijst
+            Opstelling
           </Text>
         </TouchableOpacity>
       </View>
@@ -479,9 +554,9 @@ export default function MatchScreen() {
                   <Text style={styles.emptyText}>Geen reservespelers</Text>
                 </View>
               ) : (
-                <View style={styles.playersList}>
+                <View style={styles.compactPlayersList}>
                   {match.reserve_players.map((player) => (
-                    <LivePlayerCard
+                    <CompactPlayerCard
                       key={player.id}
                       player={player}
                       stats={getPlayerStats(player.id)}
@@ -496,22 +571,27 @@ export default function MatchScreen() {
             </View>
           </View>
         ) : (
-          /* List View */
-          <>
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Star size={18} color="#16A34A" />
-                <Text style={styles.sectionTitle}>Basisopstelling ({match.lineup.length})</Text>
+          /* Two-Column List View */
+          <View style={styles.twoColumnContainer}>
+            {/* Left Column - Lineup */}
+            <View style={styles.column}>
+              <View style={styles.columnHeader}>
+                <Star size={16} color="#16A34A" />
+                <Text style={styles.columnTitle}>Basisopstelling</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>{match.lineup.length}</Text>
+                </View>
               </View>
+              
               {match.lineup.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Users size={40} color="#9CA3AF" />
-                  <Text style={styles.emptyTitle}>Geen basisopstelling ingesteld</Text>
+                <View style={styles.emptyColumnContainer}>
+                  <User size={24} color="#9CA3AF" />
+                  <Text style={styles.emptyColumnText}>Geen opstelling</Text>
                 </View>
               ) : (
-                <View style={styles.playersList}>
+                <View style={styles.compactPlayersList}>
                   {match.lineup.map((player) => (
-                    <LivePlayerCard
+                    <CompactPlayerCard
                       key={player.id}
                       player={player}
                       stats={getPlayerStats(player.id)}
@@ -525,20 +605,25 @@ export default function MatchScreen() {
               )}
             </View>
 
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Users size={18} color="#6B7280" />
-                <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
+            {/* Right Column - Reserves */}
+            <View style={styles.column}>
+              <View style={styles.columnHeader}>
+                <Users size={16} color="#6B7280" />
+                <Text style={styles.columnTitle}>Bank</Text>
+                <View style={[styles.countBadge, styles.reserveCountBadge]}>
+                  <Text style={[styles.countText, styles.reserveCountText]}>{match.reserve_players.length}</Text>
+                </View>
               </View>
+              
               {match.reserve_players.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Users size={28} color="#9CA3AF" />
-                  <Text style={styles.emptyText}>Geen reservespelers</Text>
+                <View style={styles.emptyColumnContainer}>
+                  <Users size={24} color="#9CA3AF" />
+                  <Text style={styles.emptyColumnText}>Geen reserves</Text>
                 </View>
               ) : (
-                <View style={styles.playersList}>
+                <View style={styles.compactPlayersList}>
                   {match.reserve_players.map((player) => (
-                    <LivePlayerCard
+                    <CompactPlayerCard
                       key={player.id}
                       player={player}
                       stats={getPlayerStats(player.id)}
@@ -551,7 +636,7 @@ export default function MatchScreen() {
                 </View>
               )}
             </View>
-          </>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -732,7 +817,152 @@ const styles = StyleSheet.create({
   positionsList: {
     gap: 10,
   },
-  playersList: {
+  // Two-column layout styles
+  twoColumnContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    gap: 12,
+  },
+  column: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+  },
+  columnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
     gap: 8,
+  },
+  columnTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    flex: 1,
+  },
+  countBadge: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  reserveCountBadge: {
+    backgroundColor: '#6B7280',
+  },
+  countText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+  },
+  reserveCountText: {
+    color: '#FFFFFF',
+  },
+  emptyColumnContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+  },
+  emptyColumnText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 8,
+    fontFamily: 'Inter-Regular',
+    textAlign: 'center',
+  },
+  // Compact player card styles
+  compactPlayersList: {
+    padding: 8,
+    gap: 4,
+  },
+  compactPlayerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 8,
+  },
+  selectedPlayerCard: {
+    borderColor: '#10B981',
+    backgroundColor: '#F0FDF4',
+  },
+  substitutingPlayerCard: {
+    borderColor: '#FF6B35',
+    backgroundColor: '#FEF2F2',
+  },
+  onFieldPlayerCard: {
+    borderColor: '#10B981',
+    backgroundColor: '#FFFFFF',
+  },
+  benchPlayerCard: {
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  playerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  playerNumberBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playerNumberText: {
+    fontSize: 9,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+  },
+  playerInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  playerName: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  playerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  positionText: {
+    fontSize: 9,
+    fontFamily: 'Inter-Medium',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  metaSeparator: {
+    fontSize: 8,
+    color: '#D1D5DB',
+    fontFamily: 'Inter-Regular',
+  },
+  timeText: {
+    fontSize: 9,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+  },
+  statBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  statText: {
+    fontSize: 8,
+    fontFamily: 'Inter-Bold',
+    color: '#10B981',
   },
 });
