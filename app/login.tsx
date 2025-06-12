@@ -14,13 +14,14 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogIn, Eye, EyeOff } from 'lucide-react-native';
+import { LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { signIn, user } = useAuth();
 
   // Redirect if already logged in
@@ -33,11 +34,14 @@ export default function LoginScreen() {
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Fout', 'Vul alle velden in');
+      setError('Vul alle velden in');
       return;
     }
 
+    // Clear previous error
+    setError(null);
     setLoading(true);
+    
     try {
       console.log('Attempting to sign in...');
       await signIn(email, password);
@@ -45,7 +49,18 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Sign in error:', error);
-      Alert.alert('Fout', error.message || 'Inloggen mislukt');
+      
+      // Handle specific error types
+      if (error.message?.includes('Invalid login credentials') || 
+          error.message?.includes('invalid_credentials')) {
+        setError('Onjuiste inloggegevens. Controleer je e-mailadres en wachtwoord.');
+      } else if (error.message?.includes('Email not confirmed')) {
+        setError('Je e-mailadres is nog niet bevestigd. Controleer je inbox.');
+      } else if (error.message?.includes('Too many requests')) {
+        setError('Te veel inlogpogingen. Probeer het over een paar minuten opnieuw.');
+      } else {
+        setError(error.message || 'Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.');
+      }
     } finally {
       setLoading(false);
     }
@@ -78,12 +93,23 @@ export default function LoginScreen() {
 
             {/* Login Form */}
             <View style={styles.form}>
+              {/* Error Message */}
+              {error && (
+                <View style={styles.errorContainer}>
+                  <AlertCircle size={16} color="#DC2626" />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
+
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>E-mailadres</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, error && styles.inputError]}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (error) setError(null); // Clear error when user starts typing
+                  }}
                   placeholder="Voer je e-mailadres in"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="email-address"
@@ -94,11 +120,14 @@ export default function LoginScreen() {
 
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Wachtwoord</Text>
-                <View style={styles.passwordContainer}>
+                <View style={[styles.passwordContainer, error && styles.inputError]}>
                   <TextInput
                     style={styles.passwordInput}
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (error) setError(null); // Clear error when user starts typing
+                    }}
                     placeholder="Voer je wachtwoord in"
                     placeholderTextColor="#9CA3AF"
                     secureTextEntry={!showPassword}
@@ -131,6 +160,14 @@ export default function LoginScreen() {
               <TouchableOpacity style={styles.forgotPassword}>
                 <Text style={styles.forgotPasswordText}>Wachtwoord vergeten?</Text>
               </TouchableOpacity>
+
+              {/* Help Section */}
+              <View style={styles.helpSection}>
+                <Text style={styles.helpTitle}>Nog geen account?</Text>
+                <Text style={styles.helpText}>
+                  Neem contact op met je teammanager of coach om toegang te krijgen tot doHockey Companion.
+                </Text>
+              </View>
             </View>
 
             {/* Features Section */}
@@ -215,6 +252,24 @@ const styles = StyleSheet.create({
     gap: 20,
     marginBottom: 32,
   },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#DC2626',
+    fontFamily: 'Inter-Regular',
+    lineHeight: 18,
+  },
   inputContainer: {
     gap: 6,
   },
@@ -233,6 +288,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0F172A',
     fontFamily: 'Inter-Regular',
+  },
+  inputError: {
+    borderColor: '#FECACA',
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -284,6 +342,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FF6B35',
     fontFamily: 'Inter-SemiBold',
+  },
+  helpSection: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  helpTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    marginBottom: 6,
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: 'Inter-Regular',
+    lineHeight: 18,
   },
   featuresSection: {
     alignItems: 'center',
