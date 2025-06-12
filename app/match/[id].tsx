@@ -14,7 +14,7 @@ import { Player, Substitution, MatchEvent, PlayerStats, FormationPosition } from
 import { Match } from '@/types/match';
 import { LivePlayerCard } from '@/components/LivePlayerCard';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
-import { PositionCard } from '../../components/PositionCard';
+import FieldView from '@/components/FieldView';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, Play, Pause, Square } from 'lucide-react-native';
 
@@ -449,22 +449,12 @@ export default function MatchScreen() {
                 </Text>
               </View>
             ) : (
-              <View style={styles.positionsList}>
-                {formation.positions.map((position) => {
-                  const player = getPlayerInPosition(position.id);
-                  return (
-                    <PositionCard
-                      key={position.id}
-                      position={position}
-                      player={player}
-                      stats={player ? getPlayerStats(player.id) : undefined}
-                      isSelected={selectedPosition === position.id}
-                      isSubstituting={isSubstituting}
-                      onPress={() => handlePositionPress(position)}
-                    />
-                  );
-                })}
-              </View>
+              <FieldView
+                positions={formation.positions}
+                lineup={match.lineup}
+                highlightPosition={selectedPosition}
+                onPositionPress={handlePositionPress}
+              />
             )}
 
             {/* Reserve Players */}
@@ -728,9 +718,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 8,
     fontFamily: 'Inter-Medium',
-  },
-  positionsList: {
-    gap: 10,
   },
   playersList: {
     gap: 8,
