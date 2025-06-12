@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Clock, ArrowUpDown, Users, ArrowRight } from 'lucide-react-native';
 
 interface Props {
-  substitutionSchedule: any;
+  substitutionSchedule: Record<string, any>;
   currentTime: number;
   currentQuarter: number;
 }
@@ -69,7 +69,7 @@ export function SubstitutionScheduleDisplay({
     }
   };
 
-  const renderSubstitutionDetails = (substitutions: any) => {
+  const renderSubstitutionDetails = (substitutions: Record<string, any>) => {
     if (!substitutions || typeof substitutions !== 'object') {
       return null;
     }

@@ -17,6 +17,7 @@ import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import { MatchEventLogger } from '@/components/MatchEventLogger';
 import { SubstitutionScheduleDisplay } from '@/components/SubstitutionScheduleDisplay';
 import { PositionCard } from '../../components/PositionCard';
+import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { ArrowLeft, Users, ArrowUpDown, Star, Activity, ChartBar as BarChart3, Target, TriangleAlert as AlertTriangle, Grid3x3 as Grid3X3 } from 'lucide-react-native';
 
 interface Formation {
@@ -36,33 +37,6 @@ export default function LiveMatchScreen() {
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
   const [activeTab, setActiveTab] = useState<'positions' | 'lineup' | 'events' | 'stats' | 'schedule'>('positions');
 
-  const convertPlayersDataToArray = (playersData: any): Player[] => {
-    if (!playersData) return [];
-    
-    if (Array.isArray(playersData)) {
-      return playersData.filter(player => 
-        player && typeof player === 'object' && player.id && player.name
-      );
-    }
-    
-    if (typeof playersData === 'object') {
-      const players: Player[] = [];
-      Object.keys(playersData).forEach(position => {
-        const playerData = playersData[position];
-        if (playerData && typeof playerData === 'object' && playerData.id && playerData.name) {
-          players.push({
-            id: playerData.id,
-            name: playerData.name,
-            number: playerData.number || 0,
-            position: playerData.position || position,
-          });
-        }
-      });
-      return players;
-    }
-    
-    return [];
-  };
 
   const initializePlayerStats = (lineup: Player[], reserves: Player[]): PlayerStats[] => {
     const allPlayers = [...lineup, ...reserves];
@@ -223,9 +197,9 @@ export default function LiveMatchScreen() {
     if (!match) return;
 
     try {
-      const dbUpdates: any = {};
+      const dbUpdates: Partial<Match> = {};
       Object.keys(updates).forEach(key => {
-        dbUpdates[key] = updates[key as keyof Match];
+        dbUpdates[key as keyof Match] = updates[key as keyof Match];
       });
 
       const { error } = await supabase
