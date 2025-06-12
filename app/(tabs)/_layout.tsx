@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Calendar, Users, Settings } from 'lucide-react-native';
+import { Chrome as Home, Calendar, Users, Settings, Bug } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { Redirect } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
@@ -67,6 +67,15 @@ export default function TabLayout() {
           title: 'Teams',
           tabBarIcon: ({ size, color }) => (
             <Users size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="debug-formations"
+        options={{
+          title: 'Debug',
+          tabBarIcon: ({ size, color }) => (
+            <Bug size={size} color={color} />
           ),
         }}
       />
