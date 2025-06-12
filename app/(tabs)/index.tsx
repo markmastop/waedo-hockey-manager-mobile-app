@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { Player } from '@/types/database';
+import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { router } from 'expo-router';
 import { 
   Calendar, 
@@ -40,9 +42,9 @@ interface RecentMatch {
   away_team: string;
   status: string;
   is_home: boolean;
-  lineup: any[];
-  reserve_players: any[];
-  substitution_schedule: any;
+  lineup: Player[];
+  reserve_players: Player[];
+  substitution_schedule: Record<string, any>;
   formation: string;
   formation_key?: string;
   formation_name?: string | null;
@@ -52,7 +54,7 @@ interface RecentMatch {
 interface Team {
   id: string;
   name: string;
-  players: any[];
+  players: Player[];
 }
 
 export default function DashboardScreen() {
@@ -143,7 +145,7 @@ export default function DashboardScreen() {
           const dateA = new Date(a.date);
           const dateB = new Date(b.date);
 
-          const getPriority = (match: any) => {
+          const getPriority = (match: RecentMatch) => {
             if (match.status === 'inProgress' || match.status === 'paused') return 1;
             if (match.status === 'upcoming' && dateA > now) return 2;
             return 3;
@@ -240,33 +242,6 @@ export default function DashboardScreen() {
     }
   };
 
-  const convertPlayersDataToArray = (playersData: any): any[] => {
-    if (!playersData) return [];
-
-    if (Array.isArray(playersData)) {
-      return playersData.filter(
-        player => player && typeof player === 'object' && player.id && player.name
-      );
-    }
-
-    if (typeof playersData === 'object') {
-      const players: any[] = [];
-      Object.keys(playersData).forEach(position => {
-        const playerData = playersData[position];
-        if (playerData && typeof playerData === 'object' && playerData.id && playerData.name) {
-          players.push({
-            id: playerData.id,
-            name: playerData.name,
-            number: playerData.number || 0,
-            position: playerData.position || position,
-          });
-        }
-      });
-      return players;
-    }
-
-    return [];
-  };
 
   const getMatchInfo = (match: RecentMatch) => {
     const lineupCount = Array.isArray(match.lineup) ? match.lineup.length : 0;
