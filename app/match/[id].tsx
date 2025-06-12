@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { Player, Substitution, MatchEvent, PlayerStats, FormationPosition } from '@/types/database';
 import { Match } from '@/types/match';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
-import { PositionCard } from '../../components/PositionCard';
+import FieldView from '@/components/FieldView';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, User, Target, Clock } from 'lucide-react-native';
 import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
@@ -524,22 +524,12 @@ export default function MatchScreen() {
                 </Text>
               </View>
             ) : (
-              <View style={styles.positionsList}>
-                {formation.positions.map((position) => {
-                  const player = getPlayerInPosition(position.id);
-                  return (
-                    <PositionCard
-                      key={position.id}
-                      position={position}
-                      player={player}
-                      stats={player ? getPlayerStats(player.id) : undefined}
-                      isSelected={selectedPosition === position.id}
-                      isSubstituting={isSubstituting}
-                      onPress={() => handlePositionPress(position)}
-                    />
-                  );
-                })}
-              </View>
+              <FieldView
+                positions={formation.positions}
+                lineup={match.lineup}
+                highlightPosition={selectedPosition}
+                onPositionPress={handlePositionPress}
+              />
             )}
 
             {/* Reserve Players */}
