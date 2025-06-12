@@ -76,15 +76,25 @@ export default function LiveMatchScreen() {
     }));
   };
 
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   const fetchFormation = async (formationKey: string) => {
     if (!formationKey) return;
     
     try {
-      const { data, error } = await supabase
-        .from('formations')
-        .select('*')
-        .eq('id', formationKey)
-        .single();
+      let query = supabase.from('formations').select('*');
+      
+      // Check if formationKey is a UUID or a string key
+      if (isValidUUID(formationKey)) {
+        query = query.eq('id', formationKey);
+      } else {
+        query = query.eq('key', formationKey);
+      }
+      
+      const { data, error } = await query.single();
 
       if (error) {
         console.error('Error fetching formation:', error);
