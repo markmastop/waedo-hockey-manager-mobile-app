@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Clock, ArrowUpDown, Users } from 'lucide-react-native';
+import { Clock, ArrowUpDown, Users, ArrowRight } from 'lucide-react-native';
 
 interface Props {
   substitutionSchedule: any;
@@ -61,7 +61,7 @@ export function SubstitutionScheduleDisplay({
       case 'completed':
         return 'Uitgevoerd';
       case 'upcoming':
-        return 'Binnenkort';
+        return 'Nu';
       case 'future':
         return 'Gepland';
       default:
@@ -69,26 +69,110 @@ export function SubstitutionScheduleDisplay({
     }
   };
 
+  const renderSubstitutionDetails = (substitutions: any) => {
+    if (!substitutions || typeof substitutions !== 'object') {
+      return null;
+    }
+
+    return Object.entries(substitutions).map(([position, playerData]: [string, any], index) => {
+      if (!playerData || typeof playerData !== 'object') {
+        return (
+          <View key={index} style={styles.substitutionItem}>
+            <Text style={styles.positionText}>{position}:</Text>
+            <Text style={styles.playerText}>Geen data</Text>
+          </View>
+        );
+      }
+
+      // Handle different data structures
+      let playerIn = null;
+      let playerOut = null;
+
+      if (playerData.playerIn && playerData.playerOut) {
+        playerIn = playerData.playerIn;
+        playerOut = playerData.playerOut;
+      } else if (playerData.in && playerData.out) {
+        playerIn = playerData.in;
+        playerOut = playerData.out;
+      } else {
+        // If it's just a player object, treat as substitution in
+        playerIn = playerData;
+      }
+
+      return (
+        <View key={index} style={styles.substitutionItem}>
+          <Text style={styles.positionText}>{position}:</Text>
+          <View style={styles.substitutionDetails}>
+            {playerOut && (
+              <>
+                <Text style={styles.playerOutText}>
+                  #{playerOut.number || '?'} {playerOut.name || 'Onbekend'}
+                </Text>
+                <ArrowRight size={12} color="#6B7280" />
+              </>
+            )}
+            {playerIn && (
+              <Text style={styles.playerInText}>
+                #{playerIn.number || '?'} {playerIn.name || 'Onbekend'}
+              </Text>
+            )}
+          </View>
+        </View>
+      );
+    });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <ArrowUpDown size={18} color="#8B5CF6" />
-        <Text style={styles.title}>Wisselschema</Text>
+        <Text style={styles.title}>Wisselschema Timeline</Text>
         <View style={styles.currentTime}>
           <Clock size={14} color="#6B7280" />
           <Text style={styles.currentTimeText}>{formatTime(currentTime)}</Text>
         </View>
       </View>
 
+      {/* Timeline Progress Bar */}
+      <View style={styles.timelineContainer}>
+        <View style={styles.timelineBar}>
+          {timeKeys.map((timeKey, index) => {
+            const scheduleTime = Number(timeKey);
+            const status = getTimeStatus(timeKey);
+            const statusColor = getStatusColor(status);
+            const progress = Math.min(currentTime / scheduleTime, 1);
+            
+            return (
+              <View key={timeKey} style={styles.timelinePoint}>
+                <View style={[styles.timelineDot, { backgroundColor: statusColor }]} />
+                <Text style={[styles.timelineLabel, { color: statusColor }]}>
+                  {formatTime(scheduleTime)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+        <View style={styles.currentTimeIndicator} style={{
+          left: `${Math.min((currentTime / (Number(timeKeys[timeKeys.length - 1]) || 1)) * 100, 100)}%`
+        }}>
+          <View style={styles.currentTimeLine} />
+          <Text style={styles.currentTimeLabel}>Nu</Text>
+        </View>
+      </View>
+
       <ScrollView style={styles.scheduleList} showsVerticalScrollIndicator={false}>
-        {timeKeys.map((timeKey) => {
+        {timeKeys.map((timeKey, index) => {
           const scheduleTime = Number(timeKey);
           const status = getTimeStatus(timeKey);
           const statusColor = getStatusColor(status);
           const substitutions = substitutionSchedule[timeKey];
           
           return (
-            <View key={timeKey} style={styles.scheduleItem}>
+            <View key={timeKey} style={[
+              styles.scheduleItem,
+              status === 'upcoming' && styles.upcomingItem,
+              status === 'completed' && styles.completedItem
+            ]}>
               <View style={styles.timeContainer}>
                 <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
                 <Text style={[styles.timeText, { color: statusColor }]}>
@@ -97,21 +181,34 @@ export function SubstitutionScheduleDisplay({
                 <Text style={[styles.statusText, { color: statusColor }]}>
                   {getStatusText(status)}
                 </Text>
+                {status === 'upcoming' && (
+                  <View style={styles.urgentBadge}>
+                    <Text style={styles.urgentText}>!</Text>
+                  </View>
+                )}
               </View>
               
               <View style={styles.substitutionsContainer}>
-                <Text style={styles.substitutionsTitle}>
-                  Geplande wissels ({Object.keys(substitutions || {}).length})
-                </Text>
+                <View style={styles.substitutionsHeader}>
+                  <Users size={14} color="#6B7280" />
+                  <Text style={styles.substitutionsTitle}>
+                    Wissels ({Object.keys(substitutions || {}).length})
+                  </Text>
+                </View>
                 
-                {/* Show the keys of the substitution schedule for debugging */}
-                <View style={styles.keysContainer}>
-                  <Text style={styles.keysTitle}>Schema keys:</Text>
-                  {Object.keys(substitutions || {}).map((key, index) => (
-                    <View key={index} style={styles.keyItem}>
-                      <Text style={styles.keyText}>• {key}</Text>
-                    </View>
-                  ))}
+                {/* Render actual substitution details */}
+                <View style={styles.substitutionsList}>
+                  {renderSubstitutionDetails(substitutions)}
+                </View>
+
+                {/* Debug: Show raw keys */}
+                <View style={styles.debugContainer}>
+                  <Text style={styles.debugTitle}>Debug - Schema keys:</Text>
+                  <View style={styles.keysContainer}>
+                    {Object.keys(substitutions || {}).map((key, keyIndex) => (
+                      <Text key={keyIndex} style={styles.keyText}>• {key}</Text>
+                    ))}
+                  </View>
                 </View>
               </View>
             </View>
@@ -155,6 +252,47 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
   },
+  timelineContainer: {
+    position: 'relative',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+  },
+  timelineBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 40,
+  },
+  timelinePoint: {
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  timelineLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+  },
+  currentTimeIndicator: {
+    position: 'absolute',
+    top: 12,
+    alignItems: 'center',
+  },
+  currentTimeLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: '#EF4444',
+  },
+  currentTimeLabel: {
+    fontSize: 8,
+    fontFamily: 'Inter-Bold',
+    color: '#EF4444',
+    marginTop: 2,
+  },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 32,
@@ -167,13 +305,23 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   scheduleList: {
-    maxHeight: 300,
+    maxHeight: 400,
   },
   scheduleItem: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F9FAFB',
+  },
+  upcomingItem: {
+    backgroundColor: '#FFFBEB',
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  completedItem: {
+    backgroundColor: '#F0FDF4',
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
   },
   timeContainer: {
     flexDirection: 'row',
@@ -196,33 +344,90 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  urgentBadge: {
+    backgroundColor: '#F59E0B',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 'auto',
+  },
+  urgentText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+  },
   substitutionsContainer: {
     marginLeft: 16,
+  },
+  substitutionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
   substitutionsTitle: {
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#374151',
-    marginBottom: 6,
   },
-  keysContainer: {
-    backgroundColor: '#F9FAFB',
+  substitutionsList: {
+    gap: 6,
+    marginBottom: 8,
+  },
+  substitutionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  positionText: {
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    color: '#8B5CF6',
+    minWidth: 60,
+  },
+  substitutionDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  playerOutText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Regular',
+    color: '#EF4444',
+    textDecorationLine: 'line-through',
+  },
+  playerInText: {
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    color: '#10B981',
+  },
+  playerText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+  },
+  debugContainer: {
+    backgroundColor: '#F3F4F6',
     padding: 8,
     borderRadius: 6,
     borderLeftWidth: 3,
-    borderLeftColor: '#8B5CF6',
+    borderLeftColor: '#6B7280',
   },
-  keysTitle: {
-    fontSize: 11,
+  debugTitle: {
+    fontSize: 10,
     fontFamily: 'Inter-SemiBold',
     color: '#6B7280',
     marginBottom: 4,
   },
-  keyItem: {
-    marginBottom: 2,
+  keysContainer: {
+    gap: 2,
   },
   keyText: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Inter-Regular',
     color: '#374151',
   },
