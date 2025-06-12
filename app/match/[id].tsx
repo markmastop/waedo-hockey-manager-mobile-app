@@ -75,7 +75,7 @@ export default function LiveMatchScreen() {
       const { data, error } = await supabase
         .from('formations')
         .select('*')
-        .order('name');
+        .order('id');
 
       if (error) throw error;
       setFormations(data || []);
