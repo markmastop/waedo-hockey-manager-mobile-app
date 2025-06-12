@@ -15,6 +15,7 @@ import { Match } from '@/types/match';
 import { LivePlayerCard } from '@/components/LivePlayerCard';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import { MatchEventLogger } from '@/components/MatchEventLogger';
+import { SubstitutionScheduleDisplay } from '@/components/SubstitutionScheduleDisplay';
 import { PositionCard } from '../../components/PositionCard';
 import { ArrowLeft, Users, ArrowUpDown, Star, Activity, ChartBar as BarChart3, Target, TriangleAlert as AlertTriangle, Grid3x3 as Grid3X3 } from 'lucide-react-native';
 
@@ -33,7 +34,7 @@ export default function LiveMatchScreen() {
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
-  const [activeTab, setActiveTab] = useState<'positions' | 'lineup' | 'events' | 'stats'>('positions');
+  const [activeTab, setActiveTab] = useState<'positions' | 'lineup' | 'events' | 'stats' | 'schedule'>('positions');
 
   const convertPlayersDataToArray = (playersData: any): Player[] => {
     if (!playersData) return [];
@@ -613,6 +614,16 @@ export default function LiveMatchScreen() {
             Opstelling
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'schedule' && styles.activeTab]}
+          onPress={() => setActiveTab('schedule')}
+        >
+          <ArrowUpDown size={16} color={activeTab === 'schedule' ? '#10B981' : '#6B7280'} />
+          <Text style={[styles.tabText, activeTab === 'schedule' && styles.activeTabText]}>
+            Schema
+          </Text>
+        </TouchableOpacity>
         
         <TouchableOpacity
           style={[styles.tab, activeTab === 'events' && styles.activeTab]}
@@ -620,7 +631,7 @@ export default function LiveMatchScreen() {
         >
           <Activity size={16} color={activeTab === 'events' ? '#10B981' : '#6B7280'} />
           <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
-            Gebeurtenissen
+            Events
           </Text>
         </TouchableOpacity>
         
@@ -630,7 +641,7 @@ export default function LiveMatchScreen() {
         >
           <BarChart3 size={16} color={activeTab === 'stats' ? '#10B981' : '#6B7280'} />
           <Text style={[styles.tabText, activeTab === 'stats' && styles.activeTabText]}>
-            Statistieken
+            Stats
           </Text>
         </TouchableOpacity>
       </View>
@@ -758,6 +769,16 @@ export default function LiveMatchScreen() {
               )}
             </View>
           </>
+        )}
+
+        {activeTab === 'schedule' && (
+          <View style={styles.section}>
+            <SubstitutionScheduleDisplay
+              substitutionSchedule={match.substitution_schedule}
+              currentTime={match.match_time}
+              currentQuarter={match.current_quarter}
+            />
+          </View>
         )}
 
         {activeTab === 'events' && (
