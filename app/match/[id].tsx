@@ -54,17 +54,17 @@ export default function MatchScreen() {
     return uuidRegex.test(str);
   };
 
-  const fetchFormation = async (formationKey: string) => {
-    if (!formationKey) return;
+  const fetchFormation = async (formationIdentifier: string) => {
+    if (!formationIdentifier) return;
     
     try {
       let query = supabase.from('formations').select('*');
       
-      // Use the key column instead of id for non-UUID formation keys
-      if (isValidUUID(formationKey)) {
-        query = query.eq('id', formationKey);
+      // Check if it's a UUID (use id field) or a key (use key field)
+      if (isValidUUID(formationIdentifier)) {
+        query = query.eq('id', formationIdentifier);
       } else {
-        query = query.eq('key', formationKey);
+        query = query.eq('key', formationIdentifier);
       }
       
       const { data, error } = await query.single();
@@ -132,9 +132,9 @@ export default function MatchScreen() {
       setMatchEvents(eventsArray);
       
       // Use formation_key first, then fall back to formation
-      const formationKey = data.formation_key || data.formation;
-      if (formationKey) {
-        await fetchFormation(formationKey);
+      const formationIdentifier = data.formation_key || data.formation;
+      if (formationIdentifier) {
+        await fetchFormation(formationIdentifier);
       }
     } catch (error) {
       console.error('Error fetching match:', error);
