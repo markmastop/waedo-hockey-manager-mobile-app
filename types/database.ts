@@ -168,7 +168,12 @@ export interface PlayerStats {
 export interface FormationPosition {
   id: string;
   name: string;
-  dutch_name: string;
+  dutch_name?: string;
+  label_translations?: {
+    nl?: string;
+    en?: string;
+    [key: string]: string | undefined;
+  };
   order: number;
   x: number;
   y: number;

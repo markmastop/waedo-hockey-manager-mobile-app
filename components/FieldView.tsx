@@ -18,7 +18,19 @@ export default function FieldView({
   fieldType = 'outdoor',
 }: Props) {
   const getPlayerInPosition = (pos: FormationPosition): Player | undefined => {
-    return lineup.find(p => p.position === pos.dutch_name);
+    // Try to match by the Dutch label from label_translations
+    const dutchLabel = getDutchPositionName(pos);
+    return lineup.find(p => p.position === dutchLabel || p.position === pos.dutch_name || p.position === pos.name);
+  };
+
+  const getDutchPositionName = (pos: FormationPosition): string => {
+    // First try to get from label_translations.nl
+    if (pos.label_translations && pos.label_translations.nl) {
+      return pos.label_translations.nl;
+    }
+    
+    // Fallback to dutch_name, then name
+    return pos.dutch_name || pos.name || 'Onbekend';
   };
 
   const getPositionColor = (pos: FormationPosition, player?: Player): string => {
@@ -31,7 +43,7 @@ export default function FieldView({
   const getAdjustedPosition = (pos: FormationPosition) => {
     let adjustedY = pos.y;
     
-    // Ensure positions stay within field bounds (5% margin from edges)
+    // Ensure positions stay within field bounds (8% margin from edges)
     if (adjustedY < 8) adjustedY = 8;
     if (adjustedY > 92) adjustedY = 92;
     
@@ -40,6 +52,14 @@ export default function FieldView({
       y: adjustedY
     };
   };
+
+  console.log('🏑 FieldView rendering with positions:', positions.map(p => ({
+    id: p.id,
+    name: p.name,
+    dutch_name: p.dutch_name,
+    label_translations: p.label_translations,
+    final_name: getDutchPositionName(p)
+  })));
 
   return (
     <View style={styles.container}>
@@ -69,6 +89,9 @@ export default function FieldView({
           const highlighted = highlightPosition === pos.id;
           const dotColor = getPositionColor(pos, player);
           const adjustedPos = getAdjustedPosition(pos);
+          const dutchName = getDutchPositionName(pos);
+          
+          console.log(`🎯 Position ${pos.id}: ${dutchName}, player: ${player?.name || 'none'}`);
           
           return (
             <TouchableOpacity
@@ -91,7 +114,7 @@ export default function FieldView({
                 </Text>
               )}
               
-              {/* Position label - use Dutch name from formation */}
+              {/* Position label - use Dutch name from label_translations */}
               <View style={[
                 styles.positionLabel,
                 highlighted && styles.highlightedLabel
@@ -100,7 +123,7 @@ export default function FieldView({
                   styles.positionText,
                   highlighted && styles.highlightedText
                 ]}>
-                  {pos.dutch_name || pos.name}
+                  {dutchName}
                 </Text>
               </View>
             </TouchableOpacity>
