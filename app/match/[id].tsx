@@ -32,6 +32,7 @@ interface CompactPlayerCardProps {
   isSelected?: boolean;
   isSubstituting?: boolean;
   onPress?: () => void;
+  formation?: Formation | null;
 }
 
 function CompactPlayerCard({
@@ -41,6 +42,7 @@ function CompactPlayerCard({
   isSelected,
   isSubstituting,
   onPress,
+  formation,
 }: CompactPlayerCardProps) {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -54,6 +56,30 @@ function CompactPlayerCard({
     if (isOnField) return styles.onFieldPlayerCard;
     return styles.benchPlayerCard;
   };
+
+  // Get the Dutch position name for this player
+  const getDutchPositionForPlayer = (player: Player): string => {
+    if (!formation) {
+      return getPositionDisplayName(player.position);
+    }
+
+    // Find the formation position that matches this player's position
+    const formationPosition = formation.positions.find(pos => {
+      const dutchName = pos.label_translations?.nl || pos.dutch_name || pos.name;
+      return player.position === dutchName || 
+             player.position === pos.dutch_name || 
+             player.position === pos.name;
+    });
+
+    if (formationPosition) {
+      return formationPosition.label_translations?.nl || formationPosition.dutch_name || formationPosition.name || player.position;
+    }
+
+    // Fallback to the utility function
+    return getPositionDisplayName(player.position);
+  };
+
+  const displayPosition = getDutchPositionForPlayer(player);
 
   return (
     <TouchableOpacity
@@ -76,7 +102,7 @@ function CompactPlayerCard({
               styles.positionText,
               { color: getPositionColor(player.position) }
             ]}>
-              {getPositionDisplayName(player.position)}
+              {displayPosition}
             </Text>
             {stats && stats.timeOnField > 0 && (
               <>
@@ -709,6 +735,7 @@ export default function MatchScreen() {
                       isSelected={false}
                       isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, false)}
+                      formation={formation}
                     />
                   ))}
                 </View>
@@ -744,6 +771,7 @@ export default function MatchScreen() {
                       isSelected={false}
                       isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, true)}
+                      formation={formation}
                     />
                   ))}
                 </View>
@@ -776,6 +804,7 @@ export default function MatchScreen() {
                       isSelected={false}
                       isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, false)}
+                      formation={formation}
                     />
                   ))}
                 </View>
