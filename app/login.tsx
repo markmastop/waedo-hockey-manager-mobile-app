@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react-native';
+import { LogIn, Eye, EyeOff, CircleAlert as AlertCircle } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
