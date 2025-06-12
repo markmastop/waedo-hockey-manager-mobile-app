@@ -31,7 +31,7 @@
       }
     },
     "android": {
-      "package": "com.markmastop.dohockeycompanion"
+      "package": "nl.waedo.dohockeycompanion"
     }
   }
 }
