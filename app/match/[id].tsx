@@ -15,18 +15,8 @@ import { Match } from '@/types/match';
 import { LivePlayerCard } from '@/components/LivePlayerCard';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import { MatchEventLogger } from '@/components/MatchEventLogger';
-import { PositionCard } from '@/components/PositionCard';
-import {
-  ArrowLeft,
-  Users,
-  ArrowUpDown,
-  Star,
-  Activity,
-  BarChart3,
-  Target,
-  AlertTriangle,
-  Grid3X3,
-} from 'lucide-react-native';
+import { PositionCard } from '../../components/PositionCard';
+import { ArrowLeft, Users, ArrowUpDown, Star, Activity, ChartBar as BarChart3, Target, TriangleAlert as AlertTriangle, Grid3x3 as Grid3X3 } from 'lucide-react-native';
 
 export default function LiveMatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

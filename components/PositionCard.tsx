@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Clock, ArrowUpDown, Target, AlertTriangle, User } from 'lucide-react-native';
+import { Clock, ArrowUpDown, Target, TriangleAlert as AlertTriangle, User } from 'lucide-react-native';
 import { Player, PlayerStats, FormationPosition } from '@/types/database';
 import { getPositionColor } from '@/lib/playerPositions';
 
