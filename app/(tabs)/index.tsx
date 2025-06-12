@@ -110,12 +110,15 @@ export default function DashboardScreen() {
         if (formationIds.length > 0) {
           const { data: formationsData } = await supabase
             .from('formations')
-            .select('id, name')
-            .in('id', formationIds);
+            .select('key, name_translations')
+            .in('key', formationIds);
 
           if (formationsData) {
             formationsMap = formationsData.reduce((acc: Record<string, string>, f) => {
-              acc[f.id] = f.name;
+              // Extract Dutch name from name_translations JSONB
+              const nameTranslations = f.name_translations as any;
+              const dutchName = nameTranslations?.nl || nameTranslations?.en || f.key;
+              acc[f.key] = dutchName;
               return acc;
             }, {});
           }
