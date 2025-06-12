@@ -133,6 +133,44 @@ export default function MatchScreen() {
     return uuidRegex.test(str);
   };
 
+  // Helper function to convert positions object to array
+  const convertPositionsToArray = (positions: any): FormationPosition[] => {
+    console.log('🔄 Converting positions to array:', positions);
+    
+    if (Array.isArray(positions)) {
+      console.log('✅ Positions already an array');
+      return positions;
+    }
+    
+    if (positions && typeof positions === 'object') {
+      console.log('🔧 Converting object to array...');
+      const positionsArray: FormationPosition[] = [];
+      
+      Object.entries(positions).forEach(([key, value]: [string, any], index) => {
+        if (value && typeof value === 'object') {
+          const position: FormationPosition = {
+            id: value.id || key,
+            name: value.name || key,
+            dutch_name: value.dutch_name || value.name || key,
+            order: value.order || index + 1,
+            x: value.x || 50,
+            y: value.y || 50,
+          };
+          positionsArray.push(position);
+          console.log(`📍 Added position: ${position.dutch_name} (${position.x}, ${position.y})`);
+        }
+      });
+      
+      // Sort by order
+      positionsArray.sort((a, b) => a.order - b.order);
+      console.log(`✅ Converted ${positionsArray.length} positions`);
+      return positionsArray;
+    }
+    
+    console.log('⚠️ No valid positions data found');
+    return [];
+  };
+
   const fetchFormation = async (formationIdentifier: string) => {
     console.log('🔍 fetchFormation called with:', formationIdentifier);
     
@@ -177,15 +215,13 @@ export default function MatchScreen() {
         console.log('- Positions is array:', Array.isArray(data.positions));
         console.log('- Positions length:', data.positions?.length || 0);
         
-        const sortedPositions = Array.isArray(data.positions) 
-          ? data.positions.sort((a: FormationPosition, b: FormationPosition) => a.order - b.order)
-          : [];
-          
-        console.log('📋 Sorted positions:', sortedPositions);
+        // Convert positions to array format
+        const positionsArray = convertPositionsToArray(data.positions);
+        console.log('📋 Final positions array:', positionsArray);
         
         const formationObject = {
           ...data,
-          positions: sortedPositions
+          positions: positionsArray
         };
         
         console.log('🎯 Final formation object:', formationObject);
