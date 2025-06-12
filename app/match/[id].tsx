@@ -140,7 +140,7 @@ export default function LiveMatchScreen() {
         quarter_times: quarterTimesArray,
         home_score: data.home_score || 0,
         away_score: data.away_score || 0,
-        formation: data.formation || '',
+        formation: data.formation_key || data.formation || '',
         substitution_schedule: data.substitution_schedule || {},
       };
       
@@ -149,8 +149,9 @@ export default function LiveMatchScreen() {
       setMatchEvents(eventsArray);
       
       // Fetch formation if formation key exists
-      if (data.formation) {
-        await fetchFormation(data.formation);
+      const formationKey = data.formation_key || data.formation;
+      if (formationKey) {
+        await fetchFormation(formationKey);
       }
     } catch (error) {
       console.error('Error fetching match:', error);
