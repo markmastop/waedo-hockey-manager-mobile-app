@@ -179,7 +179,7 @@ export default function MatchScreen() {
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
-  const [viewMode, setViewMode] = useState<'formation' | 'list' | 'timeline'>('timeline');
+  const [viewMode, setViewMode] = useState<'formation' | 'list' | 'timeline' | 'grid'>('timeline');
   
   // Substitution schedule state
   const [scheduleData, setScheduleData] = useState<SubstitutionData | null>(null);
@@ -726,14 +726,21 @@ export default function MatchScreen() {
         )}
       </View>
 
+      {/* Time Display - Always visible */}
+      <View style={styles.timeDisplayContainer}>
+        <View style={styles.timeInfo}>
+          <Clock size={16} color="#6B7280" />
+          <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+          <Text style={styles.quarterText}>Kwart {currentQuarter}</Text>
+        </View>
+        <View style={styles.scoreInfo}>
+          <Text style={styles.scoreText}>{match.home_score} - {match.away_score}</Text>
+        </View>
+      </View>
+
       {/* Time Control for Schedule */}
       {hasSubstitutionSchedule && viewMode === 'timeline' && (
         <View style={styles.timeControl}>
-          <View style={styles.timeDisplay}>
-            <Text style={styles.currentTimeText}>{formatTime(currentTime)}</Text>
-            <Text style={styles.quarterText}>Kwart {currentQuarter}</Text>
-          </View>
-          
           <View style={styles.playControls}>
             <TouchableOpacity 
               style={styles.controlButton}
@@ -830,31 +837,55 @@ export default function MatchScreen() {
         {viewMode === 'timeline' && hasSubstitutionSchedule ? (
           /* Timeline View */
           <View style={styles.timelineContainer}>
-            {/* Current Active Players */}
+            {/* Starting Lineup at 00:00 */}
             <View style={styles.activePlayersSection}>
-              <Text style={styles.sectionTitle}>Huidige Opstelling ({formatTime(currentTime)})</Text>
+              <Text style={styles.sectionTitle}>
+                {currentTime === 0 ? 'Startopstelling (00:00)' : `Huidige Opstelling (${formatTime(currentTime)})`}
+              </Text>
               <View style={styles.activePlayersList}>
-                {Object.entries(activePlayers).map(([position, player]) => (
-                  <View key={position} style={styles.activePlayerCard}>
-                    <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
-                    <View style={styles.activePlayerInfo}>
-                      <Text style={styles.activePlayerPosition}>
-                        {getPositionDisplayName(position)}
-                      </Text>
-                      <View style={styles.activePlayerDetails}>
-                        <Text style={styles.activePlayerName}>{player.name}</Text>
-                        <Text style={styles.activePlayerNumber}>#{player.number}</Text>
+                {Object.entries(activePlayers).length === 0 && currentTime === 0 ? (
+                  // Show starting lineup when no timeline events yet
+                  match.lineup.map((player) => (
+                    <View key={player.id} style={styles.activePlayerCard}>
+                      <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
+                      <View style={styles.activePlayerInfo}>
+                        <Text style={styles.activePlayerPosition}>
+                          {getPositionDisplayName(player.position)}
+                        </Text>
+                        <View style={styles.activePlayerDetails}>
+                          <Text style={styles.activePlayerName}>{player.name}</Text>
+                          <Text style={styles.activePlayerNumber}>#{player.number}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.activePlayerMeta}>
+                        <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
+                        {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
                       </View>
                     </View>
-                    <View style={styles.activePlayerMeta}>
-                      <View style={[styles.conditionDot, { 
-                        backgroundColor: player.condition >= 80 ? '#10B981' : 
-                                       player.condition >= 60 ? '#F59E0B' : '#EF4444' 
-                      }]} />
-                      {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
+                  ))
+                ) : (
+                  Object.entries(activePlayers).map(([position, player]) => (
+                    <View key={position} style={styles.activePlayerCard}>
+                      <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
+                      <View style={styles.activePlayerInfo}>
+                        <Text style={styles.activePlayerPosition}>
+                          {getPositionDisplayName(position)}
+                        </Text>
+                        <View style={styles.activePlayerDetails}>
+                          <Text style={styles.activePlayerName}>{player.name}</Text>
+                          <Text style={styles.activePlayerNumber}>#{player.number}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.activePlayerMeta}>
+                        <View style={[styles.conditionDot, { 
+                          backgroundColor: player.condition >= 80 ? '#10B981' : 
+                                         player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                        }]} />
+                        {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  ))
+                )}
               </View>
             </View>
 
@@ -1124,57 +1155,45 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     marginLeft: 8,
   },
-  scoreBoard: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    gap: 24,
-  },
-  scoreContainer: {
-    alignItems: 'center',
-  },
-  teamScore: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#6B7280',
-    marginBottom: 6,
-  },
-  score: {
-    fontSize: 36,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
-  },
-  scoreSeparator: {
-    fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: '#9CA3AF',
-  },
-  timeControl: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  timeDisplay: {
+  timeDisplayContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  currentTimeText: {
-    fontSize: 24,
+  timeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeText: {
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     color: '#111827',
   },
   quarterText: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
     color: '#6B7280',
+  },
+  scoreInfo: {
+    alignItems: 'flex-end',
+  },
+  scoreText: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+  },
+  timeControl: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   playControls: {
     flexDirection: 'row',
