@@ -39,6 +39,7 @@ interface Player {
   positions: string[];
   isGoalkeeper: boolean;
   isStandIn?: boolean;
+  position?: string; // Add position field for match lineup
 }
 
 interface SubstitutionData {
@@ -98,7 +99,7 @@ function PlayerDetailModal({ player, visible, onClose }: PlayerDetailModalProps)
         <ScrollView style={styles.modalContent}>
           <View style={styles.playerCard}>
             <View style={styles.playerHeader}>
-              <View style={[styles.playerAvatar, { backgroundColor: getPositionColor(player.positions[0]) }]}>
+              <View style={[styles.playerAvatar, { backgroundColor: getPositionColor(player.positions?.[0] || player.position || '') }]}>
                 {player.isGoalkeeper ? (
                   <Shield size={24} color="#FFFFFF" />
                 ) : (
@@ -119,15 +120,15 @@ function PlayerDetailModal({ player, visible, onClose }: PlayerDetailModalProps)
             <View style={styles.conditionContainer}>
               <Text style={styles.conditionLabel}>Conditie</Text>
               <View style={styles.conditionBar}>
-                <View style={[styles.conditionFill, { width: `${player.condition}%` }]} />
+                <View style={[styles.conditionFill, { width: `${player.condition || 100}%` }]} />
               </View>
-              <Text style={styles.conditionText}>{player.condition}%</Text>
+              <Text style={styles.conditionText}>{player.condition || 100}%</Text>
             </View>
 
             <View style={styles.positionsContainer}>
               <Text style={styles.sectionTitle}>Posities</Text>
               <View style={styles.positionsList}>
-                {player.positions.map((position, index) => (
+                {(player.positions || [player.position].filter(Boolean)).map((position, index) => (
                   <View 
                     key={index} 
                     style={[styles.positionBadge, { backgroundColor: getPositionColor(position) }]}
@@ -150,7 +151,7 @@ function PlayerDetailModal({ player, visible, onClose }: PlayerDetailModalProps)
               <View style={styles.statItem}>
                 <Users size={16} color="#8B5CF6" />
                 <Text style={styles.statLabel}>Team ID</Text>
-                <Text style={styles.statValue}>{player.teamId.slice(-8)}</Text>
+                <Text style={styles.statValue}>{player.teamId?.slice(-8) || 'N/A'}</Text>
               </View>
             </View>
           </View>
@@ -213,10 +214,19 @@ export default function SubstitutionScheduleScreen() {
         generateTimelineEvents(data.substitution_schedule);
       }
 
-      // Set starting lineup from match data
+      // Set starting lineup from match data - ensure it's properly formatted
       if (data?.lineup) {
         const lineupArray = Array.isArray(data.lineup) ? data.lineup : [];
-        setStartingLineup(lineupArray);
+        // Ensure each player has required fields
+        const formattedLineup = lineupArray.map(player => ({
+          ...player,
+          condition: player.condition || 100,
+          positions: player.positions || [player.position].filter(Boolean),
+          isGoalkeeper: player.isGoalkeeper || false,
+          teamId: player.teamId || id,
+        }));
+        console.log('📋 Setting starting lineup:', formattedLineup);
+        setStartingLineup(formattedLineup);
       }
     } catch (error) {
       console.error('Error fetching substitution schedule:', error);
@@ -297,6 +307,8 @@ export default function SubstitutionScheduleScreen() {
   };
 
   const getActivePlayersAtTime = (time: number) => {
+    console.log('🔍 Getting active players at time:', time, 'Starting lineup:', startingLineup.length);
+    
     const activePlayers: Record<string, Player> = {};
     
     // Start with the starting lineup from match data
@@ -304,6 +316,7 @@ export default function SubstitutionScheduleScreen() {
       startingLineup.forEach(player => {
         if (player.position) {
           activePlayers[player.position] = player;
+          console.log(`📍 Added starting player: ${player.name} at ${player.position}`);
         }
       });
     }
@@ -314,8 +327,10 @@ export default function SubstitutionScheduleScreen() {
     // For each position, find the most recent player assignment
     pastEvents.forEach(event => {
       activePlayers[event.position] = event.player;
+      console.log(`🔄 Substitution: ${event.player.name} at ${event.position} (time: ${event.time})`);
     });
     
+    console.log('✅ Final active players:', Object.keys(activePlayers).length);
     return activePlayers;
   };
 
@@ -395,7 +410,11 @@ export default function SubstitutionScheduleScreen() {
     );
   }
 
-  const activePlayers = getActivePlayersAtTime(currentTime);
+  // Calculate active players with proper memoization to prevent flashing
+  const activePlayers = React.useMemo(() => {
+    return getActivePlayersAtTime(currentTime);
+  }, [currentTime, startingLineup, timelineEvents]);
+
   const upcomingSubstitutions = getUpcomingSubstitutions(currentTime);
   const currentQuarter = getCurrentQuarter(currentTime);
 
@@ -564,8 +583,8 @@ export default function SubstitutionScheduleScreen() {
                       </View>
                       <View style={styles.activePlayerMeta}>
                         <View style={[styles.conditionDot, { 
-                          backgroundColor: player.condition >= 80 ? '#10B981' : 
-                                         player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                          backgroundColor: (player.condition || 100) >= 80 ? '#10B981' : 
+                                         (player.condition || 100) >= 60 ? '#F59E0B' : '#EF4444' 
                         }]} />
                         {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
                       </View>
@@ -717,10 +736,10 @@ export default function SubstitutionScheduleScreen() {
                             <View style={styles.playerMeta}>
                               <View style={styles.conditionIndicator}>
                                 <View style={[styles.conditionDot, { 
-                                  backgroundColor: player.condition >= 80 ? '#10B981' : 
-                                                 player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                                  backgroundColor: (player.condition || 100) >= 80 ? '#10B981' : 
+                                                 (player.condition || 100) >= 60 ? '#F59E0B' : '#EF4444' 
                                 }]} />
-                                <Text style={styles.conditionValue}>{player.condition}%</Text>
+                                <Text style={styles.conditionValue}>{player.condition || 100}%</Text>
                               </View>
                               {player.isGoalkeeper && (
                                 <Shield size={10} color="#EF4444" />
@@ -1461,5 +1480,21 @@ const styles = StyleSheet.create({
   },
   playerStats: {
     gap: 12,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
   },
 });
