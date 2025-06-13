@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { 
   ArrowLeft, 
   Users, 
@@ -216,14 +217,18 @@ export default function SubstitutionScheduleScreen() {
 
       // Set starting lineup from match data - ensure it's properly formatted
       if (data?.lineup) {
-        const lineupArray = Array.isArray(data.lineup) ? data.lineup : [];
-        // Ensure each player has required fields
+        const lineupArray = convertPlayersDataToArray(data.lineup);
+        // Ensure each player has required fields for the timeline
         const formattedLineup = lineupArray.map(player => ({
-          ...player,
-          condition: player.condition || 100,
-          positions: player.positions || [player.position].filter(Boolean),
-          isGoalkeeper: player.isGoalkeeper || false,
-          teamId: player.teamId || id,
+          id: player.id,
+          name: player.name,
+          number: player.number || 0,
+          position: player.position,
+          teamId: id, // Use match ID as team ID
+          condition: 100, // Default condition
+          positions: [player.position].filter(Boolean),
+          isGoalkeeper: player.position?.toLowerCase().includes('goalkeeper') || false,
+          isStandIn: false,
         }));
         console.log('📋 Setting starting lineup:', formattedLineup);
         setStartingLineup(formattedLineup);
