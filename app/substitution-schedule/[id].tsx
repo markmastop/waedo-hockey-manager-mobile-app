@@ -165,6 +165,7 @@ export default function SubstitutionScheduleScreen() {
   const [scheduleData, setScheduleData] = useState<SubstitutionData | null>(null);
   const [parsedSchedule, setParsedSchedule] = useState<ParsedSchedule>({});
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [startingLineup, setStartingLineup] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -197,9 +198,10 @@ export default function SubstitutionScheduleScreen() {
 
   const fetchSubstitutionSchedule = async () => {
     try {
+      // Fetch both substitution schedule and match lineup
       const { data, error } = await supabase
         .from('matches')
-        .select('substitution_schedule')
+        .select('substitution_schedule, lineup')
         .eq('id', id)
         .single();
 
@@ -209,6 +211,12 @@ export default function SubstitutionScheduleScreen() {
         setScheduleData(data.substitution_schedule);
         parseScheduleData(data.substitution_schedule);
         generateTimelineEvents(data.substitution_schedule);
+      }
+
+      // Set starting lineup from match data
+      if (data?.lineup) {
+        const lineupArray = Array.isArray(data.lineup) ? data.lineup : [];
+        setStartingLineup(lineupArray);
       }
     } catch (error) {
       console.error('Error fetching substitution schedule:', error);
@@ -291,7 +299,16 @@ export default function SubstitutionScheduleScreen() {
   const getActivePlayersAtTime = (time: number) => {
     const activePlayers: Record<string, Player> = {};
     
-    // Get all events up to current time
+    // Start with the starting lineup from match data
+    if (startingLineup && startingLineup.length > 0) {
+      startingLineup.forEach(player => {
+        if (player.position) {
+          activePlayers[player.position] = player;
+        }
+      });
+    }
+    
+    // Apply substitutions that have occurred up to current time
     const pastEvents = timelineEvents.filter(event => event.time <= time);
     
     // For each position, find the most recent player assignment
@@ -514,33 +531,47 @@ export default function SubstitutionScheduleScreen() {
           <View style={styles.timelineContainer}>
             {/* Current Active Players */}
             <View style={styles.activePlayersSection}>
-              <Text style={styles.sectionTitle}>Huidige Opstelling ({formatTime(currentTime)})</Text>
+              <Text style={styles.sectionTitle}>
+                {currentTime === 0 ? 'Startopstelling (00:00)' : `Huidige Opstelling (${formatTime(currentTime)})`}
+              </Text>
               <View style={styles.activePlayersList}>
-                {Object.entries(activePlayers).map(([position, player]) => (
-                  <TouchableOpacity
-                    key={position}
-                    style={styles.activePlayerCard}
-                    onPress={() => handlePlayerPress(player)}
-                  >
-                    <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(position) }]} />
-                    <View style={styles.activePlayerInfo}>
-                      <Text style={styles.activePlayerPosition}>
-                        {getPositionDisplayName(position)}
-                      </Text>
-                      <View style={styles.activePlayerDetails}>
-                        <Text style={styles.activePlayerName}>{player.name}</Text>
-                        <Text style={styles.activePlayerNumber}>#{player.number}</Text>
+                {Object.keys(activePlayers).length === 0 ? (
+                  <View style={styles.emptyActivePlayersContainer}>
+                    <Users size={32} color="#9CA3AF" />
+                    <Text style={styles.emptyActivePlayersText}>
+                      Geen actieve spelers gevonden
+                    </Text>
+                    <Text style={styles.emptyActivePlayersSubtext}>
+                      Controleer of er een startopstelling is ingesteld
+                    </Text>
+                  </View>
+                ) : (
+                  Object.entries(activePlayers).map(([position, player]) => (
+                    <TouchableOpacity
+                      key={position}
+                      style={styles.activePlayerCard}
+                      onPress={() => handlePlayerPress(player)}
+                    >
+                      <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(position) }]} />
+                      <View style={styles.activePlayerInfo}>
+                        <Text style={styles.activePlayerPosition}>
+                          {getPositionDisplayName(position)}
+                        </Text>
+                        <View style={styles.activePlayerDetails}>
+                          <Text style={styles.activePlayerName}>{player.name}</Text>
+                          <Text style={styles.activePlayerNumber}>#{player.number}</Text>
+                        </View>
                       </View>
-                    </View>
-                    <View style={styles.activePlayerMeta}>
-                      <View style={[styles.conditionDot, { 
-                        backgroundColor: player.condition >= 80 ? '#10B981' : 
-                                       player.condition >= 60 ? '#F59E0B' : '#EF4444' 
-                      }]} />
-                      {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                      <View style={styles.activePlayerMeta}>
+                        <View style={[styles.conditionDot, { 
+                          backgroundColor: player.condition >= 80 ? '#10B981' : 
+                                         player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                        }]} />
+                        {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
               </View>
             </View>
 
@@ -966,6 +997,28 @@ const styles = StyleSheet.create({
   },
   activePlayersList: {
     gap: 8,
+  },
+  emptyActivePlayersContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  emptyActivePlayersText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  emptyActivePlayersSubtext: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    fontFamily: 'Inter-Regular',
   },
   activePlayerCard: {
     flexDirection: 'row',
