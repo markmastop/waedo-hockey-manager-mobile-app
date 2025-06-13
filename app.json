@@ -32,6 +32,13 @@
     },
     "android": {
       "package": "nl.waedo.dohockeycompanion"
+    },
+    "owner": "markmastop",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/039b5397-a554-42ed-8a92-861dd9aa42a4"
     }
   }
 }
