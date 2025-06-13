@@ -12,6 +12,7 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 import { LogIn, Eye, EyeOff, CircleAlert as AlertCircle } from 'lucide-react-native';
@@ -171,32 +172,33 @@ export default function LoginScreen() {
             </View>
 
             {/* Features Section */}
-            <View style={styles.featuresSection}>
-              <Text style={styles.featuresTitle}>Wat je krijgt met doHockey:</Text>
-              <View style={styles.featuresList}>
-                <View style={styles.featureItem}>
-                  <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Compleet team management</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Slimme formatie builder</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Live wedstrijd coaching tools</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Speler prestatie tracking</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>Geautomatiseerde wissel planning</Text>
+              <View style={styles.featuresSection}>
+                <Text style={styles.featuresTitle}>Wat je krijgt met doHockey:</Text>
+                <View style={styles.featuresList}>
+                  <View style={styles.featureItem}>
+                    <View style={styles.featureBullet} />
+                    <Text style={styles.featureText}>Compleet team management</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <View style={styles.featureBullet} />
+                    <Text style={styles.featureText}>Slimme formatie builder</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <View style={styles.featureBullet} />
+                    <Text style={styles.featureText}>Live wedstrijd coaching tools</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <View style={styles.featureBullet} />
+                    <Text style={styles.featureText}>Speler prestatie tracking</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <View style={styles.featureBullet} />
+                    <Text style={styles.featureText}>Geautomatiseerde wissel planning</Text>
+                  </View>
                 </View>
               </View>
+              <Text style={styles.versionText}>v{Constants.expoConfig?.version}</Text>
             </View>
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -391,5 +393,12 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontFamily: 'Inter-Regular',
     lineHeight: 18,
+  },
+  versionText: {
+    marginTop: 24,
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontFamily: 'Inter-Regular',
+    textAlign: 'center',
   },
 });
