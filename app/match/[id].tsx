@@ -739,20 +739,6 @@ export default function MatchScreen() {
         </View>
       </View>
 
-      {/* Match Timer */}
-      <LiveMatchTimer
-        matchTime={match.match_time}
-        currentQuarter={match.current_quarter}
-        quarterTimes={match.quarter_times}
-        status={match.status}
-        onStart={startMatch}
-        onPause={pauseMatch}
-        onResume={resumeMatch}
-        onEnd={endMatch}
-        onNextQuarter={() => {}}
-        onTimeUpdate={handleTimeUpdate}
-      />
-
       {/* Time Control for Schedule */}
       {hasSubstitutionSchedule && viewMode === 'timeline' && (
         <View style={styles.timeControl}>
