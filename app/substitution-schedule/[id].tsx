@@ -311,7 +311,7 @@ export default function SubstitutionScheduleScreen() {
     
     const activePlayers: Record<string, Player> = {};
     
-    // Start with the starting lineup from match data
+    // ALWAYS start with the starting lineup from match data - this is the foundation
     if (startingLineup && startingLineup.length > 0) {
       startingLineup.forEach(player => {
         if (player.position) {
@@ -321,14 +321,18 @@ export default function SubstitutionScheduleScreen() {
       });
     }
     
-    // Apply substitutions that have occurred up to current time
-    const pastEvents = timelineEvents.filter(event => event.time <= time);
-    
-    // For each position, find the most recent player assignment
-    pastEvents.forEach(event => {
-      activePlayers[event.position] = event.player;
-      console.log(`🔄 Substitution: ${event.player.name} at ${event.position} (time: ${event.time})`);
-    });
+    // Only apply substitutions that have occurred up to current time (and only if time > 0)
+    if (time > 0) {
+      const pastEvents = timelineEvents.filter(event => 
+        event.time <= time && event.isSubstitution
+      );
+      
+      // Apply each substitution in chronological order
+      pastEvents.forEach(event => {
+        activePlayers[event.position] = event.player;
+        console.log(`🔄 Substitution: ${event.player.name} at ${event.position} (time: ${event.time})`);
+      });
+    }
     
     console.log('✅ Final active players:', Object.keys(activePlayers).length);
     return activePlayers;
@@ -411,12 +415,17 @@ export default function SubstitutionScheduleScreen() {
   }
 
   // Calculate active players with proper memoization to prevent flashing
+  // This ensures the starting lineup is ALWAYS shown at time 0 and substitutions are applied correctly
   const activePlayers = React.useMemo(() => {
     return getActivePlayersAtTime(currentTime);
   }, [currentTime, startingLineup, timelineEvents]);
 
   const upcomingSubstitutions = getUpcomingSubstitutions(currentTime);
   const currentQuarter = getCurrentQuarter(currentTime);
+
+  // Calculate timeline progress
+  const maxTime = timelineEvents.length > 0 ? Math.max(...timelineEvents.map(e => e.time)) : 3600; // Default to 60 minutes
+  const timelineProgress = Math.min((currentTime / maxTime) * 100, 100);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -475,7 +484,7 @@ export default function SubstitutionScheduleScreen() {
             <View 
               style={[
                 styles.timeProgress, 
-                { width: `${(currentTime / (60 * 60)) * 100}%` }
+                { width: `${timelineProgress}%` }
               ]} 
             />
             {/* Timeline markers for substitutions */}
@@ -484,7 +493,7 @@ export default function SubstitutionScheduleScreen() {
                 key={index}
                 style={[
                   styles.timeMarker,
-                  { left: `${(event.time / (60 * 60)) * 100}%` },
+                  { left: `${(event.time / maxTime) * 100}%` },
                   event.time <= currentTime && styles.passedMarker
                 ]}
               />
@@ -931,22 +940,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-  statItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: '#6B7280',
-    fontFamily: 'Inter-Medium',
-  },
-  statValue: {
-    fontSize: 12,
-    color: '#111827',
-    fontFamily: 'Inter-Bold',
-  },
   controls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1049,6 +1042,11 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     gap: 12,
   },
+  positionIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
   activePlayerInfo: {
     flex: 1,
   },
@@ -1077,6 +1075,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  conditionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   upcomingSection: {
     marginBottom: 24,
@@ -1204,6 +1207,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  playerNumber: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playerNumberText: {
+    fontSize: 8,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+  },
   timelineEventPlayerName: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
@@ -1257,12 +1272,6 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#F3F4F6',
   },
-  positionIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
   positionName: {
     fontSize: 10,
     fontFamily: 'Inter-SemiBold',
@@ -1286,18 +1295,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  playerNumber: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playerNumberText: {
-    fontSize: 8,
-    fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
-  },
   playerDetails: {
     flex: 1,
     minWidth: 0,
@@ -1317,11 +1314,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-  },
-  conditionDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
   },
   conditionValue: {
     fontSize: 7,
