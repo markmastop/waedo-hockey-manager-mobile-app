@@ -15,7 +15,7 @@ import { Match } from '@/types/match';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import FieldView from '@/components/FieldView';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
-import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, User, Target, Clock } from 'lucide-react-native';
+import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, User, Target, Clock, Calendar } from 'lucide-react-native';
 import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
 
 interface Formation {
@@ -550,6 +550,10 @@ export default function MatchScreen() {
     return nameTranslations.nl || nameTranslations.en || formation.key || '';
   };
 
+  // Check if substitution schedule exists
+  const hasSubstitutionSchedule = match?.substitution_schedule && 
+    Object.keys(match.substitution_schedule).length > 0;
+
   // Add debug logging for render conditions
   console.log('🎨 Render conditions check:');
   console.log('- loading:', loading);
@@ -598,6 +602,16 @@ export default function MatchScreen() {
           </Text>
           <Text style={styles.teamName}>{match.teams.name}</Text>
         </View>
+        
+        {/* Add Substitution Schedule Button */}
+        {hasSubstitutionSchedule && (
+          <TouchableOpacity
+            style={styles.scheduleButton}
+            onPress={() => router.push(`/substitution-schedule/${match.id}`)}
+          >
+            <Calendar size={18} color="#FF6B35" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Score Board */}
@@ -626,6 +640,24 @@ export default function MatchScreen() {
         onNextQuarter={() => {}}
         onTimeUpdate={handleTimeUpdate}
       />
+
+      {/* Substitution Schedule Quick Access */}
+      {hasSubstitutionSchedule && (
+        <View style={styles.quickAccessBanner}>
+          <View style={styles.quickAccessContent}>
+            <Calendar size={16} color="#FF6B35" />
+            <Text style={styles.quickAccessText}>
+              Wisselschema beschikbaar voor deze wedstrijd
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.quickAccessButton}
+            onPress={() => router.push(`/substitution-schedule/${match.id}`)}
+          >
+            <Text style={styles.quickAccessButtonText}>Bekijk Schema</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Substitution Banner */}
       {isSubstituting && (
@@ -848,6 +880,12 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontFamily: 'Inter-Regular',
   },
+  scheduleButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
+    marginLeft: 8,
+  },
   scoreBoard: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -876,6 +914,38 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'Inter-Bold',
     color: '#9CA3AF',
+  },
+  quickAccessBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FECACA',
+  },
+  quickAccessContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  quickAccessText: {
+    fontSize: 13,
+    color: '#DC2626',
+    fontFamily: 'Inter-Medium',
+  },
+  quickAccessButton: {
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  quickAccessButtonText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
   },
   loadingContainer: {
     flex: 1,
