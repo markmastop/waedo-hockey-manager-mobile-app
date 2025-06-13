@@ -726,19 +726,6 @@ export default function MatchScreen() {
         )}
       </View>
 
-      {/* Score Board */}
-      <View style={styles.scoreBoard}>
-        <View style={styles.scoreContainer}>
-          <Text style={styles.teamScore}>{match.home_team}</Text>
-          <Text style={styles.score}>{match.home_score}</Text>
-        </View>
-        <Text style={styles.scoreSeparator}>-</Text>
-        <View style={styles.scoreContainer}>
-          <Text style={styles.score}>{match.away_score}</Text>
-          <Text style={styles.teamScore}>{match.away_team}</Text>
-        </View>
-      </View>
-
       {/* Time Control for Schedule */}
       {hasSubstitutionSchedule && viewMode === 'timeline' && (
         <View style={styles.timeControl}>
