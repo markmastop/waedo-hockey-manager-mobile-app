@@ -200,6 +200,8 @@ export default function SubstitutionScheduleScreen() {
 
   const fetchSubstitutionSchedule = async () => {
     try {
+      console.log('🔍 Fetching substitution schedule and match data for:', id);
+      
       // Fetch both substitution schedule and match lineup
       const { data, error } = await supabase
         .from('matches')
@@ -209,7 +211,10 @@ export default function SubstitutionScheduleScreen() {
 
       if (error) throw error;
 
+      console.log('📊 Raw data received:', data);
+
       if (data?.substitution_schedule) {
+        console.log('📋 Processing substitution schedule...');
         setScheduleData(data.substitution_schedule);
         parseScheduleData(data.substitution_schedule);
         generateTimelineEvents(data.substitution_schedule);
@@ -217,7 +222,10 @@ export default function SubstitutionScheduleScreen() {
 
       // Set starting lineup from match data - ensure it's properly formatted
       if (data?.lineup) {
+        console.log('👥 Processing starting lineup:', data.lineup);
         const lineupArray = convertPlayersDataToArray(data.lineup);
+        console.log('🔄 Converted lineup array:', lineupArray);
+        
         // Ensure each player has required fields for the timeline
         const formattedLineup = lineupArray.map(player => ({
           id: player.id,
@@ -230,11 +238,16 @@ export default function SubstitutionScheduleScreen() {
           isGoalkeeper: player.position?.toLowerCase().includes('goalkeeper') || false,
           isStandIn: false,
         }));
-        console.log('📋 Setting starting lineup:', formattedLineup);
+        
+        console.log('✅ Final formatted starting lineup:', formattedLineup);
         setStartingLineup(formattedLineup);
+      } else {
+        console.log('⚠️ No lineup data found in match');
+        setStartingLineup([]);
       }
     } catch (error) {
       console.error('Error fetching substitution schedule:', error);
+      setStartingLineup([]);
     } finally {
       setLoading(false);
     }
@@ -298,6 +311,7 @@ export default function SubstitutionScheduleScreen() {
 
     // Sort events by time
     events.sort((a, b) => a.time - b.time);
+    console.log('📅 Generated timeline events:', events);
     setTimelineEvents(events);
   };
 
@@ -312,7 +326,9 @@ export default function SubstitutionScheduleScreen() {
   };
 
   const getActivePlayersAtTime = (time: number) => {
-    console.log('🔍 Getting active players at time:', time, 'Starting lineup:', startingLineup.length);
+    console.log('🔍 Getting active players at time:', formatTime(time));
+    console.log('📋 Starting lineup available:', startingLineup.length, 'players');
+    console.log('📅 Timeline events available:', timelineEvents.length, 'events');
     
     const activePlayers: Record<string, Player> = {};
     
@@ -324,6 +340,9 @@ export default function SubstitutionScheduleScreen() {
           console.log(`📍 Added starting player: ${player.name} at ${player.position}`);
         }
       });
+      console.log('✅ Starting lineup loaded:', Object.keys(activePlayers).length, 'positions filled');
+    } else {
+      console.log('⚠️ No starting lineup available');
     }
     
     // Only apply substitutions that have occurred up to current time (and only if time > 0)
@@ -332,14 +351,16 @@ export default function SubstitutionScheduleScreen() {
         event.time <= time && event.isSubstitution
       );
       
+      console.log(`🔄 Applying ${pastEvents.length} substitutions up to time ${formatTime(time)}`);
+      
       // Apply each substitution in chronological order
       pastEvents.forEach(event => {
         activePlayers[event.position] = event.player;
-        console.log(`🔄 Substitution: ${event.player.name} at ${event.position} (time: ${event.time})`);
+        console.log(`🔄 Substitution: ${event.player.name} at ${event.position} (time: ${formatTime(event.time)})`);
       });
     }
     
-    console.log('✅ Final active players:', Object.keys(activePlayers).length);
+    console.log('✅ Final active players:', Object.keys(activePlayers).length, 'positions');
     return activePlayers;
   };
 
@@ -405,14 +426,14 @@ export default function SubstitutionScheduleScreen() {
     );
   }
 
-  if (!scheduleData) {
+  if (!scheduleData && startingLineup.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
           <Users size={48} color="#9CA3AF" />
           <Text style={styles.emptyTitle}>Geen wisselschema gevonden</Text>
           <Text style={styles.emptySubtitle}>
-            Er is geen wisselschema beschikbaar voor deze wedstrijd
+            Er is geen wisselschema of startopstelling beschikbaar voor deze wedstrijd
           </Text>
         </View>
       </SafeAreaView>
@@ -422,7 +443,9 @@ export default function SubstitutionScheduleScreen() {
   // Calculate active players with proper memoization to prevent flashing
   // This ensures the starting lineup is ALWAYS shown at time 0 and substitutions are applied correctly
   const activePlayers = React.useMemo(() => {
-    return getActivePlayersAtTime(currentTime);
+    const result = getActivePlayersAtTime(currentTime);
+    console.log('🎯 Memoized active players calculation complete:', Object.keys(result).length, 'players');
+    return result;
   }, [currentTime, startingLineup, timelineEvents]);
 
   const upcomingSubstitutions = getUpcomingSubstitutions(currentTime);
@@ -442,7 +465,7 @@ export default function SubstitutionScheduleScreen() {
         <View style={styles.headerInfo}>
           <Text style={styles.title}>Wisselschema</Text>
           <Text style={styles.subtitle}>
-            {scheduleData.formation_key} • {scheduleData.quarters} kwarten
+            {scheduleData?.formation_key || 'Startopstelling'} • {scheduleData?.quarters || 4} kwarten
           </Text>
         </View>
         <TouchableOpacity style={styles.exportButton}>
