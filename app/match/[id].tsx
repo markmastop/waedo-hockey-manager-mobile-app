@@ -7,6 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -15,14 +16,56 @@ import { Match } from '@/types/match';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import FieldView from '@/components/FieldView';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
-import { ArrowLeft, Users, ArrowUpDown, Star, Grid3x3 as Grid3X3, User, Target, Clock, Calendar } from 'lucide-react-native';
+import { 
+  ArrowLeft, 
+  Users, 
+  ArrowUpDown, 
+  Star, 
+  Grid3x3 as Grid3X3, 
+  User, 
+  Target, 
+  Clock, 
+  Calendar,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Shield
+} from 'lucide-react-native';
 import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 interface Formation {
   id: string;
   key: string;
   name_translations: Record<string, string>;
   positions: FormationPosition[];
+}
+
+interface SubstitutionData {
+  formation_key: string;
+  quarters: number;
+  substitutions_per_quarter: number;
+  subs_per_quarter: number;
+  time: number;
+  [key: string]: any;
+}
+
+interface ParsedSchedule {
+  [position: string]: {
+    [quarter: number]: Player[];
+  };
+}
+
+interface TimelineEvent {
+  time: number;
+  quarter: number;
+  position: string;
+  slot: number;
+  player: Player;
+  isSubstitution: boolean;
 }
 
 interface CompactPlayerCardProps {
@@ -57,13 +100,11 @@ function CompactPlayerCard({
     return styles.benchPlayerCard;
   };
 
-  // Get the Dutch position name for this player
   const getDutchPositionForPlayer = (player: Player): string => {
     if (!formation) {
       return getPositionDisplayName(player.position);
     }
 
-    // Find the formation position that matches this player's position
     const formationPosition = formation.positions.find(pos => {
       const dutchName = pos.label_translations?.nl || pos.dutch_name || pos.name;
       return player.position === dutchName || 
@@ -75,7 +116,6 @@ function CompactPlayerCard({
       return formationPosition.label_translations?.nl || formationPosition.dutch_name || formationPosition.name || player.position;
     }
 
-    // Fallback to the utility function
     return getPositionDisplayName(player.position);
   };
 
@@ -139,7 +179,14 @@ export default function MatchScreen() {
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
-  const [viewMode, setViewMode] = useState<'formation' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'formation' | 'list' | 'timeline'>('timeline');
+  
+  // Substitution schedule state
+  const [scheduleData, setScheduleData] = useState<SubstitutionData | null>(null);
+  const [parsedSchedule, setParsedSchedule] = useState<ParsedSchedule>({});
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const initializePlayerStats = (lineup: Player[], reserves: Player[]): PlayerStats[] => {
     const allPlayers = [...lineup, ...reserves];
@@ -159,17 +206,12 @@ export default function MatchScreen() {
     return uuidRegex.test(str);
   };
 
-  // Helper function to convert positions object to array
   const convertPositionsToArray = (positions: any): FormationPosition[] => {
-    console.log('🔄 Converting positions to array:', positions);
-    
     if (Array.isArray(positions)) {
-      console.log('✅ Positions already an array');
       return positions;
     }
     
     if (positions && typeof positions === 'object') {
-      console.log('🔧 Converting object to array...');
       const positionsArray: FormationPosition[] = [];
       
       Object.entries(positions).forEach(([key, value]: [string, any], index) => {
@@ -184,87 +226,109 @@ export default function MatchScreen() {
             y: value.y || 50,
           };
           positionsArray.push(position);
-          console.log(`📍 Added position: ${position.name} (Dutch: ${position.label_translations?.nl || position.dutch_name}) (${position.x}, ${position.y})`);
         }
       });
       
-      // Sort by order
       positionsArray.sort((a, b) => a.order - b.order);
-      console.log(`✅ Converted ${positionsArray.length} positions`);
       return positionsArray;
     }
     
-    console.log('⚠️ No valid positions data found');
     return [];
   };
 
   const fetchFormation = async (formationIdentifier: string) => {
-    console.log('🔍 fetchFormation called with:', formationIdentifier);
-    
-    if (!formationIdentifier) {
-      console.log('❌ No formationIdentifier provided');
-      return;
-    }
+    if (!formationIdentifier) return;
     
     try {
       let query = supabase.from('formations').select('*');
       
       if (isValidUUID(formationIdentifier)) {
-        console.log('📋 Using UUID query for formation ID:', formationIdentifier);
         query = query.eq('id', formationIdentifier);
       } else {
-        console.log('🔑 Using key query for formation key:', formationIdentifier);
         query = query.eq('key', formationIdentifier);
       }
       
-      console.log('🚀 Executing Supabase query...');
       const { data, error } = await query.single();
 
       if (error) {
-        console.error('❌ Error fetching formation:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
+        console.error('Error fetching formation:', error);
         return;
       }
       
-      console.log('✅ Formation data received:', data);
-      
       if (data) {
-        console.log('📊 Processing formation data...');
-        console.log('- Formation ID:', data.id);
-        console.log('- Formation key:', data.key);
-        console.log('- Name translations:', data.name_translations);
-        console.log('- Raw positions:', data.positions);
-        console.log('- Positions is array:', Array.isArray(data.positions));
-        console.log('- Positions length:', data.positions?.length || 0);
-        
-        // Convert positions to array format
         const positionsArray = convertPositionsToArray(data.positions);
-        console.log('📋 Final positions array:', positionsArray);
-        
         const formationObject = {
           ...data,
           positions: positionsArray
         };
         
-        console.log('🎯 Final formation object:', formationObject);
         setFormation(formationObject);
-        console.log('✅ Formation state updated');
-      } else {
-        console.log('⚠️ No formation data returned from query');
       }
     } catch (error) {
-      console.error('💥 Exception in fetchFormation:', error);
+      console.error('Exception in fetchFormation:', error);
     }
   };
 
-  const fetchMatch = async () => {
-    console.log('🏒 fetchMatch called for match ID:', id);
+  const parseScheduleData = (data: SubstitutionData) => {
+    const parsed: ParsedSchedule = {};
     
+    Object.entries(data).forEach(([key, value]) => {
+      if (key.includes('-') && typeof value === 'object' && value?.id) {
+        const parts = key.split('-');
+        if (parts.length >= 3) {
+          const position = parts[0];
+          const quarter = parseInt(parts[1]);
+          const slot = parseInt(parts[2]);
+
+          if (!parsed[position]) {
+            parsed[position] = {};
+          }
+          if (!parsed[position][quarter]) {
+            parsed[position][quarter] = [];
+          }
+          
+          parsed[position][quarter][slot] = value as Player;
+        }
+      }
+    });
+
+    setParsedSchedule(parsed);
+  };
+
+  const generateTimelineEvents = (data: SubstitutionData) => {
+    const events: TimelineEvent[] = [];
+    const quarterDuration = 15 * 60;
+    const subsPerQuarter = data.subs_per_quarter || data.substitutions_per_quarter || 2;
+    
+    Object.entries(data).forEach(([key, value]) => {
+      if (key.includes('-') && typeof value === 'object' && value?.id) {
+        const parts = key.split('-');
+        if (parts.length >= 3) {
+          const position = parts[0];
+          const quarter = parseInt(parts[1]);
+          const slot = parseInt(parts[2]);
+          
+          const quarterStartTime = (quarter - 1) * quarterDuration;
+          const slotInterval = quarterDuration / (subsPerQuarter + 1);
+          const eventTime = quarterStartTime + (slot + 1) * slotInterval;
+          
+          events.push({
+            time: eventTime,
+            quarter,
+            position,
+            slot,
+            player: value as Player,
+            isSubstitution: slot > 0,
+          });
+        }
+      }
+    });
+
+    events.sort((a, b) => a.time - b.time);
+    setTimelineEvents(events);
+  };
+
+  const fetchMatch = async () => {
     try {
       const { data, error } = await supabase
         .from('matches')
@@ -278,10 +342,6 @@ export default function MatchScreen() {
         .single();
 
       if (error) throw error;
-      
-      console.log('📊 Match data received:', data);
-      console.log('- Formation key:', data.formation_key);
-      console.log('- Formation (legacy):', data.formation);
       
       const lineupArray = convertPlayersDataToArray(data.lineup);
       const reservePlayersArray = convertPlayersDataToArray(data.reserve_players);
@@ -305,49 +365,52 @@ export default function MatchScreen() {
         substitution_schedule: data.substitution_schedule || {},
       };
       
-      console.log('🎯 Processed match data:', matchData);
       setMatch(matchData);
       setPlayerStats(statsArray);
       setMatchEvents(eventsArray);
+      setCurrentTime(data.match_time || 0);
+      
+      // Handle substitution schedule
+      if (data.substitution_schedule) {
+        setScheduleData(data.substitution_schedule);
+        parseScheduleData(data.substitution_schedule);
+        generateTimelineEvents(data.substitution_schedule);
+      }
       
       const formationIdentifier = data.formation_key || data.formation;
-      console.log('🔍 Formation identifier to fetch:', formationIdentifier);
-      
       if (formationIdentifier) {
-        console.log('📋 Calling fetchFormation with:', formationIdentifier);
         await fetchFormation(formationIdentifier);
-      } else {
-        console.log('⚠️ No formation identifier found in match data');
       }
     } catch (error) {
-      console.error('💥 Error fetching match:', error);
+      console.error('Error fetching match:', error);
       Alert.alert('Fout', 'Kon wedstrijdgegevens niet laden');
     } finally {
       setLoading(false);
-      console.log('✅ fetchMatch completed, loading set to false');
     }
   };
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered with match ID:', id);
     if (id) {
       fetchMatch();
     }
   }, [id]);
 
-  // Add debug logging for formation state changes
   useEffect(() => {
-    console.log('🎯 Formation state changed:', formation);
-    if (formation) {
-      console.log('- Formation has positions:', formation.positions?.length || 0);
-      console.log('- Formation positions array:', formation.positions);
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentTime(prev => {
+          const newTime = prev + 1;
+          if (newTime >= 60 * 60) {
+            setIsPlaying(false);
+            return prev;
+          }
+          return newTime;
+        });
+      }, 100);
     }
-  }, [formation]);
-
-  // Add debug logging for viewMode changes
-  useEffect(() => {
-    console.log('👁️ View mode changed to:', viewMode);
-  }, [viewMode]);
+    return () => clearInterval(interval);
+  }, [isPlaying]);
 
   const updateMatch = async (updates: Partial<Match>) => {
     if (!match) return;
@@ -424,12 +487,10 @@ export default function MatchScreen() {
   };
 
   const getDutchPositionName = (pos: FormationPosition): string => {
-    // First try to get from label_translations.nl
     if (pos.label_translations && pos.label_translations.nl) {
       return pos.label_translations.nl;
     }
     
-    // Fallback to dutch_name, then name
     return pos.dutch_name || pos.name || 'Onbekend';
   };
 
@@ -511,20 +572,16 @@ export default function MatchScreen() {
     
     const dutchName = getDutchPositionName(position);
     
-    // Try multiple matching strategies to find the player
     let foundPlayer = match.lineup.find(player => player.position === dutchName);
     
     if (!foundPlayer) {
-      // Fallback: try dutch_name
       foundPlayer = match.lineup.find(player => player.position === position.dutch_name);
     }
     
     if (!foundPlayer) {
-      // Fallback: try name
       foundPlayer = match.lineup.find(player => player.position === position.name);
     }
     
-    console.log(`🔍 Looking for player in position ${positionId} (${dutchName}): ${foundPlayer?.name || 'not found'}`);
     return foundPlayer || null;
   };
 
@@ -550,20 +607,75 @@ export default function MatchScreen() {
     return nameTranslations.nl || nameTranslations.en || formation.key || '';
   };
 
-  // Check if substitution schedule exists
   const hasSubstitutionSchedule = match?.substitution_schedule && 
     Object.keys(match.substitution_schedule).length > 0;
 
-  // Add debug logging for render conditions
-  console.log('🎨 Render conditions check:');
-  console.log('- loading:', loading);
-  console.log('- match exists:', !!match);
-  console.log('- formation exists:', !!formation);
-  console.log('- formation positions length:', formation?.positions?.length || 0);
-  console.log('- viewMode:', viewMode);
+  // Timeline functions
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getCurrentQuarter = (time: number) => {
+    return Math.floor(time / (15 * 60)) + 1;
+  };
+
+  const getActivePlayersAtTime = (time: number) => {
+    const activePlayers: Record<string, Player> = {};
+    
+    const pastEvents = timelineEvents.filter(event => event.time <= time);
+    
+    pastEvents.forEach(event => {
+      activePlayers[event.position] = event.player;
+    });
+    
+    return activePlayers;
+  };
+
+  const getUpcomingSubstitutions = (time: number, lookAhead: number = 120) => {
+    return timelineEvents.filter(event => 
+      event.time > time && 
+      event.time <= time + lookAhead && 
+      event.isSubstitution
+    );
+  };
+
+  const getPositions = () => {
+    return Object.keys(parsedSchedule).sort();
+  };
+
+  const getQuarters = () => {
+    return scheduleData?.quarters ? Array.from({ length: scheduleData.quarters }, (_, i) => i + 1) : [1, 2, 3, 4];
+  };
+
+  const getPositionDisplayName = (position: string) => {
+    const positionMap: Record<string, string> = {
+      'striker': 'Aanvaller',
+      'sweeper': 'Libero',
+      'lastLine': 'Laatste Lijn',
+      'leftBack': 'Linksback',
+      'rightBack': 'Rechtsback',
+      'leftMidfield': 'Linksmidden',
+      'rightMidfield': 'Rechtsmidden',
+      'centerMidfield': 'Middenmidden',
+      'leftForward': 'Linksvoorwaarts',
+      'rightForward': 'Rechtsvoorwaarts',
+      'goalkeeper': 'Keeper',
+    };
+    return positionMap[position] || position;
+  };
+
+  const getPositionColorForSchedule = (position: string) => {
+    const pos = position.toLowerCase();
+    if (pos.includes('goalkeeper')) return '#EF4444';
+    if (pos.includes('back') || pos.includes('sweeper') || pos.includes('lastline')) return '#3B82F6';
+    if (pos.includes('midfield')) return '#8B5CF6';
+    if (pos.includes('forward') || pos.includes('striker')) return '#F59E0B';
+    return '#6B7280';
+  };
 
   if (loading) {
-    console.log('⏳ Rendering loading state');
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -574,7 +686,6 @@ export default function MatchScreen() {
   }
 
   if (!match) {
-    console.log('❌ Rendering no match found state');
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -584,7 +695,9 @@ export default function MatchScreen() {
     );
   }
 
-  console.log('✅ Rendering main match screen');
+  const activePlayers = getActivePlayersAtTime(currentTime);
+  const upcomingSubstitutions = getUpcomingSubstitutions(currentTime);
+  const currentQuarter = getCurrentQuarter(currentTime);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -603,7 +716,6 @@ export default function MatchScreen() {
           <Text style={styles.teamName}>{match.teams.name}</Text>
         </View>
         
-        {/* Add Substitution Schedule Button */}
         {hasSubstitutionSchedule && (
           <TouchableOpacity
             style={styles.scheduleButton}
@@ -641,21 +753,40 @@ export default function MatchScreen() {
         onTimeUpdate={handleTimeUpdate}
       />
 
-      {/* Substitution Schedule Quick Access */}
-      {hasSubstitutionSchedule && (
-        <View style={styles.quickAccessBanner}>
-          <View style={styles.quickAccessContent}>
-            <Calendar size={16} color="#FF6B35" />
-            <Text style={styles.quickAccessText}>
-              Wisselschema beschikbaar voor deze wedstrijd
-            </Text>
+      {/* Time Control for Schedule */}
+      {hasSubstitutionSchedule && viewMode === 'timeline' && (
+        <View style={styles.timeControl}>
+          <View style={styles.timeDisplay}>
+            <Text style={styles.currentTimeText}>{formatTime(currentTime)}</Text>
+            <Text style={styles.quarterText}>Kwart {currentQuarter}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.quickAccessButton}
-            onPress={() => router.push(`/substitution-schedule/${match.id}`)}
-          >
-            <Text style={styles.quickAccessButtonText}>Bekijk Schema</Text>
-          </TouchableOpacity>
+          
+          <View style={styles.playControls}>
+            <TouchableOpacity 
+              style={styles.controlButton}
+              onPress={() => setCurrentTime(Math.max(0, currentTime - 60))}
+            >
+              <ChevronLeft size={16} color="#6B7280" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.controlButton, styles.playButton]}
+              onPress={() => setIsPlaying(!isPlaying)}
+            >
+              {isPlaying ? (
+                <Pause size={16} color="#FFFFFF" />
+              ) : (
+                <Play size={16} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.controlButton}
+              onPress={() => setCurrentTime(Math.min(60 * 60, currentTime + 60))}
+            >
+              <ChevronRight size={16} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -677,73 +808,141 @@ export default function MatchScreen() {
 
       {/* View Mode Toggle */}
       <View style={styles.viewModeContainer}>
+        {hasSubstitutionSchedule && (
+          <TouchableOpacity
+            style={[styles.viewModeButton, viewMode === 'timeline' && styles.activeViewMode]}
+            onPress={() => setViewMode('timeline')}
+          >
+            <Clock size={16} color={viewMode === 'timeline' ? '#FFFFFF' : '#6B7280'} />
+            <Text style={[styles.viewModeText, viewMode === 'timeline' && styles.activeViewModeText]}>
+              Live
+            </Text>
+          </TouchableOpacity>
+        )}
+        
         <TouchableOpacity
           style={[styles.viewModeButton, viewMode === 'formation' && styles.activeViewMode]}
-          onPress={() => {
-            console.log('🔄 Switching to formation view');
-            setViewMode('formation');
-          }}
+          onPress={() => setViewMode('formation')}
         >
-          <Grid3X3 size={16} color={viewMode === 'formation' ? '#FFFFFF' : '#6B7280'} />
+          <Eye size={16} color={viewMode === 'formation' ? '#FFFFFF' : '#6B7280'} />
           <Text style={[styles.viewModeText, viewMode === 'formation' && styles.activeViewModeText]}>
-            Formatie
+            Veld
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity
           style={[styles.viewModeButton, viewMode === 'list' && styles.activeViewMode]}
-          onPress={() => {
-            console.log('🔄 Switching to list view');
-            setViewMode('list');
-          }}
+          onPress={() => setViewMode('list')}
         >
           <Users size={16} color={viewMode === 'list' ? '#FFFFFF' : '#6B7280'} />
           <Text style={[styles.viewModeText, viewMode === 'list' && styles.activeViewModeText]}>
             Opstelling
           </Text>
         </TouchableOpacity>
+
+        {hasSubstitutionSchedule && (
+          <TouchableOpacity
+            style={[styles.viewModeButton, viewMode === 'grid' && styles.activeViewMode]}
+            onPress={() => setViewMode('grid')}
+          >
+            <Grid3X3 size={16} color={viewMode === 'grid' ? '#FFFFFF' : '#6B7280'} />
+            <Text style={[styles.viewModeText, viewMode === 'grid' && styles.activeViewModeText]}>
+              Schema
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {viewMode === 'formation' ? (
+        {viewMode === 'timeline' && hasSubstitutionSchedule ? (
+          /* Timeline View */
+          <View style={styles.timelineContainer}>
+            {/* Current Active Players */}
+            <View style={styles.activePlayersSection}>
+              <Text style={styles.sectionTitle}>Huidige Opstelling ({formatTime(currentTime)})</Text>
+              <View style={styles.activePlayersList}>
+                {Object.entries(activePlayers).map(([position, player]) => (
+                  <View key={position} style={styles.activePlayerCard}>
+                    <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
+                    <View style={styles.activePlayerInfo}>
+                      <Text style={styles.activePlayerPosition}>
+                        {getPositionDisplayName(position)}
+                      </Text>
+                      <View style={styles.activePlayerDetails}>
+                        <Text style={styles.activePlayerName}>{player.name}</Text>
+                        <Text style={styles.activePlayerNumber}>#{player.number}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.activePlayerMeta}>
+                      <View style={[styles.conditionDot, { 
+                        backgroundColor: player.condition >= 80 ? '#10B981' : 
+                                       player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                      }]} />
+                      {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Upcoming Substitutions */}
+            {upcomingSubstitutions.length > 0 && (
+              <View style={styles.upcomingSection}>
+                <Text style={styles.sectionTitle}>Aankomende Wissels</Text>
+                <View style={styles.upcomingList}>
+                  {upcomingSubstitutions.map((event, index) => (
+                    <View key={index} style={styles.upcomingCard}>
+                      <View style={styles.upcomingTime}>
+                        <Clock size={14} color="#F59E0B" />
+                        <Text style={styles.upcomingTimeText}>
+                          {formatTime(event.time)}
+                        </Text>
+                      </View>
+                      <View style={styles.upcomingDetails}>
+                        <Text style={styles.upcomingPosition}>
+                          {getPositionDisplayName(event.position)}
+                        </Text>
+                        <View style={styles.upcomingPlayer}>
+                          <Text style={styles.upcomingPlayerName}>
+                            {event.player.name} #{event.player.number}
+                          </Text>
+                          <Text style={styles.upcomingPlayerAction}>
+                            → Komt erin
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        ) : viewMode === 'formation' ? (
           /* Formation View */
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Grid3X3 size={18} color="#16A34A" />
+              <Eye size={18} color="#16A34A" />
               <Text style={styles.sectionTitle}>
                 Formatie {formation ? `(${getFormationDisplayName()})` : ''}
               </Text>
             </View>
             
-            {(() => {
-              console.log('🎯 Formation view render check:');
-              console.log('- formation exists:', !!formation);
-              console.log('- formation positions:', formation?.positions);
-              console.log('- positions length:', formation?.positions?.length || 0);
-              
-              if (!formation || formation.positions.length === 0) {
-                console.log('❌ Rendering empty formation state');
-                return (
-                  <View style={styles.emptyContainer}>
-                    <Grid3X3 size={40} color="#9CA3AF" />
-                    <Text style={styles.emptyTitle}>Geen formatie ingesteld</Text>
-                    <Text style={styles.emptySubtitle}>
-                      Er is geen formatie geselecteerd voor deze wedstrijd
-                    </Text>
-                  </View>
-                );
-              } else {
-                console.log('✅ Rendering FieldView with formation');
-                return (
-                  <FieldView
-                    positions={formation.positions}
-                    lineup={match.lineup}
-                    highlightPosition={selectedPosition}
-                    onPositionPress={handlePositionPress}
-                  />
-                );
-              }
-            })()}
+            {!formation || formation.positions.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Grid3X3 size={40} color="#9CA3AF" />
+                <Text style={styles.emptyTitle}>Geen formatie ingesteld</Text>
+                <Text style={styles.emptySubtitle}>
+                  Er is geen formatie geselecteerd voor deze wedstrijd
+                </Text>
+              </View>
+            ) : (
+              <FieldView
+                positions={formation.positions}
+                lineup={match.lineup}
+                highlightPosition={selectedPosition}
+                onPositionPress={handlePositionPress}
+              />
+            )}
 
             {/* Reserve Players */}
             <View style={styles.reserveSection}>
@@ -774,7 +973,7 @@ export default function MatchScreen() {
               )}
             </View>
           </View>
-        ) : (
+        ) : viewMode === 'list' ? (
           /* Two-Column List View */
           <View style={styles.twoColumnContainer}>
             {/* Left Column - Lineup */}
@@ -842,6 +1041,72 @@ export default function MatchScreen() {
                 </View>
               )}
             </View>
+          </View>
+        ) : (
+          /* Grid View */
+          <View style={styles.gridContainer}>
+            {/* Header Row */}
+            <View style={styles.gridHeader}>
+              <View style={styles.positionHeaderCell}>
+                <Text style={styles.headerText}>Positie</Text>
+              </View>
+              {getQuarters().map(quarter => (
+                <View key={quarter} style={styles.quarterHeaderCell}>
+                  <Text style={styles.headerText}>Q{quarter}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Data Rows */}
+            {getPositions().map(position => (
+              <View key={position} style={styles.gridRow}>
+                <View style={styles.positionCell}>
+                  <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
+                  <Text style={styles.positionName} numberOfLines={2}>
+                    {getPositionDisplayName(position)}
+                  </Text>
+                </View>
+                
+                {getQuarters().map(quarter => (
+                  <View key={quarter} style={styles.quarterCell}>
+                    {parsedSchedule[position]?.[quarter]?.map((player, index) => (
+                      player ? (
+                        <View key={`${player.id}-${index}`} style={styles.playerChip}>
+                          <View style={[styles.playerNumber, { backgroundColor: getPositionColorForSchedule(position) }]}>
+                            <Text style={styles.playerNumberText}>{player.number}</Text>
+                          </View>
+                          <View style={styles.playerDetails}>
+                            <Text style={styles.playerName} numberOfLines={1}>
+                              {player.name}
+                            </Text>
+                            <View style={styles.playerMeta}>
+                              <View style={styles.conditionIndicator}>
+                                <View style={[styles.conditionDot, { 
+                                  backgroundColor: player.condition >= 80 ? '#10B981' : 
+                                                 player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                                }]} />
+                                <Text style={styles.conditionValue}>{player.condition}%</Text>
+                              </View>
+                              {player.isGoalkeeper && (
+                                <Shield size={10} color="#EF4444" />
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                      ) : (
+                        <View key={index} style={styles.emptySlot}>
+                          <Text style={styles.emptySlotText}>-</Text>
+                        </View>
+                      )
+                    )) || (
+                      <View style={styles.emptySlot}>
+                        <Text style={styles.emptySlotText}>Geen spelers</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
         )}
       </ScrollView>
@@ -915,37 +1180,48 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     color: '#9CA3AF',
   },
-  quickAccessBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FEF2F2',
+  timeControl: {
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#FECACA',
+    borderBottomColor: '#E5E7EB',
   },
-  quickAccessContent: {
+  timeDisplay: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
-    flex: 1,
+    marginBottom: 12,
   },
-  quickAccessText: {
-    fontSize: 13,
-    color: '#DC2626',
-    fontFamily: 'Inter-Medium',
+  currentTimeText: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
   },
-  quickAccessButton: {
-    backgroundColor: '#FF6B35',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  quickAccessButtonText: {
-    fontSize: 12,
-    color: '#FFFFFF',
+  quarterText: {
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+  },
+  playControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  controlButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButton: {
+    backgroundColor: '#FF6B35',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   loadingContainer: {
     flex: 1,
@@ -1058,8 +1334,114 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontFamily: 'Inter-Medium',
   },
-  positionsList: {
-    gap: 10,
+  // Timeline View Styles
+  timelineContainer: {
+    padding: 16,
+  },
+  activePlayersSection: {
+    marginBottom: 24,
+  },
+  activePlayersList: {
+    gap: 8,
+  },
+  activePlayerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 12,
+  },
+  activePlayerInfo: {
+    flex: 1,
+  },
+  activePlayerPosition: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  activePlayerDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activePlayerName: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+  },
+  activePlayerNumber: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  activePlayerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  positionIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  conditionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  upcomingSection: {
+    marginBottom: 24,
+  },
+  upcomingList: {
+    gap: 8,
+  },
+  upcomingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    gap: 12,
+  },
+  upcomingTime: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  upcomingTimeText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Bold',
+    color: '#D97706',
+  },
+  upcomingDetails: {
+    flex: 1,
+  },
+  upcomingPosition: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#92400E',
+    marginBottom: 2,
+  },
+  upcomingPlayer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  upcomingPlayerName: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+  },
+  upcomingPlayerAction: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#D97706',
   },
   // Two-column layout styles
   twoColumnContainer: {
@@ -1208,5 +1590,108 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontFamily: 'Inter-Bold',
     color: '#10B981',
+  },
+  // Grid View Styles
+  gridContainer: {
+    padding: 16,
+  },
+  gridHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  positionHeaderCell: {
+    width: 120,
+    padding: 12,
+    justifyContent: 'center',
+  },
+  quarterHeaderCell: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: '#E5E7EB',
+  },
+  headerText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Bold',
+    color: '#374151',
+    textAlign: 'center',
+  },
+  gridRow: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    minHeight: 80,
+  },
+  positionCell: {
+    width: 120,
+    padding: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#F3F4F6',
+  },
+  positionName: {
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  quarterCell: {
+    flex: 1,
+    padding: 8,
+    gap: 4,
+    borderLeftWidth: 1,
+    borderLeftColor: '#F3F4F6',
+  },
+  playerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 6,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 4,
+  },
+  playerNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playerDetails: {
+    flex: 1,
+    minWidth: 0,
+  },
+  conditionIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  conditionValue: {
+    fontSize: 8,
+    color: '#6B7280',
+    fontFamily: 'Inter-Regular',
+  },
+  emptySlot: {
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptySlotText: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontFamily: 'Inter-Regular',
   },
 });
