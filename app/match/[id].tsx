@@ -310,7 +310,7 @@ export default function MatchScreen() {
           
           const quarterStartTime = (quarter - 1) * quarterDuration;
           const slotInterval = quarterDuration / (subsPerQuarter + 1);
-          const eventTime = quarterStartTime + (slot + 1) * slotInterval;
+          const eventTime = quarterStartTime + slot * slotInterval;
           
           events.push({
             time: eventTime,
