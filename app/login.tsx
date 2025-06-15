@@ -161,14 +161,6 @@ export default function LoginScreen() {
               <TouchableOpacity style={styles.forgotPassword}>
                 <Text style={styles.forgotPasswordText}>Wachtwoord vergeten?</Text>
               </TouchableOpacity>
-
-              {/* Help Section */}
-              <View style={styles.helpSection}>
-                <Text style={styles.helpTitle}>Nog geen account?</Text>
-                <Text style={styles.helpText}>
-                  Neem contact op met je teammanager of coach om toegang te krijgen tot doHockey Companion.
-                </Text>
-              </View>
             </View>
 
             {/* Features Section */}
