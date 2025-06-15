@@ -161,6 +161,7 @@ export default function LoginScreen() {
               <TouchableOpacity style={styles.forgotPassword}>
                 <Text style={styles.forgotPasswordText}>Wachtwoord vergeten?</Text>
               </TouchableOpacity>
+
             </View>
 
             {/* Features Section */}
