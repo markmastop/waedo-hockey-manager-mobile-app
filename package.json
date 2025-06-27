@@ -4,6 +4,7 @@
   "version": "1.0.1",
   "private": true,
   "scripts": {
+    "start": "npm run dev",
     "dev": "EXPO_NO_TELEMETRY=1 npx expo start",
     "build:web": "npx expo export --platform web",
     "prebuild:web": "npm run bump-version",
