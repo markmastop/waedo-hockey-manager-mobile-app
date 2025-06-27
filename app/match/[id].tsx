@@ -436,15 +436,15 @@ export default function MatchScreen() {
   };
 
   const startMatch = () => {
-    updateMatch({ status: 'inProgress' });
+    updateMatch({ status: 'inProgress' as const });
   };
 
   const pauseMatch = () => {
-    updateMatch({ status: 'paused' });
+    updateMatch({ status: 'paused' as const });
   };
 
   const resumeMatch = () => {
-    updateMatch({ status: 'inProgress' });
+    updateMatch({ status: 'inProgress' as const });
   };
 
   const endMatch = () => {
@@ -737,38 +737,6 @@ export default function MatchScreen() {
           <Text style={styles.scoreText}>{match.home_score} - {match.away_score}</Text>
         </View>
       </View>
-
-      {/* Time Control for Schedule */}
-      {hasSubstitutionSchedule && viewMode === 'timeline' && (
-        <View style={styles.timeControl}>
-          <View style={styles.playControls}>
-            <TouchableOpacity 
-              style={styles.controlButton}
-              onPress={() => setCurrentTime(Math.max(0, currentTime - 60))}
-            >
-              <ChevronLeft size={16} color="#6B7280" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.controlButton, styles.playButton]}
-              onPress={() => setIsPlaying(!isPlaying)}
-            >
-              {isPlaying ? (
-                <Pause size={16} color="#FFFFFF" />
-              ) : (
-                <Play size={16} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.controlButton}
-              onPress={() => setCurrentTime(Math.min(60 * 60, currentTime + 60))}
-            >
-              <ChevronRight size={16} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
 
       {/* Substitution Banner */}
       {isSubstituting && (
@@ -1114,6 +1082,39 @@ export default function MatchScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Time Control for Schedule */}
+      {hasSubstitutionSchedule  && (
+        <View style={styles.timeControl}>
+          <View style={styles.playControls}>
+            <TouchableOpacity 
+              style={styles.controlButton}
+              onPress={() => setCurrentTime(Math.max(0, currentTime - 60))}
+            >
+              <ChevronLeft size={16} color="#6B7280" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.controlButton, styles.playButton]}
+              onPress={() => setIsPlaying(!isPlaying)}
+            >
+              {isPlaying ? (
+                <Pause size={16} color="#FFFFFF" />
+              ) : (
+                <Play size={16} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.controlButton}
+              onPress={() => setCurrentTime(Math.min(60 * 60, currentTime + 60))}
+            >
+              <ChevronRight size={16} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
     </SafeAreaView>
   );
 }
