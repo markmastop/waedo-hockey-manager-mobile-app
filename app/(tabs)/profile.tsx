@@ -9,9 +9,10 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { User, LogOut, Settings, Bell, Shield, CircleHelp as HelpCircle, Star, Award, ChevronRight } from 'lucide-react-native';
+import { User, LogOut, Settings, Bell, Shield, CircleHelp as HelpCircle, Star, Award, ChevronRight, Bug } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -42,6 +43,12 @@ export default function ProfileScreen() {
   };
 
   const menuItems = [
+    {
+      icon: Bug,
+      title: 'Debug Formations',
+      subtitle: 'Debug formations data',
+      onPress: () => router.push('/debug-formations'),
+    },
     {
       icon: Settings,
       title: 'Account Instellingen',
@@ -155,12 +162,7 @@ export default function ProfileScreen() {
           <View style={styles.appInfoCard}>
             <View style={styles.appInfoItem}>
               <Text style={styles.appInfoLabel}>Versie</Text>
-              <Text style={styles.appInfoValue}>1.0.0</Text>
-            </View>
-            <View style={styles.appInfoDivider} />
-            <View style={styles.appInfoItem}>
-              <Text style={styles.appInfoLabel}>Build</Text>
-              <Text style={styles.appInfoValue}>2024.1</Text>
+              <Text style={styles.appInfoValue}>{Constants.expoConfig?.version || '1.0.0'}</Text>
             </View>
           </View>
         </View>
