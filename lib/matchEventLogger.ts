@@ -4,7 +4,7 @@ import { Player } from '@/types/database';
 export interface MatchEventLog {
   match_id: string;
   player_id?: string;
-  action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection';
+  action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card';
   description: string;
   match_time: number;
   quarter: number;
@@ -171,10 +171,16 @@ class MatchEventLogger {
     quarter: number,
     reason?: string
   ): Promise<void> {
+    const actionMap = {
+      'yellow': 'yellow_card' as const,
+      'red': 'red_card' as const,
+      'green': 'green_card' as const
+    };
+
     await this.logEvent({
       match_id: matchId,
       player_id: player.id,
-      action: 'card',
+      action: actionMap[cardType],
       description: `${cardType.charAt(0).toUpperCase() + cardType.slice(1)} card given to ${player.name} (#${player.number})${reason ? ` for ${reason}` : ''}`,
       match_time: matchTime,
       quarter: quarter,
@@ -323,6 +329,98 @@ class MatchEventLogger {
     });
   }
 
+  async logTimeout(
+    matchId: string,
+    matchTime: number,
+    quarter: number,
+    teamType: 'home' | 'away'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      action: 'timeout',
+      description: `Timeout called by ${teamType} team`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        team_type: teamType,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  async logInjury(
+    matchId: string,
+    player: Player,
+    matchTime: number,
+    quarter: number,
+    severity?: 'minor' | 'major'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      player_id: player.id,
+      action: 'injury',
+      description: `Injury to ${player.name} (#${player.number})${severity ? ` (${severity})` : ''}`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        player: {
+          id: player.id,
+          name: player.name,
+          number: player.number,
+          position: player.position
+        },
+        severity: severity,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  async logPenaltyCorner(
+    matchId: string,
+    matchTime: number,
+    quarter: number,
+    teamType: 'home' | 'away'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      action: 'penalty_corner',
+      description: `Penalty corner awarded to ${teamType} team`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        team_type: teamType,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  async logPenaltyStroke(
+    matchId: string,
+    player: Player,
+    matchTime: number,
+    quarter: number,
+    result: 'goal' | 'save' | 'miss'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      player_id: player.id,
+      action: 'penalty_stroke',
+      description: `Penalty stroke by ${player.name} (#${player.number}) - ${result}`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        player: {
+          id: player.id,
+          name: player.name,
+          number: player.number,
+          position: player.position
+        },
+        result: result,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
   // Get events for a match
   async getMatchEvents(matchId: string): Promise<any[]> {
     try {
@@ -362,6 +460,45 @@ class MatchEventLogger {
       return data || [];
     } catch (error) {
       console.error('💥 Exception fetching events by action:', error);
+      return [];
+    }
+  }
+
+  // Get match events summary using the database function
+  async getMatchEventsSummary(matchId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_match_events_summary', { match_uuid: matchId });
+
+      if (error) {
+        console.error('❌ Failed to fetch match events summary:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('💥 Exception fetching match events summary:', error);
+      return [];
+    }
+  }
+
+  // Get player event statistics using the database function
+  async getPlayerEventStats(matchId: string, playerId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_player_event_stats', { 
+          match_uuid: matchId, 
+          player_uuid: playerId 
+        });
+
+      if (error) {
+        console.error('❌ Failed to fetch player event stats:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('💥 Exception fetching player event stats:', error);
       return [];
     }
   }

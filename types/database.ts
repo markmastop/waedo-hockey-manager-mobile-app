@@ -126,7 +126,7 @@ export interface Database {
           id: string;
           match_id: string;
           player_id?: string;
-          action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection';
+          action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card';
           description: string;
           match_time: number;
           quarter: number;
@@ -137,7 +137,7 @@ export interface Database {
           id?: string;
           match_id: string;
           player_id?: string;
-          action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection';
+          action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card';
           description: string;
           match_time?: number;
           quarter?: number;
@@ -148,13 +148,38 @@ export interface Database {
           id?: string;
           match_id?: string;
           player_id?: string;
-          action?: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection';
+          action?: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card';
           description?: string;
           match_time?: number;
           quarter?: number;
           metadata?: Record<string, any>;
           created_at?: string;
         };
+      };
+    };
+    Functions: {
+      get_match_events_summary: {
+        Args: {
+          match_uuid: string;
+        };
+        Returns: {
+          action_type: string;
+          event_count: number;
+          first_occurrence: string;
+          last_occurrence: string;
+        }[];
+      };
+      get_player_event_stats: {
+        Args: {
+          match_uuid: string;
+          player_uuid: string;
+        };
+        Returns: {
+          action_type: string;
+          event_count: number;
+          avg_match_time: number;
+          quarters_active: number[];
+        }[];
       };
     };
   };
