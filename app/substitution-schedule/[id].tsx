@@ -17,6 +17,7 @@ import StatsBar from '../components/substitution-schedule/StatsBar';
 import Controls from '../components/substitution-schedule/Controls';
 import ActivePlayers from '../components/substitution-schedule/ActivePlayers';
 import GridContainer from '../components/substitution-schedule/GridContainer';
+import Timeline from '../components/substitution-schedule/Timeline';
 import { 
   ArrowLeft, 
   Users, 
@@ -500,72 +501,12 @@ export default function SubstitutionScheduleScreen() {
               formatTime={formatTime}
             />
 
-            {/* Full Timeline */}
-            <View style={styles.fullTimelineSection}>
-              <Text style={styles.sectionTitle}>Volledige Timeline</Text>
-              <View style={styles.timelineList}>
-                {timelineEvents.map((event, index) => (
-                  <View 
-                    key={index} 
-                    style={[
-                      styles.timelineEvent,
-                      event.time <= currentTime && styles.pastEvent,
-                      event.time > currentTime && event.time <= currentTime + 120 && styles.upcomingEvent
-                    ]}
-                  >
-                    <View style={styles.timelineEventTime}>
-                      <Text style={[
-                        styles.timelineEventTimeText,
-                        event.time <= currentTime && styles.pastEventText
-                      ]}>
-                        {formatTime(event.time)}
-                      </Text>
-                      <Text style={[
-                        styles.timelineEventQuarter,
-                        event.time <= currentTime && styles.pastEventText
-                      ]}>
-                        Q{event.quarter}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.timelineEventContent}>
-                      <View style={styles.timelineEventHeader}>
-                        <Text style={[
-                          styles.timelineEventPosition,
-                          event.time <= currentTime && styles.pastEventText
-                        ]}>
-                          {formation?.positions.find(pos => pos.name === event.position)?.label_translations?.nl || event.position}
-                        </Text>
-                        <View style={[
-                          styles.timelineEventType,
-                          { backgroundColor: event.isSubstitution ? '#F59E0B' : '#10B981' }
-                        ]}>
-                          <Text style={styles.timelineEventTypeText}>
-                            {event.isSubstitution ? 'Wissel' : 'Start'}
-                          </Text>
-                        </View>
-                      </View>
-                      
-                      <TouchableOpacity 
-                        style={styles.timelineEventPlayer}
-                        onPress={() => handlePlayerPress(event.player)}
-                      >
-                        <View style={[styles.playerNumber, { backgroundColor: getPositionColor(event.position) }]}>
-                          <Text style={styles.playerNumberText}>{event.player.number}</Text>
-                        </View>
-                        <Text style={[
-                          styles.timelineEventPlayerName,
-                          event.time <= currentTime && styles.pastEventText
-                        ]}>
-                          {event.player.name}
-                        </Text>
-                        {event.player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
+            <Timeline
+              timelineEvents={timelineEvents}
+              currentTime={currentTime}
+              formation={formation}
+              formatTime={formatTime}
+            />
           </View>
         ) : (
           <GridContainer
