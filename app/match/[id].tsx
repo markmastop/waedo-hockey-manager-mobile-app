@@ -815,46 +815,53 @@ export default function MatchScreen() {
                 <View style={styles.liveColumn}>
                   <View style={styles.liveColumnHeader}>
                     <Users size={16} color="#6B7280" />
-                    <Text style={styles.liveColumnTitle}>Bank</Text>
+                    <Text style={styles.liveColumnTitle}>Bank ({match.reserve_players.length})</Text>
                   </View>
                   
                   <View style={styles.livePlayersList}>
-                    {match.reserve_players
-                      .sort((a, b) => {
-                        const posA = formation?.positions.find(pos => 
-                          pos.name === a.position || 
-                          pos.dutch_name === a.position ||
-                          pos.label_translations?.nl === a.position
-                        );
-                        const posB = formation?.positions.find(pos => 
-                          pos.name === b.position || 
-                          pos.dutch_name === b.position ||
-                          pos.label_translations?.nl === b.position
-                        );
-                        return (posA?.order || 999) - (posB?.order || 999);
-                      })
-                      .map((player) => (
-                        <View key={player.id} style={[styles.livePlayerCard, styles.benchPlayerCard]}>
-                          <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
-                          <View style={styles.livePlayerInfo}>
-                            <Text style={styles.livePlayerPosition}>
-                              {formation?.positions.find(pos => 
-                                pos.name === player.position || 
-                                pos.dutch_name === player.position ||
-                                pos.label_translations?.nl === player.position
-                              )?.label_translations?.nl || player.position}
-                            </Text>
-                            <View style={styles.livePlayerDetails}>
-                              <Text style={styles.livePlayerName}>{player.name}</Text>
-                              <Text style={styles.livePlayerNumber}>#{player.number}</Text>
+                    {match.reserve_players.length === 0 ? (
+                      <View style={styles.emptyBenchContainer}>
+                        <Users size={24} color="#9CA3AF" />
+                        <Text style={styles.emptyBenchText}>Geen reservespelers</Text>
+                      </View>
+                    ) : (
+                      match.reserve_players
+                        .sort((a, b) => {
+                          const posA = formation?.positions.find(pos => 
+                            pos.name === a.position || 
+                            pos.dutch_name === a.position ||
+                            pos.label_translations?.nl === a.position
+                          );
+                          const posB = formation?.positions.find(pos => 
+                            pos.name === b.position || 
+                            pos.dutch_name === b.position ||
+                            pos.label_translations?.nl === b.position
+                          );
+                          return (posA?.order || 999) - (posB?.order || 999);
+                        })
+                        .map((player) => (
+                          <View key={player.id} style={[styles.livePlayerCard, styles.benchPlayerCard]}>
+                            <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
+                            <View style={styles.livePlayerInfo}>
+                              <Text style={styles.livePlayerPosition}>
+                                {formation?.positions.find(pos => 
+                                  pos.name === player.position || 
+                                  pos.dutch_name === player.position ||
+                                  pos.label_translations?.nl === player.position
+                                )?.label_translations?.nl || player.position}
+                              </Text>
+                              <View style={styles.livePlayerDetails}>
+                                <Text style={styles.livePlayerName}>{player.name}</Text>
+                                <Text style={styles.livePlayerNumber}>#{player.number}</Text>
+                              </View>
+                            </View>
+                            <View style={styles.livePlayerMeta}>
+                              <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
+                              {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
                             </View>
                           </View>
-                          <View style={styles.livePlayerMeta}>
-                            <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
-                            {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
-                          </View>
-                        </View>
-                      ))}
+                        ))
+                    )}
                   </View>
                 </View>
               </View>

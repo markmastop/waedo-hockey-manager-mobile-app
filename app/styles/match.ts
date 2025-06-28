@@ -299,6 +299,18 @@ export const styles = StyleSheet.create({
       height: 6,
       borderRadius: 3,
     },
+    emptyBenchContainer: {
+      alignItems: 'center',
+      paddingVertical: 20,
+      paddingHorizontal: 12,
+    },
+    emptyBenchText: {
+      fontSize: 12,
+      color: '#9CA3AF',
+      marginTop: 6,
+      fontFamily: 'Inter-Regular',
+      textAlign: 'center',
+    },
     upcomingSection: {
       marginBottom: 24,
     },
