@@ -737,6 +737,11 @@ export default function MatchScreen() {
                   <View style={styles.liveColumnHeader}>
                     <Users size={16} color="#16A34A" />
                     <Text style={styles.liveColumnTitle}>Op het Veld</Text>
+                    <View style={styles.countBadge}>
+                      <Text style={styles.countText}>
+                        {Object.entries(activePlayers).length === 0 && currentTime === 0 ? match.lineup.length : Object.entries(activePlayers).length}
+                      </Text>
+                    </View>
                   </View>
                   
                   <View style={styles.livePlayersList}>
@@ -816,6 +821,9 @@ export default function MatchScreen() {
                   <View style={styles.liveColumnHeader}>
                     <Users size={16} color="#6B7280" />
                     <Text style={styles.liveColumnTitle}>Bank</Text>
+                    <View style={[styles.countBadge, styles.reserveCountBadge]}>
+                      <Text style={[styles.countText, styles.reserveCountText]}>{match.reserve_players.length}</Text>
+                    </View>
                   </View>
                   
                   <View style={styles.livePlayersList}>
