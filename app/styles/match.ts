@@ -474,6 +474,11 @@ export const styles = StyleSheet.create({
       borderColor: '#FF6B35',
       backgroundColor: '#FEF2F2',
       borderWidth: 2,
+      shadowColor: '#FF6B35',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 4,
     },
     playerRow: {
       flexDirection: 'row',
