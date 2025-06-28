@@ -216,57 +216,88 @@ export const styles = StyleSheet.create({
     activePlayersSection: {
       marginBottom: 24,
     },
-    activePlayersList: {
+    dualColumnContainer: {
+      flexDirection: 'row',
       gap: 8,
     },
-    activePlayerCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
+    liveColumn: {
+      flex: 1,
       backgroundColor: '#FFFFFF',
-      padding: 12,
       borderRadius: 12,
       borderWidth: 1,
       borderColor: '#E5E7EB',
-      gap: 12,
+      overflow: 'hidden',
     },
-    activePlayerInfo: {
-      flex: 1,
-    },
-    activePlayerPosition: {
-      fontSize: 12,
-      fontFamily: 'Inter-SemiBold',
-      color: '#6B7280',
-      marginBottom: 4,
-    },
-    activePlayerDetails: {
+    liveColumnHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: '#F9FAFB',
+      borderBottomWidth: 1,
+      borderBottomColor: '#E5E7EB',
+      gap: 6,
     },
-    activePlayerName: {
+    liveColumnTitle: {
       fontSize: 14,
       fontFamily: 'Inter-SemiBold',
       color: '#111827',
     },
-    activePlayerNumber: {
-      fontSize: 12,
-      fontFamily: 'Inter-Medium',
-      color: '#6B7280',
+    livePlayersList: {
+      padding: 8,
+      gap: 4,
     },
-    activePlayerMeta: {
+    livePlayerCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FFFFFF',
+      padding: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
+      gap: 8,
+    },
+    benchPlayerCard: {
+      backgroundColor: '#F9FAFB',
+    },
+    livePlayerInfo: {
+      flex: 1,
+    },
+    livePlayerPosition: {
+      fontSize: 10,
+      fontFamily: 'Inter-SemiBold',
+      color: '#6B7280',
+      marginBottom: 2,
+    },
+    livePlayerDetails: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
     },
+    livePlayerName: {
+      fontSize: 12,
+      fontFamily: 'Inter-SemiBold',
+      color: '#111827',
+    },
+    livePlayerNumber: {
+      fontSize: 10,
+      fontFamily: 'Inter-Medium',
+      color: '#6B7280',
+    },
+    livePlayerMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
     positionIndicator: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
     },
     conditionDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
+      width: 6,
+      height: 6,
+      borderRadius: 3,
     },
     upcomingSection: {
       marginBottom: 24,

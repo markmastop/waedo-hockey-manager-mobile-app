@@ -729,55 +729,138 @@ export default function MatchScreen() {
         {viewMode === 'timeline' && hasSubstitutionSchedule ? (
           /* Timeline View */
           <View style={styles.timelineContainer}>
-            {/* Starting Lineup at 00:00 */}
+            {/* Dual Column Active Players */}
             <View style={styles.activePlayersSection}>
               <Text style={styles.sectionTitle}>
                 {currentTime === 0 ? 'Startspelers (00:00)' : `Huidige Spelers (${formatTime(currentTime)})`}
               </Text>
-              <View style={styles.activePlayersList}>
-                {Object.entries(activePlayers).length === 0 && currentTime === 0 ? (
-                  // Show starting lineup when no timeline events yet
-                  match.lineup.map((player) => (
-                    <View key={player.id} style={styles.activePlayerCard}>
-                      <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
-                      <View style={styles.activePlayerInfo}>
-                        <Text style={styles.activePlayerPosition}>
-                          {formation?.positions.find(pos => pos.name === player.position)?.label_translations?.nl || player.position}
-                        </Text>
-                        <View style={styles.activePlayerDetails}>
-                          <Text style={styles.activePlayerName}>{player.name}</Text>
-                          <Text style={styles.activePlayerNumber}>#{player.number}</Text>
+              
+              <View style={styles.dualColumnContainer}>
+                {/* Left Column - Field Players */}
+                <View style={styles.liveColumn}>
+                  <View style={styles.liveColumnHeader}>
+                    <Users size={16} color="#16A34A" />
+                    <Text style={styles.liveColumnTitle}>Op het Veld</Text>
+                  </View>
+                  
+                  <View style={styles.livePlayersList}>
+                    {Object.entries(activePlayers).length === 0 && currentTime === 0 ? (
+                      // Show starting lineup when no timeline events yet, sorted by formation position order
+                      match.lineup
+                        .sort((a, b) => {
+                          const posA = formation?.positions.find(pos => 
+                            pos.name === a.position || 
+                            pos.dutch_name === a.position ||
+                            pos.label_translations?.nl === a.position
+                          );
+                          const posB = formation?.positions.find(pos => 
+                            pos.name === b.position || 
+                            pos.dutch_name === b.position ||
+                            pos.label_translations?.nl === b.position
+                          );
+                          return (posA?.order || 999) - (posB?.order || 999);
+                        })
+                        .map((player) => (
+                          <View key={player.id} style={styles.livePlayerCard}>
+                            <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
+                            <View style={styles.livePlayerInfo}>
+                              <Text style={styles.livePlayerPosition}>
+                                {formation?.positions.find(pos => 
+                                  pos.name === player.position || 
+                                  pos.dutch_name === player.position ||
+                                  pos.label_translations?.nl === player.position
+                                )?.label_translations?.nl || player.position}
+                              </Text>
+                              <View style={styles.livePlayerDetails}>
+                                <Text style={styles.livePlayerName}>{player.name}</Text>
+                                <Text style={styles.livePlayerNumber}>#{player.number}</Text>
+                              </View>
+                            </View>
+                            <View style={styles.livePlayerMeta}>
+                              <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
+                              {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
+                            </View>
+                          </View>
+                        ))
+                    ) : (
+                      // Show active players from timeline, sorted by formation position order
+                      Object.entries(activePlayers)
+                        .sort(([positionA], [positionB]) => {
+                          const posA = formation?.positions.find(pos => pos.name === positionA);
+                          const posB = formation?.positions.find(pos => pos.name === positionB);
+                          return (posA?.order || 999) - (posB?.order || 999);
+                        })
+                        .map(([position, player]) => (
+                          <View key={position} style={styles.livePlayerCard}>
+                            <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
+                            <View style={styles.livePlayerInfo}>
+                              <Text style={styles.livePlayerPosition}>
+                                {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
+                              </Text>
+                              <View style={styles.livePlayerDetails}>
+                                <Text style={styles.livePlayerName}>{player.name}</Text>
+                                <Text style={styles.livePlayerNumber}>#{player.number}</Text>
+                              </View>
+                            </View>
+                            <View style={styles.livePlayerMeta}>
+                              <View style={[styles.conditionDot, { 
+                                backgroundColor: player.condition >= 80 ? '#10B981' : 
+                                               player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                              }]} />
+                              {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
+                            </View>
+                          </View>
+                        ))
+                    )}
+                  </View>
+                </View>
+
+                {/* Right Column - Bench Players */}
+                <View style={styles.liveColumn}>
+                  <View style={styles.liveColumnHeader}>
+                    <Users size={16} color="#6B7280" />
+                    <Text style={styles.liveColumnTitle}>Bank</Text>
+                  </View>
+                  
+                  <View style={styles.livePlayersList}>
+                    {match.reserve_players
+                      .sort((a, b) => {
+                        const posA = formation?.positions.find(pos => 
+                          pos.name === a.position || 
+                          pos.dutch_name === a.position ||
+                          pos.label_translations?.nl === a.position
+                        );
+                        const posB = formation?.positions.find(pos => 
+                          pos.name === b.position || 
+                          pos.dutch_name === b.position ||
+                          pos.label_translations?.nl === b.position
+                        );
+                        return (posA?.order || 999) - (posB?.order || 999);
+                      })
+                      .map((player) => (
+                        <View key={player.id} style={[styles.livePlayerCard, styles.benchPlayerCard]}>
+                          <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
+                          <View style={styles.livePlayerInfo}>
+                            <Text style={styles.livePlayerPosition}>
+                              {formation?.positions.find(pos => 
+                                pos.name === player.position || 
+                                pos.dutch_name === player.position ||
+                                pos.label_translations?.nl === player.position
+                              )?.label_translations?.nl || player.position}
+                            </Text>
+                            <View style={styles.livePlayerDetails}>
+                              <Text style={styles.livePlayerName}>{player.name}</Text>
+                              <Text style={styles.livePlayerNumber}>#{player.number}</Text>
+                            </View>
+                          </View>
+                          <View style={styles.livePlayerMeta}>
+                            <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
+                            {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
+                          </View>
                         </View>
-                      </View>
-                      <View style={styles.activePlayerMeta}>
-                        <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
-                        {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
-                      </View>
-                    </View>
-                  ))
-                ) : (
-                  Object.entries(activePlayers).map(([position, player]) => (
-                    <View key={position} style={styles.activePlayerCard}>
-                      <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
-                      <View style={styles.activePlayerInfo}>
-                        <Text style={styles.activePlayerPosition}>
-                          {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
-                        </Text>
-                        <View style={styles.activePlayerDetails}>
-                          <Text style={styles.activePlayerName}>{player.name}</Text>
-                          <Text style={styles.activePlayerNumber}>#{player.number}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.activePlayerMeta}>
-                        <View style={[styles.conditionDot, { 
-                          backgroundColor: player.condition >= 80 ? '#10B981' : 
-                                         player.condition >= 60 ? '#F59E0B' : '#EF4444' 
-                        }]} />
-                        {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
-                      </View>
-                    </View>
-                  ))
-                )}
+                      ))}
+                  </View>
+                </View>
               </View>
             </View>
 
