@@ -184,6 +184,7 @@ export default function MatchScreen() {
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
   const [viewMode, setViewMode] = useState<'formation' | 'list' | 'timeline' | 'grid'>('timeline');
+  const [goals, setGoals] = useState<{home: number, away: number}>({home: 0, away: 0});
   
   // Substitution schedule state
   const [scheduleData, setScheduleData] = useState<SubstitutionData | null>(null);
@@ -621,6 +622,120 @@ export default function MatchScreen() {
     setIsSubstituting(false);
   };
 
+  const handleGoal = async (player: Player) => {
+    console.log('⚽ Goal scored by:', player.name, '#' + player.number);
+    
+    // Create goal event
+    const goalEvent: MatchEvent = {
+      id: Date.now().toString(),
+      type: 'goal',
+      time: currentTime,
+      quarter: currentQuarter,
+      player: player,
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Update match events
+    const newEvents = [...matchEvents, goalEvent];
+    setMatchEvents(newEvents);
+    
+    // Update player stats
+    const newPlayerStats = playerStats.map(stat => {
+      if (stat.playerId === player.id) {
+        return {
+          ...stat,
+          goals: (stat.goals || 0) + 1
+        };
+      }
+      return stat;
+    });
+    setPlayerStats(newPlayerStats);
+    
+    // Update score (assuming home team for now)
+    const newGoals = { ...goals };
+    if (match?.is_home) {
+      newGoals.home += 1;
+    } else {
+      newGoals.away += 1;
+    }
+    setGoals(newGoals);
+    
+    // Update match in database
+    try {
+      await updateMatch({
+        match_events: newEvents,
+        player_stats: newPlayerStats,
+        home_score: newGoals.home,
+        away_score: newGoals.away,
+      });
+      
+      console.log('✅ Goal saved to database');
+    } catch (error) {
+      console.error('❌ Error saving goal:', error);
+    }
+    
+    // Clear selection after goal
+    setSelectedPlayer(null);
+    setIsSubstituting(false);
+  };
+
+  const handleSubstitute = () => {
+    console.log('🔄 Starting substitution for:', selectedPlayer?.name);
+    setIsSubstituting(true);
+  };
+
+  const makeSubstitution = async (playerIn: Player, playerOut: Player) => {
+    if (!match) return;
+    
+    console.log('🔄 Making substitution:', playerOut.name, '→', playerIn.name);
+    
+    const newLineup = match.lineup.map(p => 
+      p.id === playerOut.id ? { ...playerIn, position: playerOut.position } : p
+    );
+    
+    const newReservePlayers = match.reserve_players.map(p => 
+      p.id === playerIn.id ? playerOut : p
+    );
+    
+    const substitution: Substitution = {
+      time: currentTime,
+      quarter: currentQuarter,
+      playerIn: playerIn,
+      playerOut: playerOut,
+      timestamp: new Date().toISOString(),
+    };
+    
+    const newSubstitutions = [...match.substitutions, substitution];
+    
+    // Update player stats
+    const newPlayerStats = playerStats.map(stat => {
+      if (stat.playerId === playerOut.id || stat.playerId === playerIn.id) {
+        return {
+          ...stat,
+          substitutions: (stat.substitutions || 0) + 1
+        };
+      }
+      return stat;
+    });
+    
+    try {
+      await updateMatch({
+        lineup: newLineup,
+        reserve_players: newReservePlayers,
+        substitutions: newSubstitutions,
+        player_stats: newPlayerStats,
+      });
+      
+      console.log('✅ Substitution saved to database');
+    } catch (error) {
+      console.error('❌ Error saving substitution:', error);
+    }
+    
+    // Clear selection
+    setSelectedPlayer(null);
+    setIsSubstituting(false);
+  };
+
   const getPlayerStats = (playerId: string): PlayerStats | undefined => {
     return playerStats.find(stat => stat.playerId === playerId);
   };
@@ -764,8 +879,8 @@ export default function MatchScreen() {
       <TimeDisplay
         currentTime={currentTime}
         currentQuarter={currentQuarter}
-        homeScore={match.home_score}
-        awayScore={match.away_score}
+        homeScore={goals.home}
+        awayScore={goals.away}
         formatTime={formatTime}
       />
 
@@ -782,6 +897,9 @@ export default function MatchScreen() {
         selectedPosition={selectedPosition}
         selectedPlayer={selectedPlayer}
         getPositionName={getPositionName}
+        onSubstitute={handleSubstitute}
+        onGoal={handleGoal}
+        reservePlayersCount={reservePlayers.length}
         onDismiss={cancelSubstitution}
       />
       
@@ -941,6 +1059,15 @@ export default function MatchScreen() {
                             <View style={styles.livePlayerMeta}>
                               <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
                               {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
+                              {/* Show substitute button when field player is selected */}
+                              {selectedPlayer && isSubstituting && (
+                                <TouchableOpacity 
+                                  style={styles.substituteButton}
+                                  onPress={() => makeSubstitution(player, selectedPlayer)}
+                                >
+                                  <ArrowUpDown size={10} color="#16A34A" />
+                                </TouchableOpacity>
+                              )}
                             </View>
                           </TouchableOpacity>
                         ))
@@ -1181,8 +1308,10 @@ export default function MatchScreen() {
         <TimeControl
           currentTime={currentTime}
           isPlaying={isPlaying}
+          selectedPlayer={selectedPlayer}
           setCurrentTime={setCurrentTime}
           setIsPlaying={setIsPlaying}
+          onGoal={handleGoal}
         />
       )}
     </SafeAreaView>
