@@ -758,14 +758,6 @@ export default function MatchScreen() {
         formatTime={formatTime}
       />
 
-      {/* Substitution Banner */}
-      <SubstitutionBanner
-        isSubstituting={isSubstituting}
-        selectedPosition={selectedPosition}
-        getPositionName={getPositionName}
-        onDismiss={cancelSubstitution}
-      />
-
       {/* View Mode Toggle */}
       <ViewModeToggle
         hasSubstitutionSchedule={hasSubstitutionSchedule}
@@ -773,6 +765,14 @@ export default function MatchScreen() {
         setViewMode={setViewMode}
       />
 
+      {/* Substitution Banner */}
+      <SubstitutionBanner
+        isSubstituting={isSubstituting}
+        selectedPosition={selectedPosition}
+        getPositionName={getPositionName}
+        onDismiss={cancelSubstitution}
+      />
+      
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {viewMode === 'timeline' && hasSubstitutionSchedule ? (
           /* Timeline View */
