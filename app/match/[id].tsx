@@ -487,19 +487,25 @@ export default function MatchScreen() {
     if (isSubstituting) {
       makePositionSubstitution(position);
     } else {
-      const playerInPosition = getPlayerInPosition(position.id);
       setSelectedPosition(position.id);
-      setSelectedPlayer(playerInPosition);
       setIsSubstituting(true);
     }
   };
 
   const handlePlayerPress = (player: Player, isOnField: boolean) => {
+    console.log('🎯 Player selected:', {
+      id: player.id,
+      name: player.name,
+      number: player.number,
+      position: player.position,
+      isOnField: isOnField
+    });
+    
+    setSelectedPlayer(player);
+    
     if (isSubstituting && selectedPosition) {
       makePlayerToPositionSubstitution(player, isOnField);
     } else {
-      setSelectedPosition(null);
-      setSelectedPlayer(player);
       setIsSubstituting(true);
     }
   };
@@ -533,7 +539,6 @@ export default function MatchScreen() {
     }
 
     setSelectedPosition(null);
-    setSelectedPlayer(null);
     setIsSubstituting(false);
   };
 
@@ -581,7 +586,6 @@ export default function MatchScreen() {
     }
 
     setSelectedPosition(null);
-    setSelectedPlayer(null);
     setIsSubstituting(false);
   };
 
@@ -817,7 +821,7 @@ export default function MatchScreen() {
                             key={player.id} 
                             style={[
                               styles.livePlayerCard,
-                              selectedPosition && getPlayerInPosition(selectedPosition)?.id === player.id && styles.selectedFieldPlayerCard
+                              selectedPlayer?.id === player.id && styles.selectedFieldPlayerCard
                             ]}
                             onPress={() => handlePlayerPress(player, true)}
                           >
@@ -854,7 +858,7 @@ export default function MatchScreen() {
                             key={position} 
                             style={[
                               styles.livePlayerCard,
-                              selectedPosition && getPlayerInPosition(selectedPosition)?.id === player.id && styles.selectedFieldPlayerCard
+                              selectedPlayer?.id === player.id && styles.selectedFieldPlayerCard
                             ]}
                             onPress={() => handlePlayerPress(player, true)}
                           >
@@ -914,7 +918,8 @@ export default function MatchScreen() {
                             key={player.id} 
                             style={[
                               styles.livePlayerCard, 
-                              styles.benchPlayerCard
+                              styles.benchPlayerCard,
+                              selectedPlayer?.id === player.id && styles.selectedBenchPlayerCard
                             ]}
                             onPress={() => handlePlayerPress(player, false)}
                           >
@@ -1023,7 +1028,7 @@ export default function MatchScreen() {
                       player={player}
                       stats={getPlayerStats(player.id)}
                       isOnField={false}
-                      isSelected={false}
+                      isSelected={selectedPlayer?.id === player.id}
                       isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, false)}
                       formation={formation}
@@ -1059,7 +1064,7 @@ export default function MatchScreen() {
                       player={player}
                       stats={getPlayerStats(player.id)}
                       isOnField={true}
-                      isSelected={false}
+                      isSelected={selectedPlayer?.id === player.id}
                       isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, true)}
                       formation={formation}
@@ -1092,7 +1097,7 @@ export default function MatchScreen() {
                       player={player}
                       stats={getPlayerStats(player.id)}
                       isOnField={false}
-                      isSelected={false}
+                      isSelected={selectedPlayer?.id === player.id}
                       isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, false)}
                       formation={formation}

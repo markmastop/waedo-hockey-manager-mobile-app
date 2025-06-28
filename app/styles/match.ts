@@ -265,6 +265,11 @@ export const styles = StyleSheet.create({
       backgroundColor: '#FEF2F2',
       borderWidth: 2,
     },
+    selectedBenchPlayerCard: {
+      borderColor: '#FF6B35',
+      backgroundColor: '#FEF2F2',
+      borderWidth: 2,
+    },
     livePlayerInfo: {
       flex: 1,
     },
@@ -464,6 +469,11 @@ export const styles = StyleSheet.create({
     benchPlayerCard: {
       borderColor: '#E5E7EB',
       backgroundColor: '#F9FAFB',
+    },
+    selectedPlayerCard: {
+      borderColor: '#FF6B35',
+      backgroundColor: '#FEF2F2',
+      borderWidth: 2,
     },
     playerRow: {
       flexDirection: 'row',
