@@ -180,7 +180,6 @@ export default function MatchScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [selectedPlayerLocation, setSelectedPlayerLocation] = useState<'field' | 'bench' | null>(null);
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
@@ -502,27 +501,7 @@ export default function MatchScreen() {
       isOnField: isOnField
     });
     
-    const currentLocation = isOnField ? 'field' : 'bench';
-    
-    // If we already have a selected player from a different location, swap them
-    if (selectedPlayer && selectedPlayerLocation && selectedPlayerLocation !== currentLocation) {
-      console.log('🔄 Swapping players:', {
-        player1: { name: selectedPlayer.name, location: selectedPlayerLocation },
-        player2: { name: player.name, location: currentLocation }
-      });
-      
-      swapPlayerPositions(selectedPlayer, selectedPlayerLocation === 'field', player, isOnField);
-      
-      // Clear selection after swap
-      setSelectedPlayer(null);
-      setSelectedPlayerLocation(null);
-      setIsSubstituting(false);
-      return;
-    }
-    
-    // Set new selection
     setSelectedPlayer(player);
-    setSelectedPlayerLocation(currentLocation);
     
     if (isSubstituting && selectedPosition) {
       makePlayerToPositionSubstitution(player, isOnField);
@@ -607,70 +586,7 @@ export default function MatchScreen() {
     }
 
     setSelectedPosition(null);
-  const swapPlayerPositions = (player1: Player, player1OnField: boolean, player2: Player, player2OnField: boolean) => {
-    if (!match) return;
-
-    const newLineup = [...match.lineup];
-    const newReservePlayers = [...match.reserve_players];
-
-    if (player1OnField && player2OnField) {
-      // Both players are on field - swap their positions
-      const player1Index = newLineup.findIndex(p => p.id === player1.id);
-      const player2Index = newLineup.findIndex(p => p.id === player2.id);
-      
-      if (player1Index !== -1 && player2Index !== -1) {
-        const tempPosition = newLineup[player1Index].position;
-        newLineup[player1Index] = { ...newLineup[player1Index], position: newLineup[player2Index].position };
-        newLineup[player2Index] = { ...newLineup[player2Index], position: tempPosition };
-      }
-    } else if (!player1OnField && !player2OnField) {
-      // Both players are on bench - just swap their order (no position change needed)
-      const player1Index = newReservePlayers.findIndex(p => p.id === player1.id);
-      const player2Index = newReservePlayers.findIndex(p => p.id === player2.id);
-      
-      if (player1Index !== -1 && player2Index !== -1) {
-        [newReservePlayers[player1Index], newReservePlayers[player2Index]] = 
-        [newReservePlayers[player2Index], newReservePlayers[player1Index]];
-      }
-    } else {
-      // One player on field, one on bench - substitute them
-      const fieldPlayer = player1OnField ? player1 : player2;
-      const benchPlayer = player1OnField ? player2 : player1;
-      
-      const fieldIndex = newLineup.findIndex(p => p.id === fieldPlayer.id);
-      const benchIndex = newReservePlayers.findIndex(p => p.id === benchPlayer.id);
-      
-      if (fieldIndex !== -1 && benchIndex !== -1) {
-        // Move field player to bench
-        newReservePlayers[benchIndex] = fieldPlayer;
-        
-        // Move bench player to field with field player's position
-        newLineup[fieldIndex] = { ...benchPlayer, position: fieldPlayer.position };
-
-        // Create substitution record
-        const substitution: Substitution = {
-          time: match.match_time,
-          quarter: match.current_quarter,
-          playerIn: benchPlayer,
-          playerOut: fieldPlayer,
-          timestamp: new Date().toISOString(),
-        };
     setIsSubstituting(false);
-        const newSubstitutions = [...match.substitutions, substitution];
-        
-        updateMatch({
-          lineup: newLineup,
-          reserve_players: newReservePlayers,
-          substitutions: newSubstitutions,
-        });
-        return;
-      }
-    }
-  };
-    updateMatch({
-      lineup: newLineup,
-      reserve_players: newReservePlayers,
-    });
   };
 
   const getPlayerInPosition = (positionId: string): Player | null => {
@@ -702,7 +618,6 @@ export default function MatchScreen() {
   const cancelSubstitution = () => {
     setSelectedPosition(null);
     setSelectedPlayer(null);
-    setSelectedPlayerLocation(null);
     setIsSubstituting(false);
   };
 
@@ -1055,7 +970,7 @@ export default function MatchScreen() {
                         <View style={styles.upcomingPlayer}>
                           <Text style={styles.upcomingPlayerName}>
                             {event.player.name} #{event.player.number}
-                          isSelected={selectedPlayer?.id === player.id && selectedPlayerLocation === 'field'}
+                          </Text>
                           <Text style={styles.upcomingPlayerAction}>
                             → Komt erin
                           </Text>
