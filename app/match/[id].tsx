@@ -646,19 +646,31 @@ export default function MatchScreen() {
     // Get all players (lineup + reserves)
     const allPlayers = [...match.lineup, ...match.reserve_players];
     
+    console.log('🔍 Debug Reserve Calculation:');
+    console.log('Total players:', allPlayers.length);
+    console.log('Lineup players:', match.lineup.length);
+    console.log('Original reserves:', match.reserve_players.length);
+    
     // Get currently active players on field
     const activePlayerIds = new Set();
     
     if (Object.entries(activePlayers).length === 0 && time === 0) {
       // At start, lineup players are on field
       match.lineup.forEach(player => activePlayerIds.add(player.id));
+      console.log('Using lineup as active players (start of match)');
     } else {
       // Use active players from timeline
       Object.values(activePlayers).forEach(player => activePlayerIds.add(player.id));
+      console.log('Using timeline active players');
     }
     
+    console.log('Active player IDs:', Array.from(activePlayerIds));
+    
     // Return players not currently on field
-    return allPlayers.filter(player => !activePlayerIds.has(player.id));
+    const reserves = allPlayers.filter(player => !activePlayerIds.has(player.id));
+    console.log('Calculated reserves:', reserves.length, reserves.map(p => p.name));
+    
+    return reserves;
   };
   const getPositions = () => {
     return Object.keys(parsedSchedule).sort();
