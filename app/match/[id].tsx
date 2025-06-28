@@ -32,6 +32,7 @@ import {
 import TimeControl from '../components/match/TimeControl';
 import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
 import { styles } from '../styles/match';
+import TimeDisplay from '../components/match/TimeDisplay';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -647,23 +648,6 @@ export default function MatchScreen() {
     return scheduleData?.quarters ? Array.from({ length: scheduleData.quarters }, (_, i) => i + 1) : [1, 2, 3, 4];
   };
 
-  const getPositionDisplayName = (position: string) => {
-    const positionMap: Record<string, string> = {
-      'striker': 'Aanvaller',
-      'sweeper': 'Libero',
-      'lastLine': 'Laatste Lijn',
-      'leftBack': 'Linksback',
-      'rightBack': 'Rechtsback',
-      'leftMidfield': 'Linksmidden',
-      'rightMidfield': 'Rechtsmidden',
-      'centerMidfield': 'Middenmidden',
-      'leftForward': 'Linksvoorwaarts',
-      'rightForward': 'Rechtsvoorwaarts',
-      'goalkeeper': 'Keeper',
-    };
-    return positionMap[position] || position;
-  };
-
   const getPositionColorForSchedule = (position: string) => {
     const pos = position.toLowerCase();
     if (pos.includes('goalkeeper')) return '#EF4444';
@@ -712,29 +696,17 @@ export default function MatchScreen() {
             {match.home_team} vs {match.away_team}
           </Text>
           <Text style={styles.teamName}>{match.teams.name}</Text>
-        </View>
-        
-        {hasSubstitutionSchedule && (
-          <TouchableOpacity
-            style={styles.scheduleButton}
-            onPress={() => router.push(`/substitution-schedule/${match.id}`)}
-          >
-            <Calendar size={18} color="#FF6B35" />
-          </TouchableOpacity>
-        )}
+        </View>      
       </View>
 
       {/* Time Display - Always visible */}
-      <View style={styles.timeDisplayContainer}>
-        <View style={styles.timeInfo}>
-          <Clock size={16} color="#6B7280" />
-          <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-          <Text style={styles.quarterText}>Kwart {currentQuarter}</Text>
-        </View>
-        <View style={styles.scoreInfo}>
-          <Text style={styles.scoreText}>{match.home_score} - {match.away_score}</Text>
-        </View>
-      </View>
+      <TimeDisplay
+        currentTime={currentTime}
+        currentQuarter={currentQuarter}
+        homeScore={match.home_score}
+        awayScore={match.away_score}
+        formatTime={formatTime}
+      />
 
       {/* Substitution Banner */}
       {isSubstituting && (
