@@ -11,7 +11,7 @@ interface CompactPlayerCardProps {
   isSelected?: boolean;
   isSubstituting?: boolean;
   onPress?: () => void;
-  formation?: { positions: FormationPosition[] } | null;
+  formation?: FormationPosition[] | null;
 }
 
 export function CompactPlayerCard({
@@ -41,7 +41,7 @@ export function CompactPlayerCard({
       return getPositionDisplayName(player.position);
     }
 
-    const formationPosition = formation.positions.find(pos => {
+    const formationPosition = formation.find(pos => {
       const dutchName = pos.label_translations?.nl || pos.dutch_name || pos.name;
       return player.position === dutchName || 
              player.position === pos.dutch_name || 
