@@ -179,6 +179,7 @@ export default function MatchScreen() {
   const [formation, setFormation] = useState<Formation | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
@@ -486,7 +487,9 @@ export default function MatchScreen() {
     if (isSubstituting) {
       makePositionSubstitution(position);
     } else {
+      const playerInPosition = getPlayerInPosition(position.id);
       setSelectedPosition(position.id);
+      setSelectedPlayer(playerInPosition);
       setIsSubstituting(true);
     }
   };
@@ -496,6 +499,7 @@ export default function MatchScreen() {
       makePlayerToPositionSubstitution(player, isOnField);
     } else {
       setSelectedPosition(null);
+      setSelectedPlayer(player);
       setIsSubstituting(true);
     }
   };
@@ -529,6 +533,7 @@ export default function MatchScreen() {
     }
 
     setSelectedPosition(null);
+    setSelectedPlayer(null);
     setIsSubstituting(false);
   };
 
@@ -576,6 +581,7 @@ export default function MatchScreen() {
     }
 
     setSelectedPosition(null);
+    setSelectedPlayer(null);
     setIsSubstituting(false);
   };
 
@@ -607,6 +613,7 @@ export default function MatchScreen() {
 
   const cancelSubstitution = () => {
     setSelectedPosition(null);
+    setSelectedPlayer(null);
     setIsSubstituting(false);
   };
 
@@ -769,6 +776,7 @@ export default function MatchScreen() {
       <SubstitutionBanner
         isSubstituting={isSubstituting}
         selectedPosition={selectedPosition}
+        selectedPlayer={selectedPlayer}
         getPositionName={getPositionName}
         onDismiss={cancelSubstitution}
       />
