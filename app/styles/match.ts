@@ -127,6 +127,20 @@ export const styles = StyleSheet.create({
       color: '#DC2626',
       fontFamily: 'Inter-SemiBold',
     },
+    swapBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F3E8FF',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      gap: 8,
+    },
+    swapText: {
+      flex: 1,
+      fontSize: 13,
+      color: '#8B5CF6',
+      fontFamily: 'Inter-Medium',
+    },
     viewModeContainer: {
       flexDirection: 'row',
       backgroundColor: '#FFFFFF',

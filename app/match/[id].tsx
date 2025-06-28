@@ -180,6 +180,7 @@ export default function MatchScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedPlayerIsOnField, setSelectedPlayerIsOnField] = useState<boolean>(false);
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
@@ -501,12 +502,131 @@ export default function MatchScreen() {
       isOnField: isOnField
     });
     
-    setSelectedPlayer(player);
+    // Check if we already have a selected player from the opposite column
+    if (selectedPlayer && selectedPlayerIsOnField !== isOnField) {
+      // We have a player from the opposite column, perform swap
+      performPlayerSwap(selectedPlayer, selectedPlayerIsOnField, player, isOnField);
+      return;
+    }
     
-    if (isSubstituting && selectedPosition) {
-      makePlayerToPositionSubstitution(player, isOnField);
-    } else {
-      setIsSubstituting(true);
+    // Select this player
+    setSelectedPlayer(player);
+    setSelectedPlayerIsOnField(isOnField);
+    setIsSubstituting(true);
+  };
+
+  const performPlayerSwap = async (player1: Player, player1IsOnField: boolean, player2: Player, player2IsOnField: boolean) => {
+    if (!match) return;
+
+    console.log('🔄 Performing player swap:', {
+      player1: { name: player1.name, number: player1.number, isOnField: player1IsOnField },
+      player2: { name: player2.name, number: player2.number, isOnField: player2IsOnField }
+    });
+
+    try {
+      const newLineup = [...match.lineup];
+      const newReservePlayers = [...match.reserve_players];
+
+      if (player1IsOnField && !player2IsOnField) {
+        // Player 1 is on field, Player 2 is on bench - swap them
+        const player1Index = newLineup.findIndex(p => p.id === player1.id);
+        const player2Index = newReservePlayers.findIndex(p => p.id === player2.id);
+        
+        if (player1Index !== -1 && player2Index !== -1) {
+          // Move player1 to bench with their current position
+          newReservePlayers[player2Index] = { ...player1 };
+          
+          // Move player2 to field with player1's position
+          newLineup[player1Index] = { ...player2, position: player1.position };
+
+          // Create substitution record
+          const substitution: Substitution = {
+            time: match.match_time,
+            quarter: match.current_quarter,
+            playerIn: player2,
+            playerOut: player1,
+            timestamp: new Date().toISOString(),
+          };
+
+          const newSubstitutions = [...match.substitutions, substitution];
+          
+          await updateMatch({
+            lineup: newLineup,
+            reserve_players: newReservePlayers,
+            substitutions: newSubstitutions,
+          });
+
+          Alert.alert(
+            'Wissel Uitgevoerd',
+            `${player2.name} (#${player2.number}) is ingewisseld voor ${player1.name} (#${player1.number})`
+          );
+        }
+      } else if (!player1IsOnField && player2IsOnField) {
+        // Player 1 is on bench, Player 2 is on field - swap them
+        const player1Index = newReservePlayers.findIndex(p => p.id === player1.id);
+        const player2Index = newLineup.findIndex(p => p.id === player2.id);
+        
+        if (player1Index !== -1 && player2Index !== -1) {
+          // Move player2 to bench with their current position
+          newReservePlayers[player1Index] = { ...player2 };
+          
+          // Move player1 to field with player2's position
+          newLineup[player2Index] = { ...player1, position: player2.position };
+
+          // Create substitution record
+          const substitution: Substitution = {
+            time: match.match_time,
+            quarter: match.current_quarter,
+            playerIn: player1,
+            playerOut: player2,
+            timestamp: new Date().toISOString(),
+          };
+
+          const newSubstitutions = [...match.substitutions, substitution];
+          
+          await updateMatch({
+            lineup: newLineup,
+            reserve_players: newReservePlayers,
+            substitutions: newSubstitutions,
+          });
+
+          Alert.alert(
+            'Wissel Uitgevoerd',
+            `${player1.name} (#${player1.number}) is ingewisseld voor ${player2.name} (#${player2.number})`
+          );
+        }
+      } else if (player1IsOnField && player2IsOnField) {
+        // Both players are on field - swap their positions
+        const player1Index = newLineup.findIndex(p => p.id === player1.id);
+        const player2Index = newLineup.findIndex(p => p.id === player2.id);
+        
+        if (player1Index !== -1 && player2Index !== -1) {
+          const tempPosition = newLineup[player1Index].position;
+          newLineup[player1Index] = { ...newLineup[player1Index], position: newLineup[player2Index].position };
+          newLineup[player2Index] = { ...newLineup[player2Index], position: tempPosition };
+
+          await updateMatch({ lineup: newLineup });
+
+          Alert.alert(
+            'Posities Gewisseld',
+            `${player1.name} en ${player2.name} hebben van positie gewisseld`
+          );
+        }
+      } else {
+        // Both players are on bench - just show a message
+        Alert.alert(
+          'Geen Actie',
+          'Beide spelers zitten op de bank. Selecteer een speler van het veld om te wisselen.'
+        );
+      }
+    } catch (error) {
+      console.error('Error performing player swap:', error);
+      Alert.alert('Fout', 'Kon spelers niet wisselen');
+    } finally {
+      // Clear selection
+      setSelectedPlayer(null);
+      setSelectedPlayerIsOnField(false);
+      setIsSubstituting(false);
     }
   };
 
@@ -618,6 +738,7 @@ export default function MatchScreen() {
   const cancelSubstitution = () => {
     setSelectedPosition(null);
     setSelectedPlayer(null);
+    setSelectedPlayerIsOnField(false);
     setIsSubstituting(false);
   };
 
@@ -812,6 +933,20 @@ export default function MatchScreen() {
         getPositionName={getPositionName}
         onDismiss={cancelSubstitution}
       />
+
+      {/* Player Swap Banner */}
+      {selectedPlayer && (
+        <View style={styles.swapBanner}>
+          <ArrowUpDown size={14} color="#8B5CF6" />
+          <Text style={styles.swapText}>
+            {selectedPlayer.name} (#${selectedPlayer.number}) geselecteerd - 
+            {selectedPlayerIsOnField ? ' selecteer een bankspeler om te wisselen' : ' selecteer een veldspeler om te wisselen'}
+          </Text>
+          <TouchableOpacity onPress={cancelSubstitution}>
+            <Text style={styles.cancelText}>Annuleren</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {viewMode === 'timeline' && hasSubstitutionSchedule ? (
