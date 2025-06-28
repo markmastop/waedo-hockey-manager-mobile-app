@@ -41,6 +41,7 @@ const { width: screenWidth } = Dimensions.get('window');
 interface Formation {
   id: string;
   key: string;
+  players: Player[];
   name_translations: Record<string, string>;
   positions: FormationPosition[];
 }
@@ -174,6 +175,7 @@ function CompactPlayerCard({
 export default function MatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
   const [formation, setFormation] = useState<Formation | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
@@ -336,7 +338,9 @@ export default function MatchScreen() {
         .select(`
           *,
           teams (
-            name
+            id,
+            name,
+            players
           )
         `)
         .eq('id', id)
@@ -351,6 +355,15 @@ export default function MatchScreen() {
       const statsArray = Array.isArray(data.player_stats) ? data.player_stats : 
         initializePlayerStats(lineupArray, reservePlayersArray);
       const quarterTimesArray = Array.isArray(data.quarter_times) ? data.quarter_times : [0, 0, 0, 0];
+      
+      // Set team data
+      if (data.teams) {
+        setTeam({
+          id: data.teams.id,
+          name: data.teams.name,
+          players: Array.isArray(data.teams.players) ? data.teams.players : []
+        });
+      }
       
       const matchData = {
         ...data,
@@ -643,13 +656,17 @@ export default function MatchScreen() {
   };
 
   const getReservePlayers = (time: number) => {
-    // Get all players (lineup + reserves)
-    const allPlayers = [...match.lineup, ...match.reserve_players];
+    // Get all players from the team
+    if (!team || !team.players) {
+      console.log('🔍 No team data available');
+      return [];
+    }
+    
+    const allPlayers = team.players;
     
     console.log('🔍 Debug Reserve Calculation:');
     console.log('Total players:', allPlayers.length);
-    console.log('Lineup players:', match.lineup.length);
-    console.log('Original reserves:', match.reserve_players.length);
+    console.log('Players in lineup:', match.lineup.length);
     
     // Get currently active players on field
     const activePlayerIds = new Set();
