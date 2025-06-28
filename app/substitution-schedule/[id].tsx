@@ -15,8 +15,8 @@ import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import Timer from '../components/substitution-schedule/Timer';
 import StatsBar from '../components/substitution-schedule/StatsBar';
 import Controls from '../components/substitution-schedule/Controls';
-import GridContainer from '../components/substitution-schedule/GridContainer';
 import ActivePlayers from '../components/substitution-schedule/ActivePlayers';
+import GridContainer from '../components/substitution-schedule/GridContainer';
 import { 
   ArrowLeft, 
   Users, 
@@ -568,79 +568,14 @@ export default function SubstitutionScheduleScreen() {
             </View>
           </View>
         ) : (
-          <View style={styles.gridContainer}>
-            {/* Header Row */}
-            <View style={styles.gridHeader}>
-              <View style={styles.positionHeaderCell}>
-                <Text style={styles.headerText}>Positie</Text>
-              </View>
-              {getQuarters().map(quarter => (
-                <View key={quarter} style={styles.quarterHeaderCell}>
-                  <Text style={styles.headerText}>Q{quarter}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Data Rows */}
-            {filteredPositions.map(position => (
-              <View key={position} style={styles.gridRow}>
-                <View style={styles.positionCell}>
-                  <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(position) }]} />
-                  <Text style={styles.positionName} numberOfLines={2}>
-                    {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
-                  </Text>
-                </View>
-                
-                {getQuarters().map(quarter => (
-                  <View key={quarter} style={styles.quarterCell}>
-                    {parsedSchedule[position]?.[quarter]?.map((player, index) => (
-                      player ? (
-                        <TouchableOpacity
-                          key={`${player.id}-${index}`}
-                          style={styles.playerChip}
-                          onPress={() => handlePlayerPress(player)}
-                        >
-                          <View style={[styles.playerNumber, { backgroundColor: getPositionColor(position) }]}>
-                            <Text style={styles.playerNumberText}>{player.number}</Text>
-                          </View>
-                          <View style={styles.playerDetails}>
-                            <Text style={styles.playerName} numberOfLines={1}>
-                              {player.name}
-                            </Text>
-                            <View style={styles.playerMeta}>
-                              <View style={styles.conditionIndicator}>
-                                <View style={[styles.conditionDot, { 
-                                  backgroundColor: (player.condition || 100) >= 80 ? '#10B981' : 
-                                                 (player.condition || 100) >= 60 ? '#F59E0B' : '#EF4444' 
-                                }]} />
-                                <Text style={styles.conditionValue}>{player.condition || 100}%</Text>
-                              </View>
-                              {player.isGoalkeeper && (
-                                <Shield size={10} color="#EF4444" />
-                              )}
-                              {player.isStandIn && (
-                                <View style={styles.standInIndicator}>
-                                  <Text style={styles.standInIndicatorText}>I</Text>
-                                </View>
-                              )}
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                      ) : (
-                        <View key={index} style={styles.emptySlot}>
-                          <Text style={styles.emptySlotText}>-</Text>
-                        </View>
-                      )
-                    )) || (
-                      <View style={styles.emptySlot}>
-                        <Text style={styles.emptySlotText}>Geen spelers</Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
+          <GridContainer
+            formation={formation}
+            getQuarters={getQuarters}
+            filteredPositions={filteredPositions}
+            parsedSchedule={parsedSchedule}
+            getPositionColor={getPositionColor}
+            handlePlayerPress={handlePlayerPress}
+          />
         )}
       </ScrollView>
 
