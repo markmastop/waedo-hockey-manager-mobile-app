@@ -180,7 +180,6 @@ export default function MatchScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [selectedPlayerIsOnField, setSelectedPlayerIsOnField] = useState<boolean>(false);
   const [isSubstituting, setIsSubstituting] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
@@ -499,134 +498,147 @@ export default function MatchScreen() {
       name: player.name,
       number: player.number,
       position: player.position,
-      isOnField: isOnField
+      isOnField: isOnField,
+      currentSelectedPlayer: selectedPlayer?.name,
+      isSubstituting: isSubstituting
     });
     
-    // Check if we already have a selected player from the opposite column
-    if (selectedPlayer && selectedPlayerIsOnField !== isOnField) {
-      // We have a player from the opposite column, perform swap
-      performPlayerSwap(selectedPlayer, selectedPlayerIsOnField, player, isOnField);
-      return;
+    // If we already have a selected player, check if we can swap
+    if (selectedPlayer && selectedPlayer.id !== player.id) {
+      const selectedPlayerIsOnField = match?.lineup.some(p => p.id === selectedPlayer.id) || false;
+      const newPlayerIsOnField = isOnField;
+      
+      console.log('🔄 Attempting swap:', {
+        selectedPlayer: { name: selectedPlayer.name, isOnField: selectedPlayerIsOnField },
+        newPlayer: { name: player.name, isOnField: newPlayerIsOnField }
+      });
+      
+      // Check if players are from different columns (one on field, one on bench)
+      if (selectedPlayerIsOnField !== newPlayerIsOnField) {
+        performPlayerSwap(selectedPlayer, selectedPlayerIsOnField, player, newPlayerIsOnField);
+        return;
+      } else if (selectedPlayerIsOnField && newPlayerIsOnField) {
+        // Both players are on field - swap positions
+        performPositionSwap(selectedPlayer, player);
+        return;
+      } else {
+        // Both players are on bench - show message
+        Alert.alert(
+          'Ongeldige wissel',
+          'Je kunt geen twee reservespelers wisselen. Selecteer een speler van het veld en een van de bank.',
+          [{ text: 'OK' }]
+        );
+        cancelSubstitution();
+        return;
+      }
     }
     
-    // Select this player
+    // Set as selected player
     setSelectedPlayer(player);
-    setSelectedPlayerIsOnField(isOnField);
     setIsSubstituting(true);
   };
 
-  const performPlayerSwap = async (player1: Player, player1IsOnField: boolean, player2: Player, player2IsOnField: boolean) => {
+  const performPlayerSwap = async (player1: Player, player1OnField: boolean, player2: Player, player2OnField: boolean) => {
     if (!match) return;
 
     console.log('🔄 Performing player swap:', {
-      player1: { name: player1.name, number: player1.number, isOnField: player1IsOnField },
-      player2: { name: player2.name, number: player2.number, isOnField: player2IsOnField }
+      player1: { name: player1.name, onField: player1OnField },
+      player2: { name: player2.name, onField: player2OnField }
     });
 
     try {
       const newLineup = [...match.lineup];
       const newReservePlayers = [...match.reserve_players];
 
-      if (player1IsOnField && !player2IsOnField) {
-        // Player 1 is on field, Player 2 is on bench - swap them
-        const player1Index = newLineup.findIndex(p => p.id === player1.id);
-        const player2Index = newReservePlayers.findIndex(p => p.id === player2.id);
+      if (player1OnField && !player2OnField) {
+        // Player1 is on field, Player2 is on bench
+        const fieldIndex = newLineup.findIndex(p => p.id === player1.id);
+        const benchIndex = newReservePlayers.findIndex(p => p.id === player2.id);
         
-        if (player1Index !== -1 && player2Index !== -1) {
-          // Move player1 to bench with their current position
-          newReservePlayers[player2Index] = { ...player1 };
-          
-          // Move player2 to field with player1's position
-          newLineup[player1Index] = { ...player2, position: player1.position };
-
-          // Create substitution record
-          const substitution: Substitution = {
-            time: match.match_time,
-            quarter: match.current_quarter,
-            playerIn: player2,
-            playerOut: player1,
-            timestamp: new Date().toISOString(),
-          };
-
-          const newSubstitutions = [...match.substitutions, substitution];
-          
-          await updateMatch({
-            lineup: newLineup,
-            reserve_players: newReservePlayers,
-            substitutions: newSubstitutions,
-          });
-
-          Alert.alert(
-            'Wissel Uitgevoerd',
-            `${player2.name} (#${player2.number}) is ingewisseld voor ${player1.name} (#${player1.number})`
-          );
+        if (fieldIndex !== -1 && benchIndex !== -1) {
+          // Swap: Player2 takes Player1's position, Player1 goes to bench
+          const player1Position = newLineup[fieldIndex].position;
+          newLineup[fieldIndex] = { ...player2, position: player1Position };
+          newReservePlayers[benchIndex] = player1;
         }
-      } else if (!player1IsOnField && player2IsOnField) {
-        // Player 1 is on bench, Player 2 is on field - swap them
-        const player1Index = newReservePlayers.findIndex(p => p.id === player1.id);
-        const player2Index = newLineup.findIndex(p => p.id === player2.id);
+      } else if (!player1OnField && player2OnField) {
+        // Player1 is on bench, Player2 is on field
+        const benchIndex = newReservePlayers.findIndex(p => p.id === player1.id);
+        const fieldIndex = newLineup.findIndex(p => p.id === player2.id);
         
-        if (player1Index !== -1 && player2Index !== -1) {
-          // Move player2 to bench with their current position
-          newReservePlayers[player1Index] = { ...player2 };
-          
-          // Move player1 to field with player2's position
-          newLineup[player2Index] = { ...player1, position: player2.position };
-
-          // Create substitution record
-          const substitution: Substitution = {
-            time: match.match_time,
-            quarter: match.current_quarter,
-            playerIn: player1,
-            playerOut: player2,
-            timestamp: new Date().toISOString(),
-          };
-
-          const newSubstitutions = [...match.substitutions, substitution];
-          
-          await updateMatch({
-            lineup: newLineup,
-            reserve_players: newReservePlayers,
-            substitutions: newSubstitutions,
-          });
-
-          Alert.alert(
-            'Wissel Uitgevoerd',
-            `${player1.name} (#${player1.number}) is ingewisseld voor ${player2.name} (#${player2.number})`
-          );
+        if (benchIndex !== -1 && fieldIndex !== -1) {
+          // Swap: Player1 takes Player2's position, Player2 goes to bench
+          const player2Position = newLineup[fieldIndex].position;
+          newLineup[fieldIndex] = { ...player1, position: player2Position };
+          newReservePlayers[benchIndex] = player2;
         }
-      } else if (player1IsOnField && player2IsOnField) {
-        // Both players are on field - swap their positions
-        const player1Index = newLineup.findIndex(p => p.id === player1.id);
-        const player2Index = newLineup.findIndex(p => p.id === player2.id);
-        
-        if (player1Index !== -1 && player2Index !== -1) {
-          const tempPosition = newLineup[player1Index].position;
-          newLineup[player1Index] = { ...newLineup[player1Index], position: newLineup[player2Index].position };
-          newLineup[player2Index] = { ...newLineup[player2Index], position: tempPosition };
-
-          await updateMatch({ lineup: newLineup });
-
-          Alert.alert(
-            'Posities Gewisseld',
-            `${player1.name} en ${player2.name} hebben van positie gewisseld`
-          );
-        }
-      } else {
-        // Both players are on bench - just show a message
-        Alert.alert(
-          'Geen Actie',
-          'Beide spelers zitten op de bank. Selecteer een speler van het veld om te wisselen.'
-        );
       }
-    } catch (error) {
-      console.error('Error performing player swap:', error);
-      Alert.alert('Fout', 'Kon spelers niet wisselen');
-    } finally {
+
+      // Create substitution record
+      const substitution: Substitution = {
+        time: match.match_time,
+        quarter: match.current_quarter,
+        playerIn: player1OnField ? player2 : player1,
+        playerOut: player1OnField ? player1 : player2,
+        timestamp: new Date().toISOString(),
+      };
+
+      const newSubstitutions = [...match.substitutions, substitution];
+      
+      await updateMatch({
+        lineup: newLineup,
+        reserve_players: newReservePlayers,
+        substitutions: newSubstitutions,
+      });
+
+      // Show success message
+      Alert.alert(
+        'Wissel uitgevoerd',
+        `${player1OnField ? player2.name : player1.name} is ingewisseld voor ${player1OnField ? player1.name : player2.name}`,
+        [{ text: 'OK' }]
+      );
+
       // Clear selection
-      setSelectedPlayer(null);
-      setSelectedPlayerIsOnField(false);
-      setIsSubstituting(false);
+      cancelSubstitution();
+    } catch (error) {
+      console.error('Error performing swap:', error);
+      Alert.alert('Fout', 'Kon wissel niet uitvoeren');
+    }
+  };
+
+  const performPositionSwap = async (player1: Player, player2: Player) => {
+    if (!match) return;
+
+    console.log('🔄 Performing position swap:', {
+      player1: { name: player1.name, position: player1.position },
+      player2: { name: player2.name, position: player2.position }
+    });
+
+    try {
+      const newLineup = match.lineup.map(player => {
+        if (player.id === player1.id) {
+          return { ...player, position: player2.position };
+        }
+        if (player.id === player2.id) {
+          return { ...player, position: player1.position };
+        }
+        return player;
+      });
+
+      await updateMatch({ lineup: newLineup });
+
+      // Show success message
+      Alert.alert(
+        'Posities gewisseld',
+        `${player1.name} en ${player2.name} hebben van positie gewisseld`,
+        [{ text: 'OK' }]
+      );
+
+      // Clear selection
+      cancelSubstitution();
+    } catch (error) {
+      console.error('Error performing position swap:', error);
+      Alert.alert('Fout', 'Kon posities niet wisselen');
     }
   };
 
@@ -738,7 +750,6 @@ export default function MatchScreen() {
   const cancelSubstitution = () => {
     setSelectedPosition(null);
     setSelectedPlayer(null);
-    setSelectedPlayerIsOnField(false);
     setIsSubstituting(false);
   };
 
@@ -770,24 +781,10 @@ export default function MatchScreen() {
   const getActivePlayersAtTime = (time: number) => {
     const activePlayers: Record<string, Player> = {};
     
-    // Get events up to current time, sorted by time
     const pastEvents = timelineEvents.filter(event => event.time <= time);
     
-    console.log('🔍 Getting active players at time:', time);
-    console.log('Past events:', pastEvents.length);
-    
-    // Apply events in chronological order
     pastEvents.forEach(event => {
-      console.log(`📅 Applying event at ${event.time}:`, {
-        position: event.position,
-        player: { name: event.player.name, number: event.player.number, position: event.player.position }
-      });
       activePlayers[event.position] = event.player;
-    });
-    
-    console.log('✅ Final active players:', Object.keys(activePlayers).length);
-    Object.entries(activePlayers).forEach(([pos, player]) => {
-      console.log(`  ${pos}: ${player.name} (#${player.number})`);
     });
     
     return activePlayers;
@@ -801,54 +798,40 @@ export default function MatchScreen() {
     );
   };
 
-  const getReservePlayers = (time: number, activePlayers: Record<string, Player>) => {
+  const getReservePlayers = (time: number) => {
     // Get all players from the team
     if (!team || !team.players) {
-      console.log('🔍 No team data available for reserves');
+      console.log('🔍 No team data available');
       return [];
     }
     
     const allPlayers = team.players;
     
     console.log('🔍 Debug Reserve Calculation:');
-    console.log('Total team players:', allPlayers.length);
-    console.log('Active players count:', Object.keys(activePlayers).length);
+    console.log('Total players:', allPlayers.length);
+    console.log('Players in lineup:', match.lineup.length);
     
-    // Get currently active player IDs
+    // Get currently active players on field
     const activePlayerIds = new Set();
     
-    if (Object.keys(activePlayers).length === 0 && time === 0) {
+    if (Object.entries(activePlayers).length === 0 && time === 0) {
       // At start, lineup players are on field
-      match?.lineup.forEach(player => {
-        activePlayerIds.add(player.id);
-        console.log(`  Lineup player: ${player.name} (#${player.number})`);
-      });
+      match.lineup.forEach(player => activePlayerIds.add(player.id));
       console.log('Using lineup as active players (start of match)');
     } else {
       // Use active players from timeline
-      Object.values(activePlayers).forEach(player => {
-        activePlayerIds.add(player.id);
-        console.log(`  Active player: ${player.name} (#${player.number})`);
-      });
+      Object.values(activePlayers).forEach(player => activePlayerIds.add(player.id));
       console.log('Using timeline active players');
     }
     
     console.log('Active player IDs:', Array.from(activePlayerIds));
     
-    // Return players not currently on field - ensure we get complete player objects
-    const reserves = allPlayers.filter(player => {
-      const isReserve = !activePlayerIds.has(player.id);
-      if (isReserve) {
-        console.log(`  Reserve: ${player.name} (#${player.number}) - ${player.position}`);
-      }
-      return isReserve;
-    });
-    
-    console.log('Calculated reserves:', reserves.length);
+    // Return players not currently on field
+    const reserves = allPlayers.filter(player => !activePlayerIds.has(player.id));
+    console.log('Calculated reserves:', reserves.length, reserves.map(p => p.name));
     
     return reserves;
   };
-
   const getPositions = () => {
     return Object.keys(parsedSchedule).sort();
   };
@@ -889,7 +872,7 @@ export default function MatchScreen() {
   const activePlayers = getActivePlayersAtTime(currentTime);
   const upcomingSubstitutions = getUpcomingSubstitutions(currentTime);
   const currentQuarter = getCurrentQuarter(currentTime);
-  const reservePlayers = getReservePlayers(currentTime, activePlayers);
+  const reservePlayers = getReservePlayers(currentTime);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -925,22 +908,12 @@ export default function MatchScreen() {
         setViewMode={setViewMode}
       />
 
-      {/* Substitution Banner */}
-      <SubstitutionBanner
-        isSubstituting={isSubstituting}
-        selectedPosition={selectedPosition}
-        selectedPlayer={selectedPlayer}
-        getPositionName={getPositionName}
-        onDismiss={cancelSubstitution}
-      />
-
-      {/* Player Swap Banner */}
+      {/* Swap Banner */}
       {selectedPlayer && (
         <View style={styles.swapBanner}>
           <ArrowUpDown size={14} color="#8B5CF6" />
           <Text style={styles.swapText}>
-            {selectedPlayer.name} (#${selectedPlayer.number}) geselecteerd - 
-            {selectedPlayerIsOnField ? ' selecteer een bankspeler om te wisselen' : ' selecteer een veldspeler om te wisselen'}
+            {selectedPlayer.name} geselecteerd - selecteer een andere speler om te wisselen
           </Text>
           <TouchableOpacity onPress={cancelSubstitution}>
             <Text style={styles.cancelText}>Annuleren</Text>
@@ -988,8 +961,11 @@ export default function MatchScreen() {
                             ]}
                             onPress={() => handlePlayerPress(player, true)}
                           >
-                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColor(player.position) }]}>
-                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
+                            <View style={[
+                              styles.livePlayerNumberBadge,
+                              { backgroundColor: getPositionColor(player.position) }
+                            ]}>
+                              <Text style={styles.livePlayerNumberText}>{player.number}</Text>
                             </View>
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.livePlayerPosition}>
@@ -1026,8 +1002,11 @@ export default function MatchScreen() {
                             ]}
                             onPress={() => handlePlayerPress(player, true)}
                           >
-                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColorForSchedule(position) }]}>
-                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
+                            <View style={[
+                              styles.livePlayerNumberBadge,
+                              { backgroundColor: getPositionColorForSchedule(position) }
+                            ]}>
+                              <Text style={styles.livePlayerNumberText}>{player.number}</Text>
                             </View>
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.livePlayerPosition}>
@@ -1088,8 +1067,11 @@ export default function MatchScreen() {
                             ]}
                             onPress={() => handlePlayerPress(player, false)}
                           >
-                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColor(player.position) }]}>
-                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
+                            <View style={[
+                              styles.livePlayerNumberBadge,
+                              { backgroundColor: getPositionColor(player.position) }
+                            ]}>
+                              <Text style={styles.livePlayerNumberText}>{player.number}</Text>
                             </View>
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.reserveLabel}>Reserve</Text>
