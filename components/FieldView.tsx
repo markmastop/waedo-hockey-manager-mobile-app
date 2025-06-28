@@ -18,9 +18,69 @@ export default function FieldView({
   fieldType = 'outdoor',
 }: Props) {
   const getPlayerInPosition = (pos: FormationPosition): Player | undefined => {
-    // Try to match by the Dutch label from label_translations
+    console.log(`🔍 Looking for player in position: ${pos.id}`, {
+      positionName: pos.name,
+      dutchName: pos.dutch_name,
+      labelTranslations: pos.label_translations,
+      availablePlayers: lineup.map(p => ({ name: p.name, position: p.position, number: p.number }))
+    });
+
+    // Try multiple matching strategies
     const dutchLabel = getDutchPositionName(pos);
-    return lineup.find(p => p.position === dutchLabel || p.position === pos.dutch_name || p.position === pos.name);
+    
+    // Strategy 1: Match by Dutch label from label_translations
+    let player = lineup.find(p => p.position === dutchLabel);
+    if (player) {
+      console.log(`✅ Found player by Dutch label (${dutchLabel}):`, player);
+      return player;
+    }
+
+    // Strategy 2: Match by dutch_name
+    player = lineup.find(p => p.position === pos.dutch_name);
+    if (player) {
+      console.log(`✅ Found player by dutch_name (${pos.dutch_name}):`, player);
+      return player;
+    }
+
+    // Strategy 3: Match by name
+    player = lineup.find(p => p.position === pos.name);
+    if (player) {
+      console.log(`✅ Found player by name (${pos.name}):`, player);
+      return player;
+    }
+
+    // Strategy 4: Case-insensitive matching
+    player = lineup.find(p => 
+      p.position?.toLowerCase() === dutchLabel?.toLowerCase() ||
+      p.position?.toLowerCase() === pos.dutch_name?.toLowerCase() ||
+      p.position?.toLowerCase() === pos.name?.toLowerCase()
+    );
+    if (player) {
+      console.log(`✅ Found player by case-insensitive match:`, player);
+      return player;
+    }
+
+    // Strategy 5: Partial matching for common position variations
+    const positionVariations = [
+      dutchLabel,
+      pos.dutch_name,
+      pos.name,
+      pos.label_translations?.en
+    ].filter(Boolean);
+
+    for (const variation of positionVariations) {
+      player = lineup.find(p => 
+        p.position?.includes(variation) || 
+        variation?.includes(p.position)
+      );
+      if (player) {
+        console.log(`✅ Found player by partial match (${variation}):`, player);
+        return player;
+      }
+    }
+
+    console.log(`❌ No player found for position: ${pos.id}`);
+    return undefined;
   };
 
   const getDutchPositionName = (pos: FormationPosition): string => {
@@ -53,13 +113,18 @@ export default function FieldView({
     };
   };
 
-  console.log('🏑 FieldView rendering with positions:', positions.map(p => ({
-    id: p.id,
-    name: p.name,
-    dutch_name: p.dutch_name,
-    label_translations: p.label_translations,
-    final_name: getDutchPositionName(p)
-  })));
+  console.log('🏑 FieldView rendering with:', {
+    positionsCount: positions.length,
+    lineupCount: lineup.length,
+    positions: positions.map(p => ({
+      id: p.id,
+      name: p.name,
+      dutch_name: p.dutch_name,
+      label_translations: p.label_translations,
+      final_name: getDutchPositionName(p)
+    })),
+    lineup: lineup.map(p => ({ name: p.name, position: p.position, number: p.number }))
+  });
 
   return (
     <View style={styles.container}>
@@ -91,7 +156,10 @@ export default function FieldView({
           const adjustedPos = getAdjustedPosition(pos);
           const dutchName = getDutchPositionName(pos);
           
-          console.log(`🎯 Position ${pos.id}: ${dutchName}, player: ${player?.name || 'none'}`);
+          console.log(`🎯 Rendering position ${pos.id}: ${dutchName}`, {
+            player: player ? { name: player.name, number: player.number } : 'none',
+            color: dotColor
+          });
           
           return (
             <TouchableOpacity
@@ -145,6 +213,16 @@ export default function FieldView({
           <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
           <Text style={styles.legendText}>Geselecteerd</Text>
         </View>
+      </View>
+
+      {/* Debug Information */}
+      <View style={styles.debugContainer}>
+        <Text style={styles.debugTitle}>Debug Info:</Text>
+        <Text style={styles.debugText}>Positions: {positions.length}</Text>
+        <Text style={styles.debugText}>Lineup: {lineup.length}</Text>
+        <Text style={styles.debugText}>
+          Matched: {positions.filter(pos => getPlayerInPosition(pos)).length}
+        </Text>
       </View>
     </View>
   );
@@ -345,5 +423,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#374151',
+  },
+  debugContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  debugTitle: {
+    fontSize: 12,
+    fontFamily: 'Inter-Bold',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  debugText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+    marginBottom: 2,
   },
 });
