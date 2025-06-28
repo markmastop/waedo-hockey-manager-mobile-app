@@ -35,6 +35,7 @@ export interface Database {
           field: string;
           formation: string;
           formation_key?: string;
+          match_key?: string;
           lineup: Player[];
           reserve_players: Player[];
           substitutions: Substitution[];
@@ -60,6 +61,7 @@ export interface Database {
           field: string;
           formation?: string;
           formation_key?: string;
+          match_key?: string;
           lineup?: Player[];
           reserve_players?: Player[];
           substitutions?: Substitution[];
@@ -85,6 +87,7 @@ export interface Database {
           field?: string;
           formation?: string;
           formation_key?: string;
+          match_key?: string;
           lineup?: Player[];
           reserve_players?: Player[];
           substitutions?: Substitution[];

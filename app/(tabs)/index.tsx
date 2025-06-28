@@ -25,7 +25,8 @@ import {
   Star,
   Target,
   UserCheck,
-  ArrowUpDown
+  ArrowUpDown,
+  Hash
 } from 'lucide-react-native';
 
 interface DashboardStats {
@@ -48,6 +49,7 @@ interface RecentMatch {
   formation: string;
   formation_key?: string;
   formation_name?: string | null;
+  match_key?: string;
   teams: { name: string };
 }
 
@@ -86,7 +88,7 @@ export default function DashboardScreen() {
       setTeams(userTeams || []);
 
       if (teamIds.length > 0) {
-        // Get matches for these teams
+        // Get matches for these teams - include match_key in the select
         const { data: matches, error: matchesError } = await supabase
           .from('matches')
           .select(`
@@ -376,6 +378,17 @@ export default function DashboardScreen() {
                           {formatDate(match.date)}
                         </Text>
                       </View>
+                      
+                      {/* Match Key Display */}
+                      {match.match_key && (
+                        <View style={styles.matchDetailItem}>
+                          <Hash size={12} color="#8B5CF6" />
+                          <Text style={[styles.matchDetailText, { color: '#8B5CF6', fontFamily: 'Inter-SemiBold' }]}>
+                            {match.match_key}
+                          </Text>
+                        </View>
+                      )}
+                      
                       <Text style={styles.homeIndicator}>
                         {match.is_home ? 'Thuis' : 'Uit'}
                       </Text>
@@ -631,6 +644,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   matchDetailItem: {
     flexDirection: 'row',
