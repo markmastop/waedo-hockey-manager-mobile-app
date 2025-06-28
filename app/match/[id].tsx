@@ -642,6 +642,24 @@ export default function MatchScreen() {
     );
   };
 
+  const getReservePlayers = (time: number) => {
+    // Get all players (lineup + reserves)
+    const allPlayers = [...match.lineup, ...match.reserve_players];
+    
+    // Get currently active players on field
+    const activePlayerIds = new Set();
+    
+    if (Object.entries(activePlayers).length === 0 && time === 0) {
+      // At start, lineup players are on field
+      match.lineup.forEach(player => activePlayerIds.add(player.id));
+    } else {
+      // Use active players from timeline
+      Object.values(activePlayers).forEach(player => activePlayerIds.add(player.id));
+    }
+    
+    // Return players not currently on field
+    return allPlayers.filter(player => !activePlayerIds.has(player.id));
+  };
   const getPositions = () => {
     return Object.keys(parsedSchedule).sort();
   };
@@ -682,6 +700,7 @@ export default function MatchScreen() {
   const activePlayers = getActivePlayersAtTime(currentTime);
   const upcomingSubstitutions = getUpcomingSubstitutions(currentTime);
   const currentQuarter = getCurrentQuarter(currentTime);
+  const reservePlayers = getReservePlayers(currentTime);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -815,17 +834,17 @@ export default function MatchScreen() {
                 <View style={styles.liveColumn}>
                   <View style={styles.liveColumnHeader}>
                     <Users size={16} color="#6B7280" />
-                    <Text style={styles.liveColumnTitle}>Bank ({match.reserve_players.length})</Text>
+                    <Text style={styles.liveColumnTitle}>Bank ({reservePlayers.length})</Text>
                   </View>
                   
                   <View style={styles.livePlayersList}>
-                    {match.reserve_players.length === 0 ? (
+                    {reservePlayers.length === 0 ? (
                       <View style={styles.emptyBenchContainer}>
                         <Users size={24} color="#9CA3AF" />
                         <Text style={styles.emptyBenchText}>Geen reservespelers</Text>
                       </View>
                     ) : (
-                      match.reserve_players
+                      reservePlayers
                         .sort((a, b) => {
                           const posA = formation?.positions.find(pos => 
                             pos.name === a.position || 
