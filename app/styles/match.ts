@@ -265,6 +265,10 @@ export const styles = StyleSheet.create({
       backgroundColor: '#FEF2F2',
       borderWidth: 2,
     },
+    availableFieldPlayerCard: {
+      borderColor: '#FF6B35',
+      borderWidth: 2,
+    },
     availableBenchPlayerCard: {
       borderColor: '#10B981',
       backgroundColor: '#F0FDF4',
