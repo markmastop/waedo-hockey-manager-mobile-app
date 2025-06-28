@@ -809,7 +809,7 @@ export default function MatchScreen() {
                             key={player.id} 
                             style={[
                               styles.livePlayerCard,
-                              isSubstituting && selectedPosition && getPlayerInPosition(selectedPosition)?.id === player.id && styles.selectedFieldPlayerCard
+                              selectedPosition && getPlayerInPosition(selectedPosition)?.id === player.id && styles.selectedFieldPlayerCard
                             ]}
                             onPress={() => handlePlayerPress(player, true)}
                           >
@@ -846,7 +846,7 @@ export default function MatchScreen() {
                             key={position} 
                             style={[
                               styles.livePlayerCard,
-                              isSubstituting && selectedPosition && getPlayerInPosition(selectedPosition)?.id === player.id && styles.selectedFieldPlayerCard
+                              selectedPosition && getPlayerInPosition(selectedPosition)?.id === player.id && styles.selectedFieldPlayerCard
                             ]}
                             onPress={() => handlePlayerPress(player, true)}
                           >
