@@ -330,13 +330,6 @@ export const styles = StyleSheet.create({
       fontFamily: 'Inter-Regular',
       textAlign: 'center',
     },
-    substituteButton: {
-      backgroundColor: '#F0FDF4',
-      padding: 4,
-      borderRadius: 4,
-      borderWidth: 1,
-      borderColor: '#16A34A',
-    },
     upcomingSection: {
       marginBottom: 24,
     },
