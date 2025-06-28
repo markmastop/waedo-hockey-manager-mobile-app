@@ -163,7 +163,7 @@ function PlayerDetailModal({ player, visible, onClose }: PlayerDetailModalProps)
 }
 
 export default function SubstitutionScheduleScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { matchId } = useLocalSearchParams<{ matchId: string }>();
   const [scheduleData, setScheduleData] = useState<SubstitutionData | null>(null);
   const [parsedSchedule, setParsedSchedule] = useState<ParsedSchedule>({});
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
@@ -173,13 +173,14 @@ export default function SubstitutionScheduleScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [filterPosition, setFilterPosition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('timeline');
-  const [currentTime, setCurrentTime] = useState(0); // Current match time in seconds
+  const [currentTime, setCurrentTime] = useState(0);
+  const [formation, setFormation] = useState<any>(null); // Current match time in seconds
   const [isPlaying, setIsPlaying] = useState(false);
   const [timelinePosition, setTimelinePosition] = useState(0);
 
   useEffect(() => {
     fetchSubstitutionSchedule();
-  }, [id]);
+  }, [matchId]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -200,13 +201,13 @@ export default function SubstitutionScheduleScreen() {
 
   const fetchSubstitutionSchedule = async () => {
     try {
-      console.log('🔍 Fetching substitution schedule and match data for:', id);
+      console.log('🔍 Fetching substitution schedule and match data for:', matchId);
       
       // Fetch both substitution schedule and match lineup
       const { data, error } = await supabase
         .from('matches')
         .select('substitution_schedule, lineup')
-        .eq('id', id)
+        .eq('id', matchId)
         .single();
 
       if (error) throw error;
@@ -232,9 +233,9 @@ export default function SubstitutionScheduleScreen() {
           name: player.name,
           number: player.number || 0,
           position: player.position,
-          teamId: id, // Use match ID as team ID
+          teamId: matchId, // Use match ID as team ID
           condition: 100, // Default condition
-          positions: [player.position].filter(Boolean),
+          positions: [formation?.positions.find((pos: any) => pos.name === player.position)?.label_translations?.nl || player.position].filter(Boolean),
           isGoalkeeper: player.position?.toLowerCase().includes('goalkeeper') || false,
           isStandIn: false,
         }));
@@ -252,6 +253,25 @@ export default function SubstitutionScheduleScreen() {
       setLoading(false);
     }
   };
+
+  const fetchFormation = async () => {
+    try {
+      const { data: formationData, error } = await supabase
+        .from('formations')
+        .select('*')
+        .eq('key', scheduleData?.formation_key)
+        .single();
+        
+      if (error) throw error;
+      setFormation(formationData);
+    } catch (error) {
+      console.error('Error fetching formation:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchFormation();
+  }, [scheduleData]);
 
   const parseScheduleData = (data: SubstitutionData) => {
     const parsed: ParsedSchedule = {};
@@ -433,7 +453,7 @@ export default function SubstitutionScheduleScreen() {
           <Users size={48} color="#9CA3AF" />
           <Text style={styles.emptyTitle}>Geen wisselschema gevonden</Text>
           <Text style={styles.emptySubtitle}>
-            Er is geen wisselschema of startopstelling beschikbaar voor deze wedstrijd
+            Er is geen wisselschema of startspelers beschikbaar voor deze wedstrijd
           </Text>
         </View>
       </SafeAreaView>
@@ -465,7 +485,7 @@ export default function SubstitutionScheduleScreen() {
         <View style={styles.headerInfo}>
           <Text style={styles.title}>Wisselschema</Text>
           <Text style={styles.subtitle}>
-            {scheduleData?.formation_key || 'Startopstelling'} • {scheduleData?.quarters || 4} kwarten
+            {scheduleData?.formation_key || 'Startspelers'} • {scheduleData?.quarters || 4} kwarten
           </Text>
         </View>
         <TouchableOpacity style={styles.exportButton}>
@@ -588,7 +608,7 @@ export default function SubstitutionScheduleScreen() {
             {/* Current Active Players */}
             <View style={styles.activePlayersSection}>
               <Text style={styles.sectionTitle}>
-                {currentTime === 0 ? 'Startopstelling (00:00)' : `Huidige Opstelling (${formatTime(currentTime)})`}
+                {currentTime === 0 ? 'Startspelers (00:00)' : `Huidige Spelers (${formatTime(currentTime)})`}
               </Text>
               <View style={styles.activePlayersList}>
                 {Object.keys(activePlayers).length === 0 ? (
@@ -598,7 +618,7 @@ export default function SubstitutionScheduleScreen() {
                       Geen actieve spelers gevonden
                     </Text>
                     <Text style={styles.emptyActivePlayersSubtext}>
-                      Controleer of er een startopstelling is ingesteld
+                      Controleer of er een startspelers zijn ingesteld
                     </Text>
                   </View>
                 ) : (
@@ -611,7 +631,7 @@ export default function SubstitutionScheduleScreen() {
                       <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(position) }]} />
                       <View style={styles.activePlayerInfo}>
                         <Text style={styles.activePlayerPosition}>
-                          {getPositionDisplayName(position)}
+                          {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
                         </Text>
                         <View style={styles.activePlayerDetails}>
                           <Text style={styles.activePlayerName}>{player.name}</Text>
@@ -646,7 +666,7 @@ export default function SubstitutionScheduleScreen() {
                       </View>
                       <View style={styles.upcomingDetails}>
                         <Text style={styles.upcomingPosition}>
-                          {getPositionDisplayName(event.position)}
+                          {formation?.positions.find(pos => pos.name === event.position)?.label_translations?.nl || event.position}
                         </Text>
                         <View style={styles.upcomingPlayer}>
                           <Text style={styles.upcomingPlayerName}>
@@ -697,7 +717,7 @@ export default function SubstitutionScheduleScreen() {
                           styles.timelineEventPosition,
                           event.time <= currentTime && styles.pastEventText
                         ]}>
-                          {getPositionDisplayName(event.position)}
+                          {formation?.positions.find(pos => pos.name === event.position)?.label_translations?.nl || event.position}
                         </Text>
                         <View style={[
                           styles.timelineEventType,
@@ -750,7 +770,7 @@ export default function SubstitutionScheduleScreen() {
                 <View style={styles.positionCell}>
                   <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(position) }]} />
                   <Text style={styles.positionName} numberOfLines={2}>
-                    {getPositionDisplayName(position)}
+                    {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
                   </Text>
                 </View>
                 

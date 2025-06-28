@@ -405,7 +405,7 @@ export default function DashboardScreen() {
                             styles.preparationText,
                             { color: matchInfo.lineupSet ? "#10B981" : "#9CA3AF" }
                           ]}>
-                            {matchInfo.lineupSet ? 'Opstelling klaar' : 'Opstelling ontbreekt'}
+                            {matchInfo.lineupSet ? 'Spelers klaar' : 'Spelers ontbreken'}
                           </Text>
                         </View>
                         <View style={styles.preparationItem}>

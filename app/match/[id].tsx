@@ -784,7 +784,7 @@ export default function MatchScreen() {
         >
           <Users size={16} color={viewMode === 'list' ? '#FFFFFF' : '#6B7280'} />
           <Text style={[styles.viewModeText, viewMode === 'list' && styles.activeViewModeText]}>
-            Opstelling
+            Spelers
           </Text>
         </TouchableOpacity>
 
@@ -808,7 +808,7 @@ export default function MatchScreen() {
             {/* Starting Lineup at 00:00 */}
             <View style={styles.activePlayersSection}>
               <Text style={styles.sectionTitle}>
-                {currentTime === 0 ? 'Startopstelling (00:00)' : `Huidige Opstelling (${formatTime(currentTime)})`}
+                {currentTime === 0 ? 'Startspelers (00:00)' : `Huidige Spelers (${formatTime(currentTime)})`}
               </Text>
               <View style={styles.activePlayersList}>
                 {Object.entries(activePlayers).length === 0 && currentTime === 0 ? (
@@ -818,7 +818,7 @@ export default function MatchScreen() {
                       <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
                       <View style={styles.activePlayerInfo}>
                         <Text style={styles.activePlayerPosition}>
-                          {getPositionDisplayName(player.position)}
+                          {formation?.positions.find(pos => pos.name === player.position)?.label_translations?.nl || player.position}
                         </Text>
                         <View style={styles.activePlayerDetails}>
                           <Text style={styles.activePlayerName}>{player.name}</Text>
@@ -837,7 +837,7 @@ export default function MatchScreen() {
                       <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
                       <View style={styles.activePlayerInfo}>
                         <Text style={styles.activePlayerPosition}>
-                          {getPositionDisplayName(position)}
+                          {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
                         </Text>
                         <View style={styles.activePlayerDetails}>
                           <Text style={styles.activePlayerName}>{player.name}</Text>
@@ -952,7 +952,7 @@ export default function MatchScreen() {
             <View style={styles.column}>
               <View style={styles.columnHeader}>
                 <Star size={16} color="#16A34A" />
-                <Text style={styles.columnTitle}>Basisopstelling</Text>
+                <Text style={styles.columnTitle}>Basisspelers</Text>
                 <View style={styles.countBadge}>
                   <Text style={styles.countText}>{match.lineup.length}</Text>
                 </View>
@@ -961,7 +961,7 @@ export default function MatchScreen() {
               {match.lineup.length === 0 ? (
                 <View style={styles.emptyColumnContainer}>
                   <User size={24} color="#9CA3AF" />
-                  <Text style={styles.emptyColumnText}>Geen opstelling</Text>
+                  <Text style={styles.emptyColumnText}>Geen spelers</Text>
                 </View>
               ) : (
                 <View style={styles.compactPlayersList}>
@@ -1035,7 +1035,7 @@ export default function MatchScreen() {
                 <View style={styles.positionCell}>
                   <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
                   <Text style={styles.positionName} numberOfLines={2}>
-                    {getPositionDisplayName(position)}
+                    {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
                   </Text>
                 </View>
                 
