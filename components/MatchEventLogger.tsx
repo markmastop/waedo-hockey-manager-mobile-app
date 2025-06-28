@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView } from 'react-native';
-import { Target, AlertTriangle, ArrowUpDown, Plus, X, Clock, Users, Zap, Heart, Flag, Award } from 'lucide-react-native';
+import { Target, TriangleAlert as AlertTriangle, ArrowUpDown, Plus, X, Clock, Users, Zap, Heart, Flag, Award } from 'lucide-react-native';
 import { Player, MatchEvent } from '@/types/database';
 
 interface Props {
