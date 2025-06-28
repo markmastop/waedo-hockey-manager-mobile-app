@@ -224,17 +224,25 @@ export default function MatchScreen() {
     if (formation && formation.positions) {
       // Match players to formation positions
       lineup.forEach(player => {
+        // Ensure player has all required properties
+        const safePlayer: Player = {
+          id: player.id || '',
+          name: player.name || 'Unknown Player',
+          number: player.number || 0,
+          position: player.position || 'Unknown Position'
+        };
+        
         // Find the formation position that matches this player's position
         const formationPosition = formation.positions.find(pos => {
           const dutchName = pos.label_translations?.nl || pos.dutch_name || pos.name;
-          return player.position === dutchName || 
-                 player.position === pos.dutch_name || 
-                 player.position === pos.name;
+          return safePlayer.position === dutchName || 
+                 safePlayer.position === pos.dutch_name || 
+                 safePlayer.position === pos.name;
         });
         
         if (formationPosition) {
           const activePlayer: ActivePlayer = {
-            ...player,
+            ...safePlayer,
             positionKey: formationPosition.id,
             startTime: 0,
             isStarting: true
@@ -242,14 +250,14 @@ export default function MatchScreen() {
           
           activePlayersMap[formationPosition.id] = activePlayer;
           
-          console.log(`✅ Mapped ${player.name} (#${player.number}) to position ${formationPosition.id}`, {
-            playerData: player,
+          console.log(`✅ Mapped ${safePlayer.name} (#${safePlayer.number}) to position ${formationPosition.id}`, {
+            playerData: safePlayer,
             formationPosition: formationPosition,
             activePlayerObject: activePlayer
           });
         } else {
-          console.log(`⚠️ No formation position found for ${player.name} (${player.position})`, {
-            playerPosition: player.position,
+          console.log(`⚠️ No formation position found for ${safePlayer.name} (${safePlayer.position})`, {
+            playerPosition: safePlayer.position,
             availablePositions: formation.positions.map(pos => ({
               id: pos.id,
               name: pos.name,
@@ -262,9 +270,16 @@ export default function MatchScreen() {
     } else {
       // Fallback: use player positions as keys
       lineup.forEach((player, index) => {
-        const positionKey = player.position || `position_${index}`;
+        const safePlayer: Player = {
+          id: player.id || '',
+          name: player.name || 'Unknown Player',
+          number: player.number || 0,
+          position: player.position || 'Unknown Position'
+        };
+        
+        const positionKey = safePlayer.position || `position_${index}`;
         const activePlayer: ActivePlayer = {
-          ...player,
+          ...safePlayer,
           positionKey,
           startTime: 0,
           isStarting: true
@@ -272,7 +287,7 @@ export default function MatchScreen() {
         
         activePlayersMap[positionKey] = activePlayer;
         
-        console.log(`🔄 Fallback mapping for ${player.name}:`, activePlayer);
+        console.log(`🔄 Fallback mapping for ${safePlayer.name}:`, activePlayer);
       });
     }
     
@@ -539,16 +554,24 @@ export default function MatchScreen() {
     // Initialize with starting lineup
     if (match) {
       match.lineup.forEach(player => {
+        // Ensure player has all required properties
+        const safePlayer: Player = {
+          id: player.id || '',
+          name: player.name || 'Unknown Player',
+          number: player.number || 0,
+          position: player.position || 'Unknown Position'
+        };
+        
         const formationPosition = formation.positions.find(pos => {
           const dutchName = pos.label_translations?.nl || pos.dutch_name || pos.name;
-          return player.position === dutchName || 
-                 player.position === pos.dutch_name || 
-                 player.position === pos.name;
+          return safePlayer.position === dutchName || 
+                 safePlayer.position === pos.dutch_name || 
+                 safePlayer.position === pos.name;
         });
         
         if (formationPosition) {
           newActivePlayers[formationPosition.id] = {
-            ...player,
+            ...safePlayer,
             positionKey: formationPosition.id,
             startTime: 0,
             isStarting: true
@@ -559,8 +582,16 @@ export default function MatchScreen() {
     
     // Apply all past events
     pastEvents.forEach(event => {
+      // Ensure event player has all required properties
+      const safeEventPlayer: Player = {
+        id: event.player.id || '',
+        name: event.player.name || 'Unknown Player',
+        number: event.player.number || 0,
+        position: event.player.position || 'Unknown Position'
+      };
+      
       const activePlayer: ActivePlayer = {
-        ...event.player,
+        ...safeEventPlayer,
         positionKey: event.position,
         startTime: event.time,
         isStarting: false
@@ -570,7 +601,7 @@ export default function MatchScreen() {
       
       console.log(`🔄 Applied timeline event at ${event.time}s:`, {
         position: event.position,
-        player: event.player,
+        player: safeEventPlayer,
         activePlayerObject: activePlayer
       });
     });
@@ -977,42 +1008,51 @@ export default function MatchScreen() {
                           const posB = formation?.positions.find(pos => pos.id === positionB);
                           return (posA?.order || 999) - (posB?.order || 999);
                         })
-                        .map(([positionKey, activePlayer]) => (
-                          <TouchableOpacity 
-                            key={positionKey} 
-                            style={[
-                              styles.livePlayerCard,
-                              selectedPlayer?.id === activePlayer.id && styles.selectedFieldPlayerCard
-                            ]}
-                            onPress={() => handlePlayerPress(activePlayer, true)}
-                          >
-                            <View style={[
-                              styles.livePlayerNumberBadge, 
-                              { backgroundColor: getPositionColor(activePlayer.position) }
-                            ]}>
-                              <Text style={styles.livePlayerNumberText}>#{activePlayer.number || '?'}</Text>
-                            </View>
-                            <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(activePlayer.position) }]} />
-                            <View style={styles.livePlayerInfo}>
-                              <Text style={styles.livePlayerPosition}>
-                                {formation?.positions.find(pos => pos.id === positionKey)?.label_translations?.nl || positionKey}
-                              </Text>
-                              <View style={styles.livePlayerDetails}>
-                                <Text style={styles.livePlayerName}>{activePlayer.name}</Text>
-                                {activePlayer.startTime > 0 && (
-                                  <Text style={styles.livePlayerSubTime}>
-                                    Erin: {formatTime(activePlayer.startTime)}
-                                  </Text>
-                                )}
+                        .map(([positionKey, activePlayer]) => {
+                          console.log(`🎨 Rendering active player: ${activePlayer.name} (#${activePlayer.number})`);
+                          
+                          return (
+                            <TouchableOpacity 
+                              key={positionKey} 
+                              style={[
+                                styles.livePlayerCard,
+                                selectedPlayer?.id === activePlayer.id && styles.selectedFieldPlayerCard
+                              ]}
+                              onPress={() => handlePlayerPress(activePlayer, true)}
+                            >
+                              <View style={[
+                                styles.livePlayerNumberBadge, 
+                                { backgroundColor: getPositionColor(activePlayer.position || '') }
+                              ]}>
+                                <Text style={styles.livePlayerNumberText}>
+                                  #{activePlayer.number || '?'}
+                                </Text>
                               </View>
-                            </View>
-                            <View style={styles.livePlayerMeta}>
-                              <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
-                              {activePlayer.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
-                              {activePlayer.isStarting && <Star size={10} color="#10B981" fill="#10B981" />}
-                            </View>
-                          </TouchableOpacity>
-                        ))
+                              <View style={[
+                                styles.positionIndicator, 
+                                { backgroundColor: getPositionColor(activePlayer.position || '') }
+                              ]} />
+                              <View style={styles.livePlayerInfo}>
+                                <Text style={styles.livePlayerPosition}>
+                                  {formation?.positions.find(pos => pos.id === positionKey)?.label_translations?.nl || positionKey}
+                                </Text>
+                                <View style={styles.livePlayerDetails}>
+                                  <Text style={styles.livePlayerName}>{activePlayer.name || 'Unknown'}</Text>
+                                  {activePlayer.startTime > 0 && (
+                                    <Text style={styles.livePlayerSubTime}>
+                                      Erin: {formatTime(activePlayer.startTime)}
+                                    </Text>
+                                  )}
+                                </View>
+                              </View>
+                              <View style={styles.livePlayerMeta}>
+                                <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
+                                {activePlayer.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
+                                {activePlayer.isStarting && <Star size={10} color="#10B981" fill="#10B981" />}
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })
                     )}
                   </View>
                 </View>
@@ -1045,42 +1085,51 @@ export default function MatchScreen() {
                           );
                           return (posA?.order || 999) - (posB?.order || 999);
                         })
-                        .map((player) => (
-                          <TouchableOpacity 
-                            key={player.id} 
-                            style={[
-                              styles.livePlayerCard, 
-                              styles.benchPlayerCard,
-                              selectedPlayer?.id === player.id && styles.selectedBenchPlayerCard
-                            ]}
-                            onPress={() => handlePlayerPress(player, false)}
-                          >
-                            <View style={[
-                              styles.livePlayerNumberBadge, 
-                              { backgroundColor: getPositionColor(player.position) }
-                            ]}>
-                              <Text style={styles.livePlayerNumberText}>#{player.number || '?'}</Text>
-                            </View>
-                            <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
-                            <View style={styles.livePlayerInfo}>
-                              <Text style={styles.reserveLabel}>Reserve</Text>
-                              <Text style={styles.livePlayerPosition}>
-                                {formation?.positions.find(pos => 
-                                  pos.name === player.position || 
-                                  pos.dutch_name === player.position ||
-                                  pos.label_translations?.nl === player.position
-                                )?.label_translations?.nl || player.position}
-                              </Text>
-                              <View style={styles.livePlayerDetails}>
-                                <Text style={styles.livePlayerName}>{player.name}</Text>
+                        .map((player) => {
+                          console.log(`🎨 Rendering reserve player: ${player.name} (#${player.number})`);
+                          
+                          return (
+                            <TouchableOpacity 
+                              key={player.id} 
+                              style={[
+                                styles.livePlayerCard, 
+                                styles.benchPlayerCard,
+                                selectedPlayer?.id === player.id && styles.selectedBenchPlayerCard
+                              ]}
+                              onPress={() => handlePlayerPress(player, false)}
+                            >
+                              <View style={[
+                                styles.livePlayerNumberBadge, 
+                                { backgroundColor: getPositionColor(player.position || '') }
+                              ]}>
+                                <Text style={styles.livePlayerNumberText}>
+                                  #{player.number || '?'}
+                                </Text>
                               </View>
-                            </View>
-                            <View style={styles.livePlayerMeta}>
-                              <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
-                              {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
-                            </View>
-                          </TouchableOpacity>
-                        ))
+                              <View style={[
+                                styles.positionIndicator, 
+                                { backgroundColor: getPositionColor(player.position || '') }
+                              ]} />
+                              <View style={styles.livePlayerInfo}>
+                                <Text style={styles.reserveLabel}>Reserve</Text>
+                                <Text style={styles.livePlayerPosition}>
+                                  {formation?.positions.find(pos => 
+                                    pos.name === player.position || 
+                                    pos.dutch_name === player.position ||
+                                    pos.label_translations?.nl === player.position
+                                  )?.label_translations?.nl || player.position}
+                                </Text>
+                                <View style={styles.livePlayerDetails}>
+                                  <Text style={styles.livePlayerName}>{player.name || 'Unknown'}</Text>
+                                </View>
+                              </View>
+                              <View style={styles.livePlayerMeta}>
+                                <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
+                                {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })
                     )}
                   </View>
                 </View>
