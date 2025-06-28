@@ -267,7 +267,8 @@ export const styles = StyleSheet.create({
       fontSize: 10,
       fontFamily: 'Inter-SemiBold',
       color: '#6B7280',
-      marginBottom: 2,
+      marginBottom: 4,
+      marginTop: 2,
     },
     livePlayerDetails: {
       flexDirection: 'row',
