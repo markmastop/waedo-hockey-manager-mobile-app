@@ -233,31 +233,62 @@ export default function MatchScreen() {
         });
         
         if (formationPosition) {
-          activePlayersMap[formationPosition.id] = {
+          const activePlayer: ActivePlayer = {
             ...player,
             positionKey: formationPosition.id,
             startTime: 0,
             isStarting: true
           };
-          console.log(`✅ Mapped ${player.name} (#${player.number}) to position ${formationPosition.id}`);
+          
+          activePlayersMap[formationPosition.id] = activePlayer;
+          
+          console.log(`✅ Mapped ${player.name} (#${player.number}) to position ${formationPosition.id}`, {
+            playerData: player,
+            formationPosition: formationPosition,
+            activePlayerObject: activePlayer
+          });
         } else {
-          console.log(`⚠️ No formation position found for ${player.name} (${player.position})`);
+          console.log(`⚠️ No formation position found for ${player.name} (${player.position})`, {
+            playerPosition: player.position,
+            availablePositions: formation.positions.map(pos => ({
+              id: pos.id,
+              name: pos.name,
+              dutch_name: pos.dutch_name,
+              label_nl: pos.label_translations?.nl
+            }))
+          });
         }
       });
     } else {
       // Fallback: use player positions as keys
       lineup.forEach((player, index) => {
         const positionKey = player.position || `position_${index}`;
-        activePlayersMap[positionKey] = {
+        const activePlayer: ActivePlayer = {
           ...player,
           positionKey,
           startTime: 0,
           isStarting: true
         };
+        
+        activePlayersMap[positionKey] = activePlayer;
+        
+        console.log(`🔄 Fallback mapping for ${player.name}:`, activePlayer);
       });
     }
     
-    console.log('🎯 Final active players map:', activePlayersMap);
+    console.log('🎯 Final active players map:', {
+      totalActivePlayers: Object.keys(activePlayersMap).length,
+      activePlayersDetails: Object.entries(activePlayersMap).map(([positionKey, activePlayer]) => ({
+        positionKey,
+        playerId: activePlayer.id,
+        playerName: activePlayer.name,
+        playerNumber: activePlayer.number,
+        playerPosition: activePlayer.position,
+        isStarting: activePlayer.isStarting,
+        startTime: activePlayer.startTime
+      }))
+    });
+    
     setActivePlayers(activePlayersMap);
   };
 
@@ -528,17 +559,59 @@ export default function MatchScreen() {
     
     // Apply all past events
     pastEvents.forEach(event => {
-      newActivePlayers[event.position] = {
+      const activePlayer: ActivePlayer = {
         ...event.player,
         positionKey: event.position,
         startTime: event.time,
         isStarting: false
       };
+      
+      newActivePlayers[event.position] = activePlayer;
+      
+      console.log(`🔄 Applied timeline event at ${event.time}s:`, {
+        position: event.position,
+        player: event.player,
+        activePlayerObject: activePlayer
+      });
     });
     
-    console.log('🔄 Updated active players:', newActivePlayers);
+    console.log('🔄 Updated active players:', {
+      currentTime,
+      pastEventsCount: pastEvents.length,
+      totalActivePlayers: Object.keys(newActivePlayers).length,
+      activePlayersDetails: Object.entries(newActivePlayers).map(([positionKey, activePlayer]) => ({
+        positionKey,
+        playerId: activePlayer.id,
+        playerName: activePlayer.name,
+        playerNumber: activePlayer.number,
+        playerPosition: activePlayer.position,
+        isStarting: activePlayer.isStarting,
+        startTime: activePlayer.startTime
+      }))
+    });
+    
     setActivePlayers(newActivePlayers);
   }, [currentTime, timelineEvents, formation, match]);
+
+  // Log active players whenever they change
+  useEffect(() => {
+    console.log('🎯 ACTIVE PLAYERS STATE UPDATED:', {
+      timestamp: new Date().toISOString(),
+      totalCount: Object.keys(activePlayers).length,
+      activePlayers: Object.entries(activePlayers).map(([positionKey, activePlayer]) => ({
+        positionKey,
+        activePlayerObject: {
+          id: activePlayer.id,
+          name: activePlayer.name,
+          number: activePlayer.number,
+          position: activePlayer.position,
+          positionKey: activePlayer.positionKey,
+          startTime: activePlayer.startTime,
+          isStarting: activePlayer.isStarting
+        }
+      }))
+    });
+  }, [activePlayers]);
 
   const updateMatch = async (updates: Partial<Match>) => {
     if (!match) return;
@@ -749,17 +822,6 @@ export default function MatchScreen() {
   const hasSubstitutionSchedule = match?.substitution_schedule && 
     Object.keys(match.substitution_schedule).length > 0;
 
-  // Timeline functions
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const getCurrentQuarter = (time: number) => {
-    return Math.floor(time / (15 * 60)) + 1;
-  };
-
   const getUpcomingSubstitutions = (time: number, lookAhead: number = 120) => {
     return timelineEvents.filter(event => 
       event.time > time && 
@@ -808,6 +870,17 @@ export default function MatchScreen() {
     if (pos.includes('midfield')) return '#8B5CF6';
     if (pos.includes('forward') || pos.includes('striker')) return '#F59E0B';
     return '#6B7280';
+  };
+
+  // Timeline functions
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getCurrentQuarter = (time: number) => {
+    return Math.floor(time / (15 * 60)) + 1;
   };
 
   if (loading) {
