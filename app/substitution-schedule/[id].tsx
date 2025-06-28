@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
+import Timer from '../components/substitution-schedule/Timer';
 import { 
   ArrowLeft, 
   Users, 
@@ -168,36 +169,19 @@ export default function SubstitutionScheduleScreen() {
   const [parsedSchedule, setParsedSchedule] = useState<ParsedSchedule>({});
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [startingLineup, setStartingLineup] = useState<Player[]>([]);
+  const [formation, setFormation] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('timeline');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [timelinePosition, setTimelinePosition] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [filterPosition, setFilterPosition] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('timeline');
-  const [currentTime, setCurrentTime] = useState(0);
-  const [formation, setFormation] = useState<any>(null); // Current match time in seconds
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [timelinePosition, setTimelinePosition] = useState(0);
 
   useEffect(() => {
     fetchSubstitutionSchedule();
   }, [matchId]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime(prev => {
-          const newTime = prev + 1;
-          if (newTime >= 60 * 60) { // 60 minutes max
-            setIsPlaying(false);
-            return prev;
-          }
-          return newTime;
-        });
-      }, 100); // Fast forward for demo
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
 
   const fetchSubstitutionSchedule = async () => {
     try {
@@ -405,23 +389,6 @@ export default function SubstitutionScheduleScreen() {
     setModalVisible(true);
   };
 
-  const getPositionDisplayName = (position: string) => {
-    const positionMap: Record<string, string> = {
-      'striker': 'Aanvaller',
-      'sweeper': 'Libero',
-      'lastLine': 'Laatste Lijn',
-      'leftBack': 'Linksback',
-      'rightBack': 'Rechtsback',
-      'leftMidfield': 'Linksmidden',
-      'rightMidfield': 'Rechtsmidden',
-      'centerMidfield': 'Middenmidden',
-      'leftForward': 'Linksvoorwaarts',
-      'rightForward': 'Rechtsvoorwaarts',
-      'goalkeeper': 'Keeper',
-    };
-    return positionMap[position] || position;
-  };
-
   const getPositionColor = (position: string) => {
     const pos = position.toLowerCase();
     if (pos.includes('goalkeeper')) return '#EF4444';
@@ -493,62 +460,14 @@ export default function SubstitutionScheduleScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Time Control */}
-      <View style={styles.timeControl}>
-        <View style={styles.timeDisplay}>
-          <Text style={styles.currentTimeText}>{formatTime(currentTime)}</Text>
-          <Text style={styles.quarterText}>Kwart {currentQuarter}</Text>
-        </View>
-        
-        <View style={styles.playControls}>
-          <TouchableOpacity 
-            style={styles.controlButton}
-            onPress={() => setCurrentTime(Math.max(0, currentTime - 60))}
-          >
-            <ChevronLeft size={16} color="#6B7280" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.controlButton, styles.playButton]}
-            onPress={() => setIsPlaying(!isPlaying)}
-          >
-            {isPlaying ? (
-              <Pause size={16} color="#FFFFFF" />
-            ) : (
-              <Play size={16} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.controlButton}
-            onPress={() => setCurrentTime(Math.min(60 * 60, currentTime + 60))}
-          >
-            <ChevronRight size={16} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.timeSlider}>
-          <View style={styles.timeTrack}>
-            <View 
-              style={[
-                styles.timeProgress, 
-                { width: `${timelineProgress}%` }
-              ]} 
-            />
-            {/* Timeline markers for substitutions */}
-            {timelineEvents.filter(e => e.isSubstitution).map((event, index) => (
-              <View 
-                key={index}
-                style={[
-                  styles.timeMarker,
-                  { left: `${(event.time / maxTime) * 100}%` },
-                  event.time <= currentTime && styles.passedMarker
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-      </View>
+      {/* Timer Component */}
+      <Timer
+        currentTime={currentTime}
+        setCurrentTime={setCurrentTime}
+        isPlaying={isPlaying}
+        setIsPlaying={setIsPlaying}
+        timelineEvents={timelineEvents}
+      />
 
       {/* Stats Bar */}
       <View style={styles.statsBar}>
