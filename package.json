@@ -1,7 +1,7 @@
 {
-  "name": "doHockey Companion",
+  "name": "dohockey-companion",
   "main": "expo-router/entry",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "private": true,
   "scripts": {
     "start": "npm run dev",

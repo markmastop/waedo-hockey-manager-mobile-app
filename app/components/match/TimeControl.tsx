@@ -61,32 +61,27 @@ const TimeControl: React.FC<TimeControlProps> = ({
             <ChevronLeft size={16} color="#6B7280" />
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={[styles.controlButton, styles.playButton]}
-            onPress={() => setIsPlaying(!isPlaying)}
-          >
-            {isPlaying ? (
-              <Pause size={16} color="#FFFFFF" />
-            ) : (
-              <Play size={16} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
+          <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+            <TouchableOpacity 
+              style={[styles.controlButton, styles.playButton]}
+              onPress={() => setIsPlaying(!isPlaying)}
+            >
+              {isPlaying ? (
+                <Pause size={24} color="#FFFFFF" />
+              ) : (
+                <Play size={24} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+          </View>
           
           <TouchableOpacity 
-            style={styles.controlButton}
+            style={[styles.controlButton, { zIndex: 0 }]}
             onPress={() => setCurrentTime(Math.min(60 * 60, currentTime + 60))}
           >
             <ChevronRight size={16} color="#6B7280" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.controlButton, styles.resetButton]}
-            onPress={() => setCurrentTime(0)}
-          >
-            <RefreshCw size={16} color="#6B7280" />
-          </TouchableOpacity>
         </View>
-        <View style={styles.scoreControls}>
+        <View style={[styles.scoreControls, { justifyContent: 'flex-end' }]}>
           <TouchableOpacity 
             style={[styles.controlButton, styles.scoreButton]}
             onPress={() => {
@@ -97,7 +92,7 @@ const TimeControl: React.FC<TimeControlProps> = ({
           >
             <Minus size={16} color="#6B7280" />
           </TouchableOpacity>
-          <Text style={styles.scoreText}>{away_score}</Text>
+          <Text style={[styles.scoreText, { marginLeft: 8 }]}>{away_score}</Text>
           <TouchableOpacity 
             style={[styles.controlButton, styles.scoreButton]}
             onPress={() => {
@@ -123,30 +118,37 @@ const styles = StyleSheet.create({
   },
   playControls: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
+    paddingHorizontal: 16,
+    width: '100%', // Take full width
   },
   scoreControls: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   timerControls: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   controlButton: {
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#F3F4F6',
-  },
-  scoreButton: {
-    backgroundColor: '#F3F4F6',
+    zIndex: 1,
   },
   playButton: {
     backgroundColor: '#10B981',
+    padding: 12,
+    borderRadius: 12,
+    zIndex: 2,
+  },
+  scoreButton: {
+    backgroundColor: '#F3F4F6',
   },
   resetButton: {
     backgroundColor: '#F3F4F6',

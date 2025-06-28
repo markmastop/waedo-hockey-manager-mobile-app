@@ -912,7 +912,7 @@ export default function MatchScreen() {
           <Text style={styles.matchTitle}>
             {match.home_team} vs {match.away_team}
           </Text>
-          <Text style={styles.teamName}>{match.home_team}</Text>
+          <Text style={styles.teamName}>#{match.match_key}</Text>
         </View>      
       </View>
 
@@ -1179,16 +1179,16 @@ export default function MatchScreen() {
               />
             )}
 
-            {/* Reserve Players */}
+            {/* Show Events from database */}
             <View style={styles.reserveSection}>
               <View style={styles.sectionHeader}>
                 <Users size={18} color="#6B7280" />
-                <Text style={styles.sectionTitle}>Bank ({match.reserve_players.length})</Text>
+                <Text style={styles.sectionTitle}>Events ({match.reserve_players.length})</Text>
               </View>
               {match.reserve_players.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Users size={28} color="#9CA3AF" />
-                  <Text style={styles.emptyText}>Geen reservespelers</Text>
+                  <Text style={styles.emptyText}>Geen events</Text>
                 </View>
               ) : (
                 <View style={styles.compactPlayersList}>
