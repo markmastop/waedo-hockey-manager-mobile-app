@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ArrowUpDown } from 'lucide-react-native';
+import { Player } from '@/types/database';
 
 interface SubstitutionBannerProps {
   isSubstituting: boolean;
   selectedPosition: string | null;
+  selectedPlayer: Player | null;
   getPositionName: (position: string) => string;
   onDismiss: () => void;
 }
@@ -12,17 +14,27 @@ interface SubstitutionBannerProps {
 export default function SubstitutionBanner({
   isSubstituting,
   selectedPosition,
+  selectedPlayer,
   getPositionName,
   onDismiss,
 }: SubstitutionBannerProps) {
+  const getBannerText = () => {
+    if (selectedPlayer && selectedPosition) {
+      return `Wissel ${selectedPlayer.name} (#${selectedPlayer.number}) uit positie ${getPositionName(selectedPosition)}`;
+    } else if (selectedPosition) {
+      return `Selecteer een speler voor positie ${getPositionName(selectedPosition)}`;
+    } else if (selectedPlayer) {
+      return `Selecteer een positie voor ${selectedPlayer.name} (#${selectedPlayer.number})`;
+    } else {
+      return 'Selecteer een positie of speler om te wisselen';
+    }
+  };
+
   return isSubstituting ? (
     <View style={styles.substitutionBanner}>
       <ArrowUpDown size={14} color="#16A34A" />
       <Text style={styles.substitutionText}>
-        {selectedPosition 
-          ? `Selecteer een speler voor positie ${getPositionName(selectedPosition)}`
-          : 'Selecteer een positie of speler om te wisselen'
-        }
+        {getBannerText()}
       </Text>
       <TouchableOpacity onPress={onDismiss}>
         <Text style={styles.cancelText}>Annuleren</Text>
