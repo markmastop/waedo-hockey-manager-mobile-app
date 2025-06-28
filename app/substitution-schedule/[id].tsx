@@ -13,23 +13,23 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import Timer from '../components/substitution-schedule/Timer';
+import StatsBar from '../components/substitution-schedule/StatsBar';
+import Controls from '../components/substitution-schedule/Controls';
 import { 
   ArrowLeft, 
   Users, 
-  Clock, 
-  Filter,
+  Target,
   Search,
   User,
   Shield,
-  Target,
   RotateCcw,
-  Grid3x3,
   Eye,
   Download,
   Play,
   Pause,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from 'lucide-react-native';
 
 interface Player {
@@ -470,55 +470,21 @@ export default function SubstitutionScheduleScreen() {
       />
 
       {/* Stats Bar */}
-      <View style={styles.statsBar}>
-        <View style={styles.statItem}>
-          <Users size={16} color="#10B981" />
-          <Text style={styles.statLabel}>Actieve Spelers</Text>
-          <Text style={styles.statValue}>{Object.keys(activePlayers).length}</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <Clock size={16} color="#F59E0B" />
-          <Text style={styles.statLabel}>Aankomende Wissels</Text>
-          <Text style={styles.statValue}>{upcomingSubstitutions.length}</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <Target size={16} color="#8B5CF6" />
-          <Text style={styles.statLabel}>Kwart</Text>
-          <Text style={styles.statValue}>{currentQuarter}/4</Text>
-        </View>
-      </View>
+      <StatsBar
+        activePlayers={Object.keys(activePlayers).length}
+        upcomingSubstitutions={upcomingSubstitutions.length}
+        currentQuarter={currentQuarter}
+      />
 
       {/* Controls */}
-      <View style={styles.controls}>
-        <View style={styles.viewModeToggle}>
-          <TouchableOpacity
-            style={[styles.toggleButton, viewMode === 'timeline' && styles.activeToggle]}
-            onPress={() => setViewMode('timeline')}
-          >
-            <Clock size={16} color={viewMode === 'timeline' ? '#FFFFFF' : '#6B7280'} />
-            <Text style={[styles.toggleText, viewMode === 'timeline' && styles.activeToggleText]}>
-              Live
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.toggleButton, viewMode === 'grid' && styles.activeToggle]}
-            onPress={() => setViewMode('grid')}
-          >
-            <Grid3x3 size={16} color={viewMode === 'grid' ? '#FFFFFF' : '#6B7280'} />
-            <Text style={[styles.toggleText, viewMode === 'grid' && styles.activeToggleText]}>
-              Grid
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity style={styles.filterButton}>
-          <Filter size={16} color="#6B7280" />
-          <Text style={styles.filterText}>Filter</Text>
-        </TouchableOpacity>
-      </View>
+      <Controls
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onFilterPress={() => {
+          // Add filter logic here
+          console.log('Filter pressed');
+        }}
+      />
 
       {/* Main Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
