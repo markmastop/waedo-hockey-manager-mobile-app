@@ -121,6 +121,41 @@ export interface Database {
           created_at?: string;
         };
       };
+      matches_live_events: {
+        Row: {
+          id: string;
+          match_id: string;
+          player_id?: string;
+          action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection';
+          description: string;
+          match_time: number;
+          quarter: number;
+          metadata: Record<string, any>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          player_id?: string;
+          action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection';
+          description: string;
+          match_time?: number;
+          quarter?: number;
+          metadata?: Record<string, any>;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          match_id?: string;
+          player_id?: string;
+          action?: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection';
+          description?: string;
+          match_time?: number;
+          quarter?: number;
+          metadata?: Record<string, any>;
+          created_at?: string;
+        };
+      };
     };
   };
 }
