@@ -244,18 +244,18 @@ export const styles = StyleSheet.create({
       color: '#111827',
     },
     livePlayersList: {
-      padding: 8,
+      padding: 12,
       gap: 4,
     },
     livePlayerCard: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: '#FFFFFF',
-      padding: 8,
+      padding: 12,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: '#E5E7EB',
-      gap: 8,
+      gap: 10,
     },
     benchPlayerCard: {
       backgroundColor: '#F9FAFB',
