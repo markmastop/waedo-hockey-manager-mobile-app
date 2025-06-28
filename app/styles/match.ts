@@ -260,15 +260,6 @@ export const styles = StyleSheet.create({
     benchPlayerCard: {
       backgroundColor: '#F9FAFB',
     },
-    selectedLivePlayerCard: {
-      borderColor: '#FF6B35',
-      borderWidth: 2,
-      backgroundColor: '#FEF2F2',
-    },
-    substitutingBenchPlayerCard: {
-      borderColor: '#10B981',
-      borderWidth: 2,
-    },
     livePlayerInfo: {
       flex: 1,
     },
@@ -298,6 +289,14 @@ export const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
+    },
+    reserveLabel: {
+      fontSize: 8,
+      fontFamily: 'Inter-Medium',
+      color: '#9CA3AF',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 2,
     },
     positionIndicator: {
       width: 10,
