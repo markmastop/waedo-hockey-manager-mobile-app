@@ -33,6 +33,7 @@ import TimeControl from '../components/match/TimeControl';
 import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
 import { styles } from '../styles/match';
 import TimeDisplay from '../components/match/TimeDisplay';
+import SubstitutionBanner from '../components/match/SubstitutionBanner';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -709,20 +710,12 @@ export default function MatchScreen() {
       />
 
       {/* Substitution Banner */}
-      {isSubstituting && (
-        <View style={styles.substitutionBanner}>
-          <ArrowUpDown size={14} color="#16A34A" />
-          <Text style={styles.substitutionText}>
-            {selectedPosition 
-              ? `Selecteer een speler voor positie ${getPositionName(selectedPosition)}`
-              : 'Selecteer een positie of speler om te wisselen'
-            }
-          </Text>
-          <TouchableOpacity onPress={cancelSubstitution}>
-            <Text style={styles.cancelText}>Annuleren</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <SubstitutionBanner
+        isSubstituting={isSubstituting}
+        selectedPosition={selectedPosition}
+        getPositionName={getPositionName}
+        onDismiss={cancelSubstitution}
+      />
 
       {/* View Mode Toggle */}
       <View style={styles.viewModeContainer}>
