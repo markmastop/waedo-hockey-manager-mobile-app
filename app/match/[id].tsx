@@ -1055,11 +1055,10 @@ export default function MatchScreen() {
                         <View style={styles.upcomingPlayer}>
                           <Text style={styles.upcomingPlayerName}>
                             {event.player.name} #{event.player.number}
-                          isSelected={selectedPlayer?.id === player.id && selectedPlayerLocation === 'field'}
+                          </Text>
                           <Text style={styles.upcomingPlayerAction}>
                             → Komt erin
                           </Text>
-                        </View>
                       </View>
                     </View>
                   ))}
