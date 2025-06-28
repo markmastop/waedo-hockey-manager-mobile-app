@@ -330,6 +330,20 @@ export const styles = StyleSheet.create({
       fontFamily: 'Inter-Regular',
       textAlign: 'center',
     },
+    // Add player number badge styles for timeline view
+    livePlayerNumberBadge: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 6,
+    },
+    livePlayerNumberText: {
+      fontSize: 9,
+      fontFamily: 'Inter-Bold',
+      color: '#FFFFFF',
+    },
     upcomingSection: {
       marginBottom: 24,
     },

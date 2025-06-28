@@ -498,7 +498,8 @@ export default function MatchScreen() {
       name: player.name,
       number: player.number,
       position: player.position,
-      isOnField: isOnField
+      isOnField: isOnField,
+      timestamp: new Date().toISOString()
     });
     
     setSelectedPlayer(player);
@@ -825,6 +826,12 @@ export default function MatchScreen() {
                             ]}
                             onPress={() => handlePlayerPress(player, true)}
                           >
+                            <View style={[
+                              styles.livePlayerNumberBadge, 
+                              { backgroundColor: getPositionColor(player.position) }
+                            ]}>
+                              <Text style={styles.livePlayerNumberText}>#{player.number || '?'}</Text>
+                            </View>
                             <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.livePlayerPosition}>
@@ -836,7 +843,6 @@ export default function MatchScreen() {
                               </Text>
                               <View style={styles.livePlayerDetails}>
                                 <Text style={styles.livePlayerName}>{player.name}</Text>
-                                <Text style={styles.livePlayerNumber}>#{player.number}</Text>
                               </View>
                             </View>
                             <View style={styles.livePlayerMeta}>
@@ -862,6 +868,12 @@ export default function MatchScreen() {
                             ]}
                             onPress={() => handlePlayerPress(player, true)}
                           >
+                            <View style={[
+                              styles.livePlayerNumberBadge, 
+                              { backgroundColor: getPositionColorForSchedule(position) }
+                            ]}>
+                              <Text style={styles.livePlayerNumberText}>#{player.number || '?'}</Text>
+                            </View>
                             <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.livePlayerPosition}>
@@ -869,7 +881,6 @@ export default function MatchScreen() {
                               </Text>
                               <View style={styles.livePlayerDetails}>
                                 <Text style={styles.livePlayerName}>{player.name}</Text>
-                                <Text style={styles.livePlayerNumber}>#{player.number}</Text>
                               </View>
                             </View>
                             <View style={styles.livePlayerMeta}>
@@ -923,6 +934,12 @@ export default function MatchScreen() {
                             ]}
                             onPress={() => handlePlayerPress(player, false)}
                           >
+                            <View style={[
+                              styles.livePlayerNumberBadge, 
+                              { backgroundColor: getPositionColor(player.position) }
+                            ]}>
+                              <Text style={styles.livePlayerNumberText}>#{player.number || '?'}</Text>
+                            </View>
                             <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.reserveLabel}>Reserve</Text>
@@ -935,7 +952,6 @@ export default function MatchScreen() {
                               </Text>
                               <View style={styles.livePlayerDetails}>
                                 <Text style={styles.livePlayerName}>{player.name}</Text>
-                                <Text style={styles.livePlayerNumber}>#{player.number}</Text>
                               </View>
                             </View>
                             <View style={styles.livePlayerMeta}>
