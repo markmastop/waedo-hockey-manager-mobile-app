@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Play, Pause, Square, SkipForward, Clock } from 'lucide-react-native';
+import { Play, Pause, Square, SkipForward, Clock, Plus, Minus, Home, Plane } from 'lucide-react-native';
 
 interface Props {
   matchTime: number;
   currentQuarter: number;
   quarterTimes: number[];
   status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
+  homeScore: number;
+  awayScore: number;
+  homeTeam: string;
+  awayTeam: string;
   onStart: () => void;
   onPause: () => void;
   onResume: () => void;
   onEnd: () => void;
   onNextQuarter: () => void;
   onTimeUpdate: (time: number) => void;
+  onScoreUpdate: (homeScore: number, awayScore: number) => void;
 }
 
 export function LiveMatchTimer({
@@ -20,12 +25,17 @@ export function LiveMatchTimer({
   currentQuarter,
   quarterTimes,
   status,
+  homeScore,
+  awayScore,
+  homeTeam,
+  awayTeam,
   onStart,
   onPause,
   onResume,
   onEnd,
   onNextQuarter,
   onTimeUpdate,
+  onScoreUpdate,
 }: Props) {
   const [localTime, setLocalTime] = useState(matchTime);
 
@@ -68,8 +78,77 @@ export function LiveMatchTimer({
     return Math.min(quarterTime / maxQuarterTime, 1);
   };
 
+  const handleScoreChange = (team: 'home' | 'away', change: number) => {
+    const newHomeScore = team === 'home' ? Math.max(0, homeScore + change) : homeScore;
+    const newAwayScore = team === 'away' ? Math.max(0, awayScore + change) : awayScore;
+    onScoreUpdate(newHomeScore, newAwayScore);
+  };
+
+  const truncateTeamName = (name: string, maxLength: number = 12) => {
+    return name.length > maxLength ? name.substring(0, maxLength) + '...' : name;
+  };
+
   return (
     <View style={styles.container}>
+      {/* Score Display with Controls */}
+      <View style={styles.scoreSection}>
+        <View style={styles.teamScoreContainer}>
+          {/* Home Team */}
+          <View style={styles.teamScore}>
+            <View style={styles.teamHeader}>
+              <Home size={14} color="#10B981" />
+              <Text style={styles.teamName}>{truncateTeamName(homeTeam)}</Text>
+            </View>
+            <View style={styles.scoreControls}>
+              <TouchableOpacity
+                style={styles.scoreButton}
+                onPress={() => handleScoreChange('home', -1)}
+                disabled={homeScore === 0}
+              >
+                <Minus size={16} color={homeScore === 0 ? '#9CA3AF' : '#EF4444'} />
+              </TouchableOpacity>
+              <Text style={styles.scoreText}>{homeScore}</Text>
+              <TouchableOpacity
+                style={styles.scoreButton}
+                onPress={() => handleScoreChange('home', 1)}
+              >
+                <Plus size={16} color="#10B981" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Score Separator */}
+          <View style={styles.scoreSeparator}>
+            <Text style={styles.separatorText}>-</Text>
+          </View>
+
+          {/* Away Team */}
+          <View style={styles.teamScore}>
+            <View style={styles.teamHeader}>
+              <Plane size={14} color="#F59E0B" />
+              <Text style={styles.teamName}>{truncateTeamName(awayTeam)}</Text>
+            </View>
+            <View style={styles.scoreControls}>
+              <TouchableOpacity
+                style={styles.scoreButton}
+                onPress={() => handleScoreChange('away', -1)}
+                disabled={awayScore === 0}
+              >
+                <Minus size={16} color={awayScore === 0 ? '#9CA3AF' : '#EF4444'} />
+              </TouchableOpacity>
+              <Text style={styles.scoreText}>{awayScore}</Text>
+              <TouchableOpacity
+                style={styles.scoreButton}
+                onPress={() => handleScoreChange('away', 1)}
+              >
+                <Plus size={16} color="#10B981" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Time Display */}
       <View style={styles.timeDisplay}>
         <View style={styles.mainTimer}>
           <Clock size={20} color="#374151" />
@@ -95,6 +174,7 @@ export function LiveMatchTimer({
         </View>
       </View>
 
+      {/* Match Controls */}
       <View style={styles.controls}>
         {status === 'upcoming' && (
           <TouchableOpacity style={styles.startButton} onPress={onStart}>
@@ -139,6 +219,7 @@ export function LiveMatchTimer({
         )}
       </View>
 
+      {/* Status Indicator */}
       <View style={styles.statusIndicator}>
         <View 
           style={[
@@ -167,6 +248,61 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     marginBottom: 16,
+  },
+  scoreSection: {
+    marginBottom: 16,
+  },
+  teamScoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  teamScore: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  teamHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  teamName: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    textAlign: 'center',
+  },
+  scoreControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  scoreButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  scoreText: {
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  scoreSeparator: {
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  separatorText: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    color: '#9CA3AF',
   },
   timeDisplay: {
     alignItems: 'center',
@@ -220,6 +356,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     marginBottom: 12,
+    flexWrap: 'wrap',
   },
   startButton: {
     flexDirection: 'row',

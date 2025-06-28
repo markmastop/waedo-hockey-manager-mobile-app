@@ -4,7 +4,7 @@ import { Player } from '@/types/database';
 export interface MatchEventLog {
   match_id: string;
   player_id?: string;
-  action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card';
+  action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card' | 'score_change';
   description: string;
   match_time: number;
   quarter: number;
@@ -226,6 +226,49 @@ class MatchEventLogger {
           position: playerOut.position
         },
         position: position
+      }
+    });
+  }
+
+  async logScoreChange(
+    matchId: string,
+    matchTime: number,
+    quarter: number,
+    homeScore: number,
+    awayScore: number,
+    previousHomeScore: number,
+    previousAwayScore: number,
+    teamScored?: 'home' | 'away'
+  ): Promise<void> {
+    const scoreDiff = {
+      home: homeScore - previousHomeScore,
+      away: awayScore - previousAwayScore
+    };
+
+    let description = `Score updated: ${homeScore}-${awayScore}`;
+    if (teamScored) {
+      const diff = teamScored === 'home' ? scoreDiff.home : scoreDiff.away;
+      description = `${teamScored === 'home' ? 'Home' : 'Away'} team score ${diff > 0 ? 'increased' : 'decreased'} by ${Math.abs(diff)}. New score: ${homeScore}-${awayScore}`;
+    }
+
+    await this.logEvent({
+      match_id: matchId,
+      action: 'score_change',
+      description: description,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        new_score: {
+          home: homeScore,
+          away: awayScore
+        },
+        previous_score: {
+          home: previousHomeScore,
+          away: previousAwayScore
+        },
+        score_difference: scoreDiff,
+        team_scored: teamScored,
+        timestamp: new Date().toISOString()
       }
     });
   }
