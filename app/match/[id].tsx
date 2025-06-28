@@ -731,10 +731,6 @@ export default function MatchScreen() {
           <View style={styles.timelineContainer}>
             {/* Dual Column Active Players */}
             <View style={styles.activePlayersSection}>
-              <Text style={styles.sectionTitle}>
-                {currentTime === 0 ? 'Startspelers (00:00)' : `Huidige Spelers (${formatTime(currentTime)})`}
-              </Text>
-              
               <View style={styles.dualColumnContainer}>
                 {/* Left Column - Field Players */}
                 <View style={styles.liveColumn}>
