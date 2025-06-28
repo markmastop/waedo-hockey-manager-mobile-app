@@ -34,6 +34,7 @@ import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions'
 import { styles } from '../styles/match';
 import TimeDisplay from '../components/match/TimeDisplay';
 import SubstitutionBanner from '../components/match/SubstitutionBanner';
+import ViewModeToggle from '../components/match/ViewModeToggle';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -718,51 +719,11 @@ export default function MatchScreen() {
       />
 
       {/* View Mode Toggle */}
-      <View style={styles.viewModeContainer}>
-        {hasSubstitutionSchedule && (
-          <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'timeline' && styles.activeViewMode]}
-            onPress={() => setViewMode('timeline')}
-          >
-            <Clock size={16} color={viewMode === 'timeline' ? '#FFFFFF' : '#6B7280'} />
-            <Text style={[styles.viewModeText, viewMode === 'timeline' && styles.activeViewModeText]}>
-              Live
-            </Text>
-          </TouchableOpacity>
-        )}
-        
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'formation' && styles.activeViewMode]}
-          onPress={() => setViewMode('formation')}
-        >
-          <Eye size={16} color={viewMode === 'formation' ? '#FFFFFF' : '#6B7280'} />
-          <Text style={[styles.viewModeText, viewMode === 'formation' && styles.activeViewModeText]}>
-            Veld
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'list' && styles.activeViewMode]}
-          onPress={() => setViewMode('list')}
-        >
-          <Users size={16} color={viewMode === 'list' ? '#FFFFFF' : '#6B7280'} />
-          <Text style={[styles.viewModeText, viewMode === 'list' && styles.activeViewModeText]}>
-            Spelers
-          </Text>
-        </TouchableOpacity>
-
-        {hasSubstitutionSchedule && (
-          <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'grid' && styles.activeViewMode]}
-            onPress={() => setViewMode('grid')}
-          >
-            <Grid3X3 size={16} color={viewMode === 'grid' ? '#FFFFFF' : '#6B7280'} />
-            <Text style={[styles.viewModeText, viewMode === 'grid' && styles.activeViewModeText]}>
-              Schema
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ViewModeToggle
+        hasSubstitutionSchedule={hasSubstitutionSchedule}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {viewMode === 'timeline' && hasSubstitutionSchedule ? (
@@ -1055,7 +1016,6 @@ export default function MatchScreen() {
           setIsPlaying={setIsPlaying}
         />
       )}
-
     </SafeAreaView>
   );
 }
