@@ -260,6 +260,15 @@ export const styles = StyleSheet.create({
     benchPlayerCard: {
       backgroundColor: '#F9FAFB',
     },
+    selectedFieldPlayerCard: {
+      borderColor: '#FF6B35',
+      backgroundColor: '#FEF2F2',
+      borderWidth: 2,
+    },
+    availableBenchPlayerCard: {
+      borderColor: '#10B981',
+      backgroundColor: '#F0FDF4',
+    },
     livePlayerInfo: {
       flex: 1,
     },

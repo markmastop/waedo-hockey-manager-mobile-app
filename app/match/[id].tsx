@@ -805,7 +805,14 @@ export default function MatchScreen() {
                           return (posA?.order || 999) - (posB?.order || 999);
                         })
                         .map((player) => (
-                          <View key={player.id} style={styles.livePlayerCard}>
+                          <TouchableOpacity 
+                            key={player.id} 
+                            style={[
+                              styles.livePlayerCard,
+                              isSubstituting && selectedPosition && getPlayerInPosition(selectedPosition)?.id === player.id && styles.selectedFieldPlayerCard
+                            ]}
+                            onPress={() => handlePlayerPress(player, true)}
+                          >
                             <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.livePlayerPosition}>
@@ -824,7 +831,7 @@ export default function MatchScreen() {
                               <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
                               {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
                             </View>
-                          </View>
+                          </TouchableOpacity>
                         ))
                     ) : (
                       // Show active players from timeline, sorted by formation position order
@@ -835,7 +842,14 @@ export default function MatchScreen() {
                           return (posA?.order || 999) - (posB?.order || 999);
                         })
                         .map(([position, player]) => (
-                          <View key={position} style={styles.livePlayerCard}>
+                          <TouchableOpacity 
+                            key={position} 
+                            style={[
+                              styles.livePlayerCard,
+                              isSubstituting && selectedPosition && getPlayerInPosition(selectedPosition)?.id === player.id && styles.selectedFieldPlayerCard
+                            ]}
+                            onPress={() => handlePlayerPress(player, true)}
+                          >
                             <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.livePlayerPosition}>
@@ -853,7 +867,7 @@ export default function MatchScreen() {
                               }]} />
                               {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
                             </View>
-                          </View>
+                          </TouchableOpacity>
                         ))
                     )}
                   </View>
@@ -888,7 +902,15 @@ export default function MatchScreen() {
                           return (posA?.order || 999) - (posB?.order || 999);
                         })
                         .map((player) => (
-                          <View key={player.id} style={[styles.livePlayerCard, styles.benchPlayerCard]}>
+                          <TouchableOpacity 
+                            key={player.id} 
+                            style={[
+                              styles.livePlayerCard, 
+                              styles.benchPlayerCard,
+                              isSubstituting && styles.availableBenchPlayerCard
+                            ]}
+                            onPress={() => handlePlayerPress(player, false)}
+                          >
                             <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(player.position) }]} />
                             <View style={styles.livePlayerInfo}>
                               <Text style={styles.reserveLabel}>Reserve</Text>
@@ -908,7 +930,7 @@ export default function MatchScreen() {
                               <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
                               {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
                             </View>
-                          </View>
+                          </TouchableOpacity>
                         ))
                     )}
                   </View>
