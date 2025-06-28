@@ -17,4 +17,4 @@ The main issues were:
 2. Missing closing bracket for the `swapPlayerPositions` function 
 3. Missing closing bracket for the entire `MatchScreen` component
 
-The fixed version should now have proper bracket closure and maintain the correct nesting levels throughout the code.
+The code should now be properly closed with all required brackets in place. The structure is now complete and should compile correctly.
