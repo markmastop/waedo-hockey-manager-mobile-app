@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Play, Pause, Square, SkipForward, Clock, Plus, Minus, Home, Plane } from 'lucide-react-native';
+import { Play, Pause, Square, SkipForward, Clock, Plus, Minus, Chrome as Home, Plane } from 'lucide-react-native';
 
 interface Props {
   matchTime: number;
