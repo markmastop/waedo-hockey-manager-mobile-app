@@ -281,9 +281,8 @@ export const styles = StyleSheet.create({
       marginTop: 1,
     },
     livePlayerDetails: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
+      flexDirection: 'column',
+      gap: 1,
     },
     livePlayerName: {
       fontSize: 12,
@@ -294,6 +293,11 @@ export const styles = StyleSheet.create({
       fontSize: 10,
       fontFamily: 'Inter-Medium',
       color: '#6B7280',
+    },
+    livePlayerSubTime: {
+      fontSize: 9,
+      fontFamily: 'Inter-Regular',
+      color: '#10B981',
     },
     livePlayerMeta: {
       flexDirection: 'row',

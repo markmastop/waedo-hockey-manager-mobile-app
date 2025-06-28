@@ -961,7 +961,7 @@ export default function MatchScreen() {
                 <View style={styles.liveColumn}>
                   <View style={styles.liveColumnHeader}>
                     <Users size={16} color="#16A34A" />
-                    <Text style={styles.liveColumnTitle}>Op het Veld</Text>
+                    <Text style={styles.liveColumnTitle}>Op het Veld ({Object.keys(activePlayers).length})</Text>
                   </View>
                   
                   <View style={styles.livePlayersList}>
@@ -999,11 +999,17 @@ export default function MatchScreen() {
                               </Text>
                               <View style={styles.livePlayerDetails}>
                                 <Text style={styles.livePlayerName}>{activePlayer.name}</Text>
+                                {activePlayer.startTime > 0 && (
+                                  <Text style={styles.livePlayerSubTime}>
+                                    Erin: {formatTime(activePlayer.startTime)}
+                                  </Text>
+                                )}
                               </View>
                             </View>
                             <View style={styles.livePlayerMeta}>
                               <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
                               {activePlayer.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
+                              {activePlayer.isStarting && <Star size={10} color="#10B981" fill="#10B981" />}
                             </View>
                           </TouchableOpacity>
                         ))
