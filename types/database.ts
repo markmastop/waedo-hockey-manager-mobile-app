@@ -193,6 +193,8 @@ export interface Player {
   name: string;
   number: number;
   position: string;
+  condition?: number;
+  isGoalkeeper?: boolean;
 }
 
 export interface Coach {

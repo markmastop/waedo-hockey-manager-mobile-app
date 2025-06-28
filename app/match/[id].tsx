@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Player, Substitution, MatchEvent, PlayerStats, FormationPosition } from '@/types/database';
-import { Match } from '@/types/match';
+import { Match, Team } from '@/types/match';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import FieldView from '@/components/FieldView';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
@@ -363,7 +363,8 @@ export default function MatchScreen() {
         setTeam({
           id: data.teams.id,
           name: data.teams.name,
-          players: Array.isArray(data.teams.players) ? data.teams.players : []
+          players: Array.isArray(data.teams.players) ? data.teams.players : [],
+          coach: Array.isArray(data.teams.coach) ? data.teams.coach : []
         });
       }
       
@@ -911,7 +912,7 @@ export default function MatchScreen() {
           <Text style={styles.matchTitle}>
             {match.home_team} vs {match.away_team}
           </Text>
-          <Text style={styles.teamName}>{match.teams.name}</Text>
+          <Text style={styles.teamName}>{match.home_team}</Text>
         </View>      
       </View>
 
@@ -1042,7 +1043,7 @@ export default function MatchScreen() {
                             </View>
                             <View style={styles.livePlayerMeta}>
                               <View style={[styles.conditionDot, { 
-                                backgroundColor: player.condition >= 80 ? '#10B981' : 
+                                backgroundColor: player.condition && player.condition >= 80 ? '#10B981' : 
                                                player.condition >= 60 ? '#F59E0B' : '#EF4444' 
                               }]} />
                               {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
@@ -1316,10 +1317,10 @@ export default function MatchScreen() {
                             <View style={styles.playerMeta}>
                               <View style={styles.conditionIndicator}>
                                 <View style={[styles.conditionDot, { 
-                                  backgroundColor: player.condition >= 80 ? '#10B981' : 
+                                  backgroundColor: player.condition && player.condition >= 80 ? '#10B981' : 
                                                  player.condition >= 60 ? '#F59E0B' : '#EF4444' 
                                 }]} />
-                                <Text style={styles.conditionValue}>{player.condition}%</Text>
+                                <Text style={styles.conditionValue}>{player.condition ? `${player.condition}%` : 'N/A'}</Text>
                               </View>
                               {player.isGoalkeeper && (
                                 <Shield size={10} color="#EF4444" />
@@ -1346,12 +1347,38 @@ export default function MatchScreen() {
       </ScrollView>
 
       {/* Time Control for Schedule */}
-      {hasSubstitutionSchedule && (
+      {hasSubstitutionSchedule && match && (
         <TimeControl
           currentTime={currentTime}
           isPlaying={isPlaying}
           setCurrentTime={setCurrentTime}
           setIsPlaying={setIsPlaying}
+          home_score={match.home_score}
+          away_score={match.away_score}
+          onHomeScoreUp={() => {
+            setMatch(prev => prev ? {
+              ...prev,
+              home_score: prev.home_score + 1
+            } : null);
+          }}
+          onHomeScoreDown={() => {
+            setMatch(prev => prev ? {
+              ...prev,
+              home_score: Math.max(0, prev.home_score - 1)
+            } : null);
+          }}
+          onAwayScoreUp={() => {
+            setMatch(prev => prev ? {
+              ...prev,
+              away_score: prev.away_score + 1
+            } : null);
+          }}
+          onAwayScoreDown={() => {
+            setMatch(prev => prev ? {
+              ...prev,
+              away_score: Math.max(0, prev.away_score - 1)
+            } : null);
+          }}
         />
       )}
     </SafeAreaView>

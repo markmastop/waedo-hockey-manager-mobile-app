@@ -4,8 +4,8 @@ import { Clock, Eye, Users, Grid3X3 } from 'lucide-react-native';
 
 interface ViewModeToggleProps {
   hasSubstitutionSchedule: boolean;
-  viewMode: string;
-  setViewMode: (mode: string) => void;
+  viewMode: 'formation' | 'list' | 'timeline' | 'grid';
+  setViewMode: React.Dispatch<React.SetStateAction<'formation' | 'list' | 'timeline' | 'grid'>>;
 }
 
 export default function ViewModeToggle({
@@ -13,7 +13,7 @@ export default function ViewModeToggle({
   viewMode,
   setViewMode,
 }: ViewModeToggleProps) {
-  const renderViewModeButton = (icon: React.ReactNode, label: string, mode: string) => (
+  const renderViewModeButton = (icon: React.ReactNode, label: string, mode: 'formation' | 'list' | 'timeline' | 'grid') => (
     <TouchableOpacity
       style={[styles.viewModeButton, viewMode === mode && styles.activeViewMode]}
       onPress={() => setViewMode(mode)}

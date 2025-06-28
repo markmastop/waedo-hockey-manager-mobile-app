@@ -1,12 +1,37 @@
-import { Database, Player, Substitution } from './database';
+import { Database, Player, Substitution, Coach } from './database';
 
-export interface Match extends Database['public']['Tables']['matches']['Row'] {
+export interface Team {
+  id: string;
+  name: string;
+  players: Player[];
+  coach: Coach[];
+}
+
+export interface Match {
+  id: string;
+  team_id: string;
+  date: string;
+  home_team: string;
+  away_team: string;
+  location: string;
+  field: string;
+  formation: string;
+  formation_key?: string;
+  match_key?: string;
   lineup: Player[];
   reserve_players: Player[];
   substitutions: Substitution[];
-  teams: {
-    name: string;
-  };
+  substitution_schedule: any;
+  match_events: MatchEvent[];
+  player_stats: PlayerStats[];
+  match_time: number;
+  current_quarter: number;
+  quarter_times: number[];
+  status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
+  is_home: boolean;
+  home_score: number;
+  away_score: number;
+  created_at: string;
 }
 
 export interface MatchEvent {
