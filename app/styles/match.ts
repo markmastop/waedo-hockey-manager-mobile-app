@@ -267,14 +267,13 @@ export const styles = StyleSheet.create({
       fontSize: 10,
       fontFamily: 'Inter-SemiBold',
       color: '#6B7280',
-      marginBottom: 6,
-      marginTop: 4,
+      marginBottom: 4,
+      marginTop: 2,
     },
     livePlayerDetails: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginTop: 2,
     },
     livePlayerName: {
       fontSize: 12,
