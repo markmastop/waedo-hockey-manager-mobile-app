@@ -15,10 +15,11 @@ import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import Timer from '../components/substitution-schedule/Timer';
 import StatsBar from '../components/substitution-schedule/StatsBar';
 import Controls from '../components/substitution-schedule/Controls';
+import GridContainer from '../components/substitution-schedule/GridContainer';
+import ActivePlayers from '../components/substitution-schedule/ActivePlayers';
 import { 
   ArrowLeft, 
   Users, 
-  Target,
   Search,
   User,
   Shield,
@@ -143,7 +144,7 @@ function PlayerDetailModal({ player, visible, onClose }: PlayerDetailModalProps)
 
             <View style={styles.playerStats}>
               <View style={styles.statItem}>
-                <Target size={16} color="#10B981" />
+                <Users size={16} color="#374151" />
                 <Text style={styles.statLabel}>Type</Text>
                 <Text style={styles.statValue}>
                   {player.isGoalkeeper ? 'Keeper' : 'Veldspeler'}
@@ -364,7 +365,7 @@ export default function SubstitutionScheduleScreen() {
       });
     }
     
-    console.log('✅ Final active players:', Object.keys(activePlayers).length, 'positions');
+    console.log('✅ Final active players:', Object.keys(activePlayers).length, 'players');
     return activePlayers;
   };
 
@@ -490,83 +491,14 @@ export default function SubstitutionScheduleScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {viewMode === 'timeline' ? (
           <View style={styles.timelineContainer}>
-            {/* Current Active Players */}
-            <View style={styles.activePlayersSection}>
-              <Text style={styles.sectionTitle}>
-                {currentTime === 0 ? 'Startspelers (00:00)' : `Huidige Spelers (${formatTime(currentTime)})`}
-              </Text>
-              <View style={styles.activePlayersList}>
-                {Object.keys(activePlayers).length === 0 ? (
-                  <View style={styles.emptyActivePlayersContainer}>
-                    <Users size={32} color="#9CA3AF" />
-                    <Text style={styles.emptyActivePlayersText}>
-                      Geen actieve spelers gevonden
-                    </Text>
-                    <Text style={styles.emptyActivePlayersSubtext}>
-                      Controleer of er een startspelers zijn ingesteld
-                    </Text>
-                  </View>
-                ) : (
-                  Object.entries(activePlayers).map(([position, player]) => (
-                    <TouchableOpacity
-                      key={position}
-                      style={styles.activePlayerCard}
-                      onPress={() => handlePlayerPress(player)}
-                    >
-                      <View style={[styles.positionIndicator, { backgroundColor: getPositionColor(position) }]} />
-                      <View style={styles.activePlayerInfo}>
-                        <Text style={styles.activePlayerPosition}>
-                          {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
-                        </Text>
-                        <View style={styles.activePlayerDetails}>
-                          <Text style={styles.activePlayerName}>{player.name}</Text>
-                          <Text style={styles.activePlayerNumber}>#{player.number}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.activePlayerMeta}>
-                        <View style={[styles.conditionDot, { 
-                          backgroundColor: (player.condition || 100) >= 80 ? '#10B981' : 
-                                         (player.condition || 100) >= 60 ? '#F59E0B' : '#EF4444' 
-                        }]} />
-                        {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
-                      </View>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </View>
-            </View>
-
-            {/* Upcoming Substitutions */}
-            {upcomingSubstitutions.length > 0 && (
-              <View style={styles.upcomingSection}>
-                <Text style={styles.sectionTitle}>Aankomende Wissels</Text>
-                <View style={styles.upcomingList}>
-                  {upcomingSubstitutions.map((event, index) => (
-                    <View key={index} style={styles.upcomingCard}>
-                      <View style={styles.upcomingTime}>
-                        <Clock size={14} color="#F59E0B" />
-                        <Text style={styles.upcomingTimeText}>
-                          {formatTime(event.time)}
-                        </Text>
-                      </View>
-                      <View style={styles.upcomingDetails}>
-                        <Text style={styles.upcomingPosition}>
-                          {formation?.positions.find(pos => pos.name === event.position)?.label_translations?.nl || event.position}
-                        </Text>
-                        <View style={styles.upcomingPlayer}>
-                          <Text style={styles.upcomingPlayerName}>
-                            {event.player.name} #{event.player.number}
-                          </Text>
-                          <Text style={styles.upcomingPlayerAction}>
-                            → Komt erin
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
+            <ActivePlayers
+              activePlayers={activePlayers}
+              upcomingSubstitutions={upcomingSubstitutions}
+              formation={formation}
+              getPositionColor={getPositionColor}
+              handlePlayerPress={handlePlayerPress}
+              formatTime={formatTime}
+            />
 
             {/* Full Timeline */}
             <View style={styles.fullTimelineSection}>
