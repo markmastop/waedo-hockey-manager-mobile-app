@@ -1,15 +1,14 @@
 export interface MatchesLive {
   id: string;
   match_id: string;
-  match_key?: string;
-  home_team: string;
-  away_team: string;
-  club_logo_url?: string;
   status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
-  match_time: number;
   current_quarter: number;
   home_score: number;
   away_score: number;
+  match_key: string | null;
+  home_team: string;
+  away_team: string;
+  club_logo_url: string | null;
   updated_at: string;
 }
 
@@ -145,31 +144,64 @@ export interface Database {
           created_at?: string;
         };
       };
+      matches_live_events: {
+        Row: {
+          id: string;
+          match_id: string;
+          player_id?: string;
+          action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card' | 'score_change';
+          description: string;
+          match_time: number;
+          quarter: number;
+          metadata: Record<string, any>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          player_id?: string;
+          action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card' | 'score_change';
+          description: string;
+          match_time?: number;
+          quarter?: number;
+          metadata?: Record<string, any>;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          match_id?: string;
+          player_id?: string;
+          action?: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card' | 'score_change';
+          description?: string;
+          match_time?: number;
+          quarter?: number;
+          metadata?: Record<string, any>;
+          created_at?: string;
+        };
+      };
     };
     Functions: {
-      get_live_match_state: {
+      get_match_events_summary: {
         Args: {
           match_uuid: string;
         };
         Returns: {
-          match_id: string;
-          status: string;
-          current_quarter: number;
-          match_time: number;
-          home_score: number;
-          away_score: number;
-          updated_at: string;
+          action_type: string;
+          event_count: number;
+          first_occurrence: string;
+          last_occurrence: string;
         }[];
       };
-      get_match_score_history: {
+      get_player_event_stats: {
         Args: {
           match_uuid: string;
+          player_uuid: string;
         };
         Returns: {
-          match_id: string;
-          home_score: number;
-          away_score: number;
-          updated_at: string;
+          action_type: string;
+          event_count: number;
+          avg_match_time: number;
+          quarters_active: number[];
         }[];
       };
     };
