@@ -5,7 +5,7 @@ import { MatchesLive } from '@/types/database';
 export interface MatchEventLog {
   match_id: string;
   player_id?: string;
-  action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card';
+  action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card' | 'score_change';
   description: string;
   match_time: number;
   quarter: number;
@@ -114,6 +114,8 @@ class MatchEventLogger {
           home_team: matchData.home_team,
           away_team: matchData.away_team,
           club_logo_url: matchData.club_logo_url,
+          events: [],
+          last_event: null,
           updated_at: new Date().toISOString()
         });
 
@@ -163,6 +165,40 @@ class MatchEventLogger {
     }
   }
 
+  private async addEventToMatchesLive(matchId: string, event: MatchEventLog): Promise<boolean> {
+    try {
+      // Prepare event data for storage
+      const eventData = {
+        id: crypto.randomUUID(),
+        action: event.action,
+        description: event.description,
+        match_time: event.match_time,
+        quarter: event.quarter,
+        player_id: event.player_id,
+        metadata: event.metadata,
+        timestamp: new Date().toISOString()
+      };
+
+      // Use the database function to add the event
+      const { data, error } = await supabase
+        .rpc('add_match_event', {
+          match_uuid: matchId,
+          event_data: eventData
+        });
+
+      if (error) {
+        console.error('❌ Failed to add event to matches_live:', error);
+        return false;
+      }
+
+      console.log('✅ Event added to matches_live successfully');
+      return true;
+    } catch (error) {
+      console.error('💥 Exception adding event to matches_live:', error);
+      return false;
+    }
+  }
+
   async logEvent(event: MatchEventLog): Promise<void> {
     console.log('📝 Logging match event:', event);
     
@@ -178,6 +214,9 @@ class MatchEventLogger {
         match_time: event.match_time, // Update match time with each event
       });
 
+      // Add event to the events JSON array and update last_event
+      await this.addEventToMatchesLive(matchId, event);
+
       console.log('✅ Match event logged successfully');
     } catch (error) {
       console.error('💥 Exception logging match event:', error);
@@ -189,24 +228,100 @@ class MatchEventLogger {
     try {
       const { data, error } = await supabase
         .from('matches_live')
-        .select('*')
-        .eq('match_id', matchId);
+        .select('events')
+        .eq('match_id', matchId)
+        .single();
 
       if (error) {
         console.error('❌ Failed to fetch match events:', error);
         return [];
       }
 
-      return data || [];
+      return data?.events || [];
     } catch (error) {
       console.error('💥 Exception fetching match events:', error);
       return [];
     }
   }
 
+  async getRecentMatchEvents(matchId: string, limit: number = 10): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_recent_match_events', {
+          match_uuid: matchId,
+          event_limit: limit
+        });
+
+      if (error) {
+        console.error('❌ Failed to fetch recent match events:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('💥 Exception fetching recent match events:', error);
+      return [];
+    }
+  }
+
   async getEventsByAction(matchId: string, action: string): Promise<any[]> {
-    console.warn('⚠️ getEventsByAction not implemented for matches_live table');
-    return [];
+    try {
+      const { data, error } = await supabase
+        .rpc('get_match_events_by_action', {
+          match_uuid: matchId,
+          action_type: action
+        });
+
+      if (error) {
+        console.error('❌ Failed to fetch events by action:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('💥 Exception fetching events by action:', error);
+      return [];
+    }
+  }
+
+  async getLastEvent(matchId: string): Promise<any | null> {
+    try {
+      const { data, error } = await supabase
+        .from('matches_live')
+        .select('last_event')
+        .eq('match_id', matchId)
+        .single();
+
+      if (error) {
+        console.error('❌ Failed to fetch last event:', error);
+        return null;
+      }
+
+      return data?.last_event || null;
+    } catch (error) {
+      console.error('💥 Exception fetching last event:', error);
+      return null;
+    }
+  }
+
+  async clearMatchEvents(matchId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .rpc('clear_match_events', {
+          match_uuid: matchId
+        });
+
+      if (error) {
+        console.error('❌ Failed to clear match events:', error);
+        return false;
+      }
+
+      console.log('✅ Match events cleared successfully');
+      return true;
+    } catch (error) {
+      console.error('💥 Exception clearing match events:', error);
+      return false;
+    }
   }
 
   private async processQueue(): Promise<void> {
@@ -576,6 +691,8 @@ class MatchEventLogger {
           home_team: matchData.home_team,
           away_team: matchData.away_team,
           club_logo_url: matchData.club_logo_url,
+          events: [],
+          last_event: null,
           updated_at: new Date().toISOString()
         });
 
@@ -676,49 +793,6 @@ class MatchEventLogger {
       await this.updateMatchesLiveRecord(matchId, updates);
     } catch (error) {
       console.error('💥 Exception updating match status:', error);
-    }
-  }
-
-  // Get events for a match
-  async getMatchEvents(matchId: string): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .from('matches_live_events')
-        .select('*')
-        .eq('match_id', matchId)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('❌ Failed to fetch match events:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('💥 Exception fetching match events:', error);
-      return [];
-    }
-  }
-
-  // Get events by action type
-  async getEventsByAction(matchId: string, action: string): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .from('matches_live_events')
-        .select('*')
-        .eq('match_id', matchId)
-        .eq('action', action)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('❌ Failed to fetch events by action:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('💥 Exception fetching events by action:', error);
-      return [];
     }
   }
 

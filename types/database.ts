@@ -10,6 +10,8 @@ export interface MatchesLive {
   home_team: string;
   away_team: string;
   club_logo_url: string | null;
+  events: any[]; // Array of match events
+  last_event: any | null; // Most recent event for quick access
   updated_at: string;
 }
 
@@ -204,6 +206,33 @@ export interface Database {
           avg_match_time: number;
           quarters_active: number[];
         }[];
+      };
+      add_match_event: {
+        Args: {
+          match_uuid: string;
+          event_data: any;
+        };
+        Returns: boolean;
+      };
+      get_recent_match_events: {
+        Args: {
+          match_uuid: string;
+          event_limit?: number;
+        };
+        Returns: any[];
+      };
+      get_match_events_by_action: {
+        Args: {
+          match_uuid: string;
+          action_type: string;
+        };
+        Returns: any[];
+      };
+      clear_match_events: {
+        Args: {
+          match_uuid: string;
+        };
+        Returns: boolean;
       };
     };
   };
