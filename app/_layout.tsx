@@ -47,6 +47,7 @@ export default function RootLayout() {
           <Stack.Screen name="match/[id]" />
           <Stack.Screen name="team/[id]" />
           <Stack.Screen name="formation/[id]" />
+          <Stack.Screen name="debug-formations" />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
