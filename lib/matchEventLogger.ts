@@ -228,7 +228,7 @@ class MatchEventLogger {
 
       console.log('📝 Adding event to matches_live:', eventData);
 
-      // Use the database function to add the event
+      // Use the database function to add the event - fix parameter order
       const { data, error } = await supabase
         .rpc('add_match_event', {
           match_uuid: matchId,
