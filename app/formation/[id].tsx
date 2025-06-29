@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { FormationPosition } from '@/types/database';
-import { ArrowLeft, Grid3X3, Users } from 'lucide-react-native';
+import { ArrowLeft, Grid3x3 as Grid3X3, Users } from 'lucide-react-native';
 
 interface Formation {
   id: string;
