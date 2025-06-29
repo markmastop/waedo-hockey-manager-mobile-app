@@ -90,30 +90,6 @@ class MatchEventLogger {
     }
   }
 
-  async getMatchEvents(matchId: string): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .from('matches_live')
-        .select('*')
-        .eq('match_id', matchId);
-
-      if (error) {
-        console.error('❌ Failed to fetch match events:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('💥 Exception fetching match events:', error);
-      return [];
-    }
-  }
-
-  async getEventsByAction(matchId: string, action: string): Promise<any[]> {
-    console.warn('⚠️ getEventsByAction not implemented for matches_live table');
-    return [];
-  }
-
   private async processQueue(): Promise<void> {
     if (this.isProcessing || this.eventQueue.length === 0) return;
     
@@ -290,6 +266,24 @@ class MatchEventLogger {
     if (teamScored) {
       const diff = teamScored === 'home' ? scoreDiff.home : scoreDiff.away;
       description = `${teamScored === 'home' ? 'Home' : 'Away'} team score ${diff > 0 ? 'increased' : 'decreased'} by ${Math.abs(diff)}. New score: ${homeScore}-${awayScore}`;
+    }
+
+    // Update the matches_live table with new scores
+    try {
+      const { error } = await supabase
+        .from('matches_live')
+        .update({
+          home_score: homeScore,
+          away_score: awayScore,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId);
+
+      if (error) {
+        console.error('❌ Failed to update scores in matches_live:', error);
+      }
+    } catch (error) {
+      console.error('💥 Exception updating scores:', error);
     }
 
     await this.logEvent({
@@ -495,6 +489,23 @@ class MatchEventLogger {
   }
 
   async logMatchEnd(matchId: string, matchTime: number, quarter: number, finalScore?: { home: number; away: number }): Promise<void> {
+    // Update matches_live status to completed
+    try {
+      const { error } = await supabase
+        .from('matches_live')
+        .update({
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId);
+
+      if (error) {
+        console.error('❌ Failed to update match status to completed:', error);
+      }
+    } catch (error) {
+      console.error('💥 Exception updating match status:', error);
+    }
+
     await this.logEvent({
       match_id: matchId,
       action: 'match_end',
@@ -534,223 +545,69 @@ class MatchEventLogger {
     });
   }
 
-  async logPlayerSelection(
-    matchId: string,
-    player: Player,
-    matchTime: number,
-    quarter: number,
-    selectionType: 'field' | 'bench'
-  ): Promise<void> {
-    await this.logEvent({
-      match_id: matchId,
-      player_id: player.id,
-      action: 'player_selection',
-      description: `Player ${player.name} (#${player.number}) selected from ${selectionType}`,
-      match_time: matchTime,
-      quarter: quarter,
-      metadata: {
-        player: {
-          id: player.id,
-          name: player.name,
-          number: player.number,
-          position: player.position
-        },
-        selection_type: selectionType
-      }
-    });
-  }
-
-  async logFormationChange(
-    matchId: string,
-    oldFormation: string,
-    newFormation: string,
-    matchTime: number,
-    quarter: number
-  ): Promise<void> {
-    await this.logEvent({
-      match_id: matchId,
-      action: 'formation_change',
-      description: `Formation changed from ${oldFormation} to ${newFormation}`,
-      match_time: matchTime,
-      quarter: quarter,
-      metadata: {
-        old_formation: oldFormation,
-        new_formation: newFormation
-      }
-    });
-  }
-
-  async logTimeout(
-    matchId: string,
-    matchTime: number,
-    quarter: number,
-    teamType: 'home' | 'away'
-  ): Promise<void> {
-    await this.logEvent({
-      match_id: matchId,
-      action: 'timeout',
-      description: `Timeout called by ${teamType} team`,
-      match_time: matchTime,
-      quarter: quarter,
-      metadata: {
-        team_type: teamType,
-        timestamp: new Date().toISOString()
-      }
-    });
-  }
-
-  async logInjury(
-    matchId: string,
-    player: Player,
-    matchTime: number,
-    quarter: number,
-    severity?: 'minor' | 'major'
-  ): Promise<void> {
-    await this.logEvent({
-      match_id: matchId,
-      player_id: player.id,
-      action: 'injury',
-      description: `Injury to ${player.name} (#${player.number})${severity ? ` (${severity})` : ''}`,
-      match_time: matchTime,
-      quarter: quarter,
-      metadata: {
-        player: {
-          id: player.id,
-          name: player.name,
-          number: player.number,
-          position: player.position
-        },
-        severity: severity,
-        timestamp: new Date().toISOString()
-      }
-    });
-  }
-
-  async logPenaltyCorner(
-    matchId: string,
-    matchTime: number,
-    quarter: number,
-    teamType: 'home' | 'away'
-  ): Promise<void> {
-    await this.logEvent({
-      match_id: matchId,
-      action: 'penalty_corner',
-      description: `Penalty corner awarded to ${teamType} team`,
-      match_time: matchTime,
-      quarter: quarter,
-      metadata: {
-        team_type: teamType,
-        timestamp: new Date().toISOString()
-      }
-    });
-  }
-
-  async logPenaltyStroke(
-    matchId: string,
-    player: Player,
-    matchTime: number,
-    quarter: number,
-    result: 'goal' | 'save' | 'miss'
-  ): Promise<void> {
-    await this.logEvent({
-      match_id: matchId,
-      player_id: player.id,
-      action: 'penalty_stroke',
-      description: `Penalty stroke by ${player.name} (#${player.number}) - ${result}`,
-      match_time: matchTime,
-      quarter: quarter,
-      metadata: {
-        player: {
-          id: player.id,
-          name: player.name,
-          number: player.number,
-          position: player.position
-        },
-        result: result,
-        timestamp: new Date().toISOString()
-      }
-    });
-  }
-
-  // Get events for a match
-  async getMatchEvents(matchId: string): Promise<any[]> {
+  // Get live match state from matches_live table
+  async getLiveMatchState(matchId: string): Promise<MatchesLive | null> {
     try {
       const { data, error } = await supabase
-        .from('matches_live_events')
+        .from('matches_live')
         .select('*')
         .eq('match_id', matchId)
-        .order('created_at', { ascending: true });
+        .single();
 
       if (error) {
-        console.error('❌ Failed to fetch match events:', error);
-        return [];
+        console.error('❌ Failed to fetch live match state:', error);
+        return null;
       }
 
-      return data || [];
+      return data;
     } catch (error) {
-      console.error('💥 Exception fetching match events:', error);
-      return [];
+      console.error('💥 Exception fetching live match state:', error);
+      return null;
     }
   }
 
-  // Get events by action type
-  async getEventsByAction(matchId: string, action: string): Promise<any[]> {
+  // Update match status
+  async updateMatchStatus(matchId: string, status: 'upcoming' | 'inProgress' | 'paused' | 'completed'): Promise<void> {
     try {
-      const { data, error } = await supabase
-        .from('matches_live_events')
-        .select('*')
-        .eq('match_id', matchId)
-        .eq('action', action)
-        .order('created_at', { ascending: true });
+      const { error } = await supabase
+        .from('matches_live')
+        .update({
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId);
 
       if (error) {
-        console.error('❌ Failed to fetch events by action:', error);
-        return [];
+        console.error('❌ Failed to update match status:', error);
+        throw error;
       }
 
-      return data || [];
+      console.log(`✅ Match status updated to: ${status}`);
     } catch (error) {
-      console.error('💥 Exception fetching events by action:', error);
-      return [];
+      console.error('💥 Exception updating match status:', error);
+      throw error;
     }
   }
 
-  // Get match events summary using the database function
-  async getMatchEventsSummary(matchId: string): Promise<any[]> {
+  // Update match time and quarter
+  async updateMatchTime(matchId: string, currentTime: number, currentQuarter: number): Promise<void> {
     try {
-      const { data, error } = await supabase
-        .rpc('get_match_events_summary', { match_uuid: matchId });
+      const { error } = await supabase
+        .from('matches_live')
+        .update({
+          current_time: currentTime,
+          current_quarter: currentQuarter,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId);
 
       if (error) {
-        console.error('❌ Failed to fetch match events summary:', error);
-        return [];
+        console.error('❌ Failed to update match time:', error);
+        throw error;
       }
-
-      return data || [];
     } catch (error) {
-      console.error('💥 Exception fetching match events summary:', error);
-      return [];
-    }
-  }
-
-  // Get player event statistics using the database function
-  async getPlayerEventStats(matchId: string, playerId: string): Promise<any[]> {
-    try {
-      const { data, error } = await supabase
-        .rpc('get_player_event_stats', { 
-          match_uuid: matchId, 
-          player_uuid: playerId 
-        });
-
-      if (error) {
-        console.error('❌ Failed to fetch player event stats:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('💥 Exception fetching player event stats:', error);
-      return [];
+      console.error('💥 Exception updating match time:', error);
+      throw error;
     }
   }
 }
