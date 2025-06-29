@@ -1,10 +1,11 @@
 import { supabase } from '@/lib/supabase';
 import { Player } from '@/types/database';
+import { MatchesLive } from '@/types/database';
 
 export interface MatchEventLog {
   match_id: string;
   player_id?: string;
-  action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card' | 'score_change';
+  action: 'swap' | 'goal' | 'card' | 'substitution' | 'match_start' | 'match_end' | 'quarter_start' | 'quarter_end' | 'formation_change' | 'player_selection' | 'timeout' | 'injury' | 'penalty_corner' | 'penalty_stroke' | 'green_card' | 'yellow_card' | 'red_card';
   description: string;
   match_time: number;
   quarter: number;
@@ -27,31 +28,90 @@ class MatchEventLogger {
     console.log('📝 Logging match event:', event);
     
     try {
-      const { error } = await supabase
-        .from('matches_live_events')
-        .insert({
-          match_id: event.match_id,
-          player_id: event.player_id,
-          action: event.action,
-          description: event.description,
-          match_time: event.match_time,
-          quarter: event.quarter,
-          metadata: event.metadata || {},
-        });
+      // Ensure match_id is a valid UUID
+      const matchId = typeof event.match_id === 'string' 
+        ? event.match_id 
+        : event.match_id.toString();
 
-      if (error) {
-        console.error('❌ Failed to log match event:', error);
-        // Add to queue for retry
-        this.eventQueue.push(event);
-        this.processQueue();
-      } else {
-        console.log('✅ Match event logged successfully');
+      // First try to update existing record
+      const { error: updateError } = await supabase
+        .from('matches_live')
+        .update({
+          match_id: matchId,
+          current_quarter: event.quarter,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId);
+
+      if (updateError) {
+        console.log('🔄 No existing record found, creating new matches_live record');
+        
+        // Check if the match exists in matches table
+        const { data: matchData, error: matchError } = await supabase
+          .from('matches')
+          .select('id')
+          .eq('id', matchId)
+          .single();
+
+        if (matchError || !matchData) {
+          console.error('❌ Match not found in matches table:', matchError || 'No match found');
+          throw new Error('Match not found in matches table');
+        }
+
+        // If update fails, try to insert a new record
+        const { error: insertError, data } = await supabase
+          .from('matches_live')
+          .insert({
+            match_id: matchId,
+            status: 'inProgress',
+            current_quarter: event.quarter,
+            home_score: 0,
+            away_score: 0,
+            updated_at: new Date().toISOString()
+          })
+          .select();
+
+        if (insertError) {
+          console.error('❌ Failed to create matches_live record:', insertError);
+          console.log('Error details:', {
+            match_id: matchId,
+            current_quarter: event.quarter
+          });
+          throw insertError;
+        }
+
+        console.log('✅ Created new matches_live record:', data);
       }
+
+      console.log('✅ Match event logged successfully');
     } catch (error) {
       console.error('💥 Exception logging match event:', error);
-      this.eventQueue.push(event);
-      this.processQueue();
+      throw error;
     }
+  }
+
+  async getMatchEvents(matchId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('matches_live')
+        .select('*')
+        .eq('match_id', matchId);
+
+      if (error) {
+        console.error('❌ Failed to fetch match events:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('💥 Exception fetching match events:', error);
+      return [];
+    }
+  }
+
+  async getEventsByAction(matchId: string, action: string): Promise<any[]> {
+    console.warn('⚠️ getEventsByAction not implemented for matches_live table');
+    return [];
   }
 
   private async processQueue(): Promise<void> {
@@ -64,28 +124,9 @@ class MatchEventLogger {
       const event = this.eventQueue.shift();
       if (event) {
         try {
-          const { error } = await supabase
-            .from('matches_live_events')
-            .insert({
-              match_id: event.match_id,
-              player_id: event.player_id,
-              action: event.action,
-              description: event.description,
-              match_time: event.match_time,
-              quarter: event.quarter,
-              metadata: event.metadata || {},
-            });
-
-          if (error) {
-            console.error('❌ Failed to process queued event:', error);
-            // Put it back at the end of the queue
-            this.eventQueue.push(event);
-            break;
-          } else {
-            console.log('✅ Queued event processed successfully');
-          }
+          await this.logEvent(event);
         } catch (error) {
-          console.error('💥 Exception processing queued event:', error);
+          console.error('❌ Failed to process queued event:', error);
           this.eventQueue.push(event);
           break;
         }
@@ -273,7 +314,174 @@ class MatchEventLogger {
     });
   }
 
+  async logPlayerSelection(
+    matchId: string,
+    player: Player,
+    matchTime: number,
+    quarter: number,
+    selectionType: 'field' | 'bench'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      player_id: player.id,
+      action: 'player_selection',
+      description: `Player ${player.name} (#${player.number}) selected from ${selectionType}`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        player: {
+          id: player.id,
+          name: player.name,
+          number: player.number,
+          position: player.position
+        },
+        selection_type: selectionType
+      }
+    });
+  }
+
+  async logFormationChange(
+    matchId: string,
+    oldFormation: string,
+    newFormation: string,
+    matchTime: number,
+    quarter: number
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      action: 'formation_change',
+      description: `Formation changed from ${oldFormation} to ${newFormation}`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        old_formation: oldFormation,
+        new_formation: newFormation
+      }
+    });
+  }
+
+  async logTimeout(
+    matchId: string,
+    matchTime: number,
+    quarter: number,
+    teamType: 'home' | 'away'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      action: 'timeout',
+      description: `Timeout called by ${teamType} team`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        team_type: teamType,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  async logInjury(
+    matchId: string,
+    player: Player,
+    matchTime: number,
+    quarter: number,
+    severity?: 'minor' | 'major'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      player_id: player.id,
+      action: 'injury',
+      description: `Injury to ${player.name} (#${player.number})${severity ? ` (${severity})` : ''}`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        player: {
+          id: player.id,
+          name: player.name,
+          number: player.number,
+          position: player.position
+        },
+        severity: severity,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  async logPenaltyCorner(
+    matchId: string,
+    matchTime: number,
+    quarter: number,
+    teamType: 'home' | 'away'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      action: 'penalty_corner',
+      description: `Penalty corner awarded to ${teamType} team`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        team_type: teamType,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  async logPenaltyStroke(
+    matchId: string,
+    player: Player,
+    matchTime: number,
+    quarter: number,
+    result: 'goal' | 'save' | 'miss'
+  ): Promise<void> {
+    await this.logEvent({
+      match_id: matchId,
+      player_id: player.id,
+      action: 'penalty_stroke',
+      description: `Penalty stroke by ${player.name} (#${player.number}) - ${result}`,
+      match_time: matchTime,
+      quarter: quarter,
+      metadata: {
+        player: {
+          id: player.id,
+          name: player.name,
+          number: player.number,
+          position: player.position
+        },
+        result: result,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  async createMatchesLiveRecord(matchId: string, status: 'upcoming' | 'inProgress' | 'paused' | 'completed'): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('matches_live')
+        .insert({
+          match_id: matchId,
+          status: status,
+          current_time: 0,
+          current_quarter: 1,
+          home_score: 0,
+          away_score: 0,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('❌ Failed to create matches_live record:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('💥 Exception creating matches_live record:', error);
+      return false;
+    }
+  }
+
   async logMatchStart(matchId: string): Promise<void> {
+    // Create matches_live record first
+    await this.createMatchesLiveRecord(matchId, 'inProgress');
+
     await this.logEvent({
       match_id: matchId,
       action: 'match_start',

@@ -1355,29 +1355,81 @@ export default function MatchScreen() {
           setIsPlaying={setIsPlaying}
           home_score={match.home_score}
           away_score={match.away_score}
-          onHomeScoreUp={() => {
-            setMatch(prev => prev ? {
-              ...prev,
-              home_score: prev.home_score + 1
-            } : null);
+          onHomeScoreUp={async () => {
+            if (match) {
+              const newScore = match.home_score + 1;
+              await matchEventLogger.logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                newScore,
+                match.away_score,
+                match.home_score,
+                match.away_score,
+                'home'
+              );
+              setMatch(prev => prev ? {
+                ...prev,
+                home_score: newScore
+              } : null);
+            }
           }}
-          onHomeScoreDown={() => {
-            setMatch(prev => prev ? {
-              ...prev,
-              home_score: Math.max(0, prev.home_score - 1)
-            } : null);
+          onHomeScoreDown={async () => {
+            if (match) {
+              const newScore = Math.max(0, match.home_score - 1);
+              await matchEventLogger.logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                newScore,
+                match.away_score,
+                match.home_score,
+                match.away_score,
+                'home'
+              );
+              setMatch(prev => prev ? {
+                ...prev,
+                home_score: newScore
+              } : null);
+            }
           }}
-          onAwayScoreUp={() => {
-            setMatch(prev => prev ? {
-              ...prev,
-              away_score: prev.away_score + 1
-            } : null);
+          onAwayScoreUp={async () => {
+            if (match) {
+              const newScore = match.away_score + 1;
+              await matchEventLogger.logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                match.home_score,
+                newScore,
+                match.home_score,
+                match.away_score,
+                'away'
+              );
+              setMatch(prev => prev ? {
+                ...prev,
+                away_score: newScore
+              } : null);
+            }
           }}
-          onAwayScoreDown={() => {
-            setMatch(prev => prev ? {
-              ...prev,
-              away_score: Math.max(0, prev.away_score - 1)
-            } : null);
+          onAwayScoreDown={async () => {
+            if (match) {
+              const newScore = Math.max(0, match.away_score - 1);
+              await matchEventLogger.logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                match.home_score,
+                newScore,
+                match.home_score,
+                match.away_score,
+                'away'
+              );
+              setMatch(prev => prev ? {
+                ...prev,
+                away_score: newScore
+              } : null);
+            }
           }}
         />
       )}

@@ -1,6 +1,22 @@
+export interface MatchesLive {
+  id: string;
+  match_id: string;
+  status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
+  current_time: number;
+  current_quarter: number;
+  home_score: number;
+  away_score: number;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
+      matches_live: {
+        Row: MatchesLive;
+        Insert: Omit<MatchesLive, 'id'>;
+        Update: Partial<MatchesLive>;
+      };
       teams: {
         Row: {
           id: string;
@@ -47,8 +63,6 @@ export interface Database {
           quarter_times: number[];
           status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
           is_home: boolean;
-          home_score: number;
-          away_score: number;
           created_at: string;
         };
         Insert: {
