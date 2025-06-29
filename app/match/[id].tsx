@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Player, FormationPosition, PlayerStats } from '@/types/database';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { matchEventLogger } from '@/lib/matchEventLogger';
-import { ArrowLeft, Calendar, Settings, Clock, Eye, Users, Grid3X3 } from 'lucide-react-native';
+import { ArrowLeft, Calendar, Settings, Clock, Eye, Users, Grid3x3 as Grid3X3 } from 'lucide-react-native';
 import { styles as matchStyles } from '@/app/styles/match';
 
 // Import components
