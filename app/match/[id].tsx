@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Player, FormationPosition, PlayerStats } from '@/types/database';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
-import { ArrowLeft, Calendar, Settings, Users, Eye, Clock, Grid3X3 } from 'lucide-react-native';
+import { ArrowLeft, Calendar, Settings, Users, Eye, Clock, Grid3x3 as Grid3X3 } from 'lucide-react-native';
 import { styles } from '@/app/styles/match';
 import FieldView from '@/components/FieldView';
 import { CompactPlayerCard } from '@/components/CompactPlayerCard';
