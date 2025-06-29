@@ -31,6 +31,35 @@ class MatchEventLogger {
     return MatchEventLogger.instance;
   }
 
+  private async checkDatabaseSchema(): Promise<boolean> {
+    try {
+      console.log('🔍 Checking database schema...');
+      
+      // Check if the check_matches_live_schema function exists and use it
+      const { data, error } = await supabase
+        .rpc('check_matches_live_schema');
+
+      if (error) {
+        console.warn('⚠️ Schema check function not available:', error.message);
+        return true; // Assume schema is correct if we can't check
+      }
+
+      console.log('✅ Database schema check:', data);
+      
+      // Check if events column exists
+      const hasEventsColumn = data?.some((col: any) => col.column_name === 'events');
+      if (!hasEventsColumn) {
+        console.error('❌ Events column missing from matches_live table');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('⚠️ Could not check database schema:', error);
+      return true; // Assume schema is correct if we can't check
+    }
+  }
+
   private async getMatchData(matchId: string): Promise<MatchData | null> {
     try {
       console.log('🔍 Fetching match data for:', matchId);
@@ -81,6 +110,13 @@ class MatchEventLogger {
 
   private async ensureMatchesLiveRecord(matchId: string): Promise<boolean> {
     try {
+      // Check database schema first
+      const schemaOk = await this.checkDatabaseSchema();
+      if (!schemaOk) {
+        console.error('❌ Database schema check failed');
+        return false;
+      }
+
       // First check if record already exists
       const { data: existingRecord } = await supabase
         .from('matches_live')
@@ -100,27 +136,32 @@ class MatchEventLogger {
         return false;
       }
 
-      // Create new matches_live record
+      // Create new matches_live record with all required columns
+      const insertData = {
+        match_id: matchId,
+        status: 'inProgress' as const,
+        current_quarter: 1,
+        match_time: 0,
+        home_score: 0,
+        away_score: 0,
+        match_key: matchData.match_key,
+        home_team: matchData.home_team,
+        away_team: matchData.away_team,
+        club_logo_url: matchData.club_logo_url,
+        events: [],
+        last_event: null,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('📝 Creating matches_live record with data:', insertData);
+
       const { error: insertError } = await supabase
         .from('matches_live')
-        .insert({
-          match_id: matchId,
-          status: 'inProgress',
-          current_quarter: 1,
-          match_time: 0,
-          home_score: 0,
-          away_score: 0,
-          match_key: matchData.match_key,
-          home_team: matchData.home_team,
-          away_team: matchData.away_team,
-          club_logo_url: matchData.club_logo_url,
-          events: [],
-          last_event: null,
-          updated_at: new Date().toISOString()
-        });
+        .insert(insertData);
 
       if (insertError) {
         console.error('❌ Failed to create matches_live record:', insertError);
+        console.error('Insert data was:', insertData);
         return false;
       }
 
@@ -143,17 +184,23 @@ class MatchEventLogger {
         throw new Error(`Failed to ensure matches_live record exists for match ${matchId}`);
       }
 
+      // Prepare updates with timestamp
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('📝 Updating matches_live record with:', updateData);
+
       // Update the record
       const { error } = await supabase
         .from('matches_live')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('match_id', matchId);
 
       if (error) {
         console.error('❌ Failed to update matches_live record:', error);
+        console.error('Update data was:', updateData);
         return false;
       }
 
@@ -179,6 +226,8 @@ class MatchEventLogger {
         timestamp: new Date().toISOString()
       };
 
+      console.log('📝 Adding event to matches_live:', eventData);
+
       // Use the database function to add the event
       const { data, error } = await supabase
         .rpc('add_match_event', {
@@ -188,6 +237,14 @@ class MatchEventLogger {
 
       if (error) {
         console.error('❌ Failed to add event to matches_live:', error);
+        console.error('Event data was:', eventData);
+        
+        // If the function doesn't exist, try direct update as fallback
+        if (error.message?.includes('function') || error.message?.includes('does not exist')) {
+          console.log('🔄 Trying direct update as fallback...');
+          return await this.addEventDirectly(matchId, eventData);
+        }
+        
         return false;
       }
 
@@ -195,6 +252,46 @@ class MatchEventLogger {
       return true;
     } catch (error) {
       console.error('💥 Exception adding event to matches_live:', error);
+      return false;
+    }
+  }
+
+  private async addEventDirectly(matchId: string, eventData: any): Promise<boolean> {
+    try {
+      // Get current events
+      const { data: currentRecord, error: fetchError } = await supabase
+        .from('matches_live')
+        .select('events')
+        .eq('match_id', matchId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Failed to fetch current events:', fetchError);
+        return false;
+      }
+
+      const currentEvents = currentRecord?.events || [];
+      const newEvents = [...currentEvents, eventData];
+
+      // Update with new events
+      const { error: updateError } = await supabase
+        .from('matches_live')
+        .update({
+          events: newEvents,
+          last_event: eventData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId);
+
+      if (updateError) {
+        console.error('❌ Failed to update events directly:', updateError);
+        return false;
+      }
+
+      console.log('✅ Event added directly to matches_live');
+      return true;
+    } catch (error) {
+      console.error('💥 Exception adding event directly:', error);
       return false;
     }
   }
@@ -254,12 +351,35 @@ class MatchEventLogger {
 
       if (error) {
         console.error('❌ Failed to fetch recent match events:', error);
-        return [];
+        // Fallback to direct query
+        return await this.getMatchEventsDirectly(matchId, limit);
       }
 
       return data || [];
     } catch (error) {
       console.error('💥 Exception fetching recent match events:', error);
+      return [];
+    }
+  }
+
+  private async getMatchEventsDirectly(matchId: string, limit: number = 10): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('matches_live')
+        .select('events')
+        .eq('match_id', matchId)
+        .single();
+
+      if (error || !data?.events) {
+        return [];
+      }
+
+      const events = Array.isArray(data.events) ? data.events : [];
+      return events
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, limit);
+    } catch (error) {
+      console.error('💥 Exception in direct events fetch:', error);
       return [];
     }
   }
@@ -274,7 +394,9 @@ class MatchEventLogger {
 
       if (error) {
         console.error('❌ Failed to fetch events by action:', error);
-        return [];
+        // Fallback to direct query
+        const allEvents = await this.getMatchEventsDirectly(matchId, 1000);
+        return allEvents.filter(event => event.action === action);
       }
 
       return data || [];
@@ -313,7 +435,20 @@ class MatchEventLogger {
 
       if (error) {
         console.error('❌ Failed to clear match events:', error);
-        return false;
+        // Fallback to direct update
+        const { error: directError } = await supabase
+          .from('matches_live')
+          .update({
+            events: [],
+            last_event: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('match_id', matchId);
+
+        if (directError) {
+          console.error('❌ Failed to clear events directly:', directError);
+          return false;
+        }
       }
 
       console.log('✅ Match events cleared successfully');
