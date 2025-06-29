@@ -3,6 +3,7 @@ export interface MatchesLive {
   match_id: string;
   status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
   current_quarter: number;
+  match_time: number;
   home_score: number;
   away_score: number;
   match_key: string | null;

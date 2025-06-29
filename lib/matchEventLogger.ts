@@ -107,6 +107,7 @@ class MatchEventLogger {
           match_id: matchId,
           status: 'inProgress',
           current_quarter: 1,
+          match_time: 0,
           home_score: 0,
           away_score: 0,
           match_key: matchData.match_key,
@@ -171,9 +172,10 @@ class MatchEventLogger {
         ? event.match_id 
         : event.match_id.toString();
 
-      // Update matches_live record
+      // Update matches_live record with current match time and quarter
       await this.updateMatchesLiveRecord(matchId, {
         current_quarter: event.quarter,
+        match_time: event.match_time, // Update match time with each event
       });
 
       console.log('✅ Match event logged successfully');
@@ -374,11 +376,12 @@ class MatchEventLogger {
     previousAwayScore: number,
     teamScored?: 'home' | 'away'
   ): Promise<void> {
-    // Update the live match record with new scores
+    // Update the live match record with new scores and current match time
     await this.updateMatchesLiveRecord(matchId, {
       home_score: homeScore,
       away_score: awayScore,
-      current_quarter: quarter
+      current_quarter: quarter,
+      match_time: matchTime // Include match time in score updates
     });
 
     const scoreDiff = {
@@ -566,6 +569,7 @@ class MatchEventLogger {
           match_id: matchId,
           status: status,
           current_quarter: 1,
+          match_time: 0,
           home_score: 0,
           away_score: 0,
           match_key: matchData.match_key,
@@ -604,6 +608,13 @@ class MatchEventLogger {
   }
 
   async logMatchEnd(matchId: string, matchTime: number, quarter: number, finalScore?: { home: number; away: number }): Promise<void> {
+    // Update status to completed when match ends
+    await this.updateMatchesLiveRecord(matchId, {
+      status: 'completed',
+      match_time: matchTime,
+      current_quarter: quarter
+    });
+
     await this.logEvent({
       match_id: matchId,
       action: 'match_end',
@@ -641,6 +652,31 @@ class MatchEventLogger {
         timestamp: new Date().toISOString()
       }
     });
+  }
+
+  // Method to update match time without logging an event (for timer updates)
+  async updateMatchTime(matchId: string, matchTime: number, quarter: number): Promise<void> {
+    try {
+      await this.updateMatchesLiveRecord(matchId, {
+        match_time: matchTime,
+        current_quarter: quarter
+      });
+    } catch (error) {
+      console.error('💥 Exception updating match time:', error);
+    }
+  }
+
+  // Method to update match status
+  async updateMatchStatus(matchId: string, status: 'upcoming' | 'inProgress' | 'paused' | 'completed', matchTime?: number, quarter?: number): Promise<void> {
+    try {
+      const updates: Partial<MatchesLive> = { status };
+      if (matchTime !== undefined) updates.match_time = matchTime;
+      if (quarter !== undefined) updates.current_quarter = quarter;
+      
+      await this.updateMatchesLiveRecord(matchId, updates);
+    } catch (error) {
+      console.error('💥 Exception updating match status:', error);
+    }
   }
 
   // Get events for a match
