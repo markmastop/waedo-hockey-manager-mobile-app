@@ -68,7 +68,7 @@ class MatchEventLogger {
         .insert({
           match_id: matchId,
           status: 'upcoming',
-          current_time: 0,
+          match_time: 0,
           current_quarter: quarter,
           home_score: 0,
           away_score: 0,
@@ -98,7 +98,7 @@ class MatchEventLogger {
     matchId: string, 
     updates: Partial<{
       status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
-      current_time: number;
+      match_time: number;
       current_quarter: number;
       home_score: number;
       away_score: number;
@@ -145,7 +145,7 @@ class MatchEventLogger {
       // Ensure matches_live record exists and update it
       await this.updateMatchesLiveRecord(matchId, {
         current_quarter: event.quarter,
-        current_time: event.match_time
+        match_time: event.match_time
       });
 
       console.log('✅ Match event logged successfully');
@@ -337,7 +337,7 @@ class MatchEventLogger {
     await this.updateMatchesLiveRecord(matchId, {
       home_score: homeScore,
       away_score: awayScore,
-      current_time: matchTime,
+      match_time: matchTime,
       current_quarter: quarter
     });
 
@@ -521,7 +521,7 @@ class MatchEventLogger {
     // Ensure matches_live record exists and set status to inProgress
     await this.updateMatchesLiveRecord(matchId, {
       status: 'inProgress',
-      current_time: 0,
+      match_time: 0,
       current_quarter: 1
     });
 
@@ -541,7 +541,7 @@ class MatchEventLogger {
     // Update matches_live status to completed
     await this.updateMatchesLiveRecord(matchId, {
       status: 'completed',
-      current_time: matchTime,
+      match_time: matchTime,
       current_quarter: quarter,
       ...(finalScore && {
         home_score: finalScore.home,
@@ -565,7 +565,7 @@ class MatchEventLogger {
   async logQuarterStart(matchId: string, quarter: number, matchTime: number): Promise<void> {
     await this.updateMatchesLiveRecord(matchId, {
       current_quarter: quarter,
-      current_time: matchTime
+      match_time: matchTime
     });
 
     await this.logEvent({
@@ -625,9 +625,9 @@ class MatchEventLogger {
   }
 
   // Update match time and quarter
-  async updateMatchTime(matchId: string, currentTime: number, currentQuarter: number): Promise<void> {
+  async updateMatchTime(matchId: string, matchTime: number, currentQuarter: number): Promise<void> {
     await this.updateMatchesLiveRecord(matchId, {
-      current_time: currentTime,
+      match_time: matchTime,
       current_quarter: currentQuarter
     });
   }

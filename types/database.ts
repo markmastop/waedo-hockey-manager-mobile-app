@@ -2,7 +2,7 @@ export interface MatchesLive {
   id: string;
   match_id: string;
   status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
-  current_time: number;
+  match_time: number;
   current_quarter: number;
   home_score: number;
   away_score: number;
@@ -148,6 +148,7 @@ export interface Database {
           match_id: string;
           status: string;
           current_quarter: number;
+          match_time: number;
           home_score: number;
           away_score: number;
           updated_at: string;
