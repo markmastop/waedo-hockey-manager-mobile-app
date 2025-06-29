@@ -24,6 +24,26 @@ class MatchEventLogger {
     return MatchEventLogger.instance;
   }
 
+  async getMatchKey(matchId: string): Promise<string | null> {
+    try {
+      const { data: matchData, error } = await supabase
+        .from('matches')
+        .select('match_key')
+        .eq('id', matchId)
+        .single();
+
+      if (error) {
+        console.error('❌ Error fetching match_key:', error);
+        return null;
+      }
+
+      return matchData?.match_key || null;
+    } catch (error) {
+      console.error('💥 Exception fetching match_key:', error);
+      return null;
+    }
+  }
+
   async ensureMatchesLiveRecord(matchId: string, quarter: number = 1): Promise<void> {
     console.log('🔍 Ensuring matches_live record exists for match:', matchId);
     
@@ -47,10 +67,10 @@ class MatchEventLogger {
 
       console.log('📝 Creating new matches_live record...');
 
-      // Verify the match exists in the matches table first
+      // Verify the match exists in the matches table and get match_key
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
-        .select('id, home_team, away_team')
+        .select('id, home_team, away_team, match_key')
         .eq('id', matchId)
         .single();
 
@@ -61,11 +81,12 @@ class MatchEventLogger {
 
       console.log('✅ Match found in matches table:', matchData);
 
-      // Create new matches_live record
+      // Create new matches_live record with match_key
       const { error: insertError, data: insertedData } = await supabase
         .from('matches_live')
         .insert({
           match_id: matchId,
+          match_key: matchData.match_key,
           status: 'upcoming',
           match_time: 0,
           current_quarter: quarter,
@@ -80,6 +101,7 @@ class MatchEventLogger {
         console.error('❌ Failed to create matches_live record:', insertError);
         console.log('Insert attempt details:', {
           match_id: matchId,
+          match_key: matchData.match_key,
           current_quarter: quarter,
           timestamp: new Date().toISOString()
         });

@@ -1,6 +1,7 @@
 export interface MatchesLive {
   id: string;
   match_id: string;
+  match_key?: string;
   status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
   match_time: number;
   current_quarter: number;
