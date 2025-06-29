@@ -1,85 +1,337 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  TouchableOpacity,
   Alert,
-  RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
-import { Player, FormationPosition, PlayerStats } from '@/types/database';
-import { convertPlayersDataToArray } from '@/lib/playerUtils';
-import { ArrowLeft, Calendar, Settings, Users, Eye, Clock, Grid3x3 as Grid3X3 } from 'lucide-react-native';
-import { styles } from '@/app/styles/match';
-import FieldView from '@/components/FieldView';
-import { CompactPlayerCard } from '@/components/CompactPlayerCard';
+import { Player, Substitution, MatchEvent, PlayerStats, FormationPosition } from '@/types/database';
+import { Match, Team } from '@/types/match';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
-import { MatchEventLogger } from '@/components/MatchEventLogger';
-import { SubstitutionScheduleDisplay } from '@/components/SubstitutionScheduleDisplay';
+import FieldView from '@/components/FieldView';
+import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { matchEventLogger } from '@/lib/matchEventLogger';
-import PlayerSelectionBanner from '@/components/PlayerSelectionBanner';
+import { 
+  ArrowLeft, 
+  Users, 
+  ArrowUpDown, 
+  Star, 
+  Grid3x3 as Grid3X3, 
+  User, 
+  Target, 
+  Clock, 
+  Calendar,
+  Eye,
+  Shield
+} from 'lucide-react-native';
+import TimeControl from '../components/match/TimeControl';
+import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
+import { styles } from '../styles/match';
+import TimeDisplay from '../components/match/TimeDisplay';
+import SubstitutionBanner from '../components/match/SubstitutionBanner';
+import ViewModeToggle from '../components/match/ViewModeToggle';
 
-interface Match {
+const { width: screenWidth } = Dimensions.get('window');
+
+interface Formation {
   id: string;
-  team_id: string;
-  date: string;
-  home_team: string;
-  away_team: string;
-  location: string;
-  field: string;
-  formation: string;
-  formation_key?: string;
-  match_key?: string;
-  lineup: Player[];
-  reserve_players: Player[];
-  substitutions: any[];
-  substitution_schedule: any;
-  match_events: any[];
-  player_stats: PlayerStats[];
-  match_time: number;
-  current_quarter: number;
-  quarter_times: number[];
-  status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
-  is_home: boolean;
-  home_score: number;
-  away_score: number;
-  created_at: string;
-  teams: {
-    name: string;
+  key: string;
+  players: Player[];
+  name_translations: Record<string, string>;
+  positions: FormationPosition[];
+}
+
+interface SubstitutionData {
+  formation_key: string;
+  quarters: number;
+  substitutions_per_quarter: number;
+  subs_per_quarter: number;
+  time: number;
+  [key: string]: any;
+}
+
+interface ParsedSchedule {
+  [position: string]: {
+    [quarter: number]: Player[];
   };
 }
 
-type ViewMode = 'formation' | 'list' | 'timeline' | 'grid';
+interface TimelineEvent {
+  time: number;
+  quarter: number;
+  position: string;
+  slot: number;
+  player: Player;
+  isSubstitution: boolean;
+}
 
-export default function MatchDetailsScreen() {
+interface CompactPlayerCardProps {
+  player: Player;
+  stats?: PlayerStats;
+  isOnField: boolean;
+  isSelected?: boolean;
+  isSubstituting?: boolean;
+  onPress?: () => void;
+  formation?: Formation | null;
+}
+
+function CompactPlayerCard({
+  player,
+  stats,
+  isOnField,
+  isSelected,
+  isSubstituting,
+  onPress,
+  formation,
+}: CompactPlayerCardProps) {
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getCardStyle = () => {
+    if (isSelected) return styles.selectedPlayerCard;
+    if (isSubstituting) return styles.substitutingPlayerCard;
+    if (isOnField) return styles.onFieldPlayerCard;
+    return styles.benchPlayerCard;
+  };
+
+  const getDutchPositionForPlayer = (player: Player): string => {
+    if (!formation) {
+      return getPositionDisplayName(player.position);
+    }
+
+    const formationPosition = formation.positions.find(pos => {
+      const dutchName = pos.label_translations?.nl || pos.dutch_name || pos.name;
+      return player.position === dutchName || 
+             player.position === pos.dutch_name || 
+             player.position === pos.name;
+    });
+
+    if (formationPosition) {
+      return formationPosition.label_translations?.nl || formationPosition.dutch_name || formationPosition.name || player.position;
+    }
+
+    return getPositionDisplayName(player.position);
+  };
+
+  const displayPosition = getDutchPositionForPlayer(player);
+
+  return (
+    <TouchableOpacity
+      style={[styles.compactPlayerCard, getCardStyle()]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      <View style={styles.playerRow}>
+        <View style={[
+          styles.playerNumberBadge,
+          { backgroundColor: getPositionColor(player.position) }
+        ]}>
+          <Text style={styles.playerNumberText}>#{player.number || '?'}</Text>
+        </View>
+        
+        <View style={styles.playerInfo}>
+          <Text style={styles.playerName} numberOfLines={1}>{player.name}</Text>
+          <View style={styles.playerMeta}>
+            <Text style={[
+              styles.positionText,
+              { color: getPositionColor(player.position) }
+            ]}>
+              {displayPosition}
+            </Text>
+            {stats && stats.timeOnField > 0 && (
+              <>
+                <Text style={styles.metaSeparator}>•</Text>
+                <Text style={styles.timeText}>{formatTime(stats.timeOnField)}</Text>
+              </>
+            )}
+            {stats && stats.goals && stats.goals > 0 && (
+              <>
+                <Text style={styles.metaSeparator}>•</Text>
+                <View style={styles.statBadge}>
+                  <Target size={8} color="#10B981" />
+                  <Text style={styles.statText}>{stats.goals}</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {isOnField && (
+          <Star size={12} color="#10B981" fill="#10B981" />
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+export default function MatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
   const [match, setMatch] = useState<Match | null>(null);
-  const [formation, setFormation] = useState<FormationPosition[]>([]);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [formation, setFormation] = useState<Formation | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('formation');
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isSubstituting, setIsSubstituting] = useState(false);
-  const [isSwapping, setIsSwapping] = useState(false);
-  const [swapFromPlayer, setSwapFromPlayer] = useState<Player | null>(null);
-  const [swapFromPosition, setSwapFromPosition] = useState<string | null>(null);
+  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
+  const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
+  const [viewMode, setViewMode] = useState<'formation' | 'list' | 'timeline' | 'grid'>('timeline');
+  
+  // Substitution schedule state
+  const [scheduleData, setScheduleData] = useState<SubstitutionData | null>(null);
+  const [parsedSchedule, setParsedSchedule] = useState<ParsedSchedule>({});
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  // Live match state
-  const [matchTime, setMatchTime] = useState(0);
-  const [currentQuarter, setCurrentQuarter] = useState(1);
-  const [quarterTimes, setQuarterTimes] = useState([0, 0, 0, 0]);
-  const [homeScore, setHomeScore] = useState(0);
-  const [awayScore, setAwayScore] = useState(0);
-  const [matchStatus, setMatchStatus] = useState<'upcoming' | 'inProgress' | 'paused' | 'completed'>('upcoming');
+  const initializePlayerStats = (lineup: Player[], reserves: Player[]): PlayerStats[] => {
+    const allPlayers = [...lineup, ...reserves];
+    return allPlayers.map(player => ({
+      playerId: player.id,
+      timeOnField: lineup.some(p => p.id === player.id) ? 0 : 0,
+      quartersPlayed: [],
+      substitutions: 0,
+      goals: 0,
+      assists: 0,
+      cards: 0,
+    }));
+  };
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
+  const convertPositionsToArray = (positions: any): FormationPosition[] => {
+    if (Array.isArray(positions)) {
+      return positions;
+    }
+    
+    if (positions && typeof positions === 'object') {
+      const positionsArray: FormationPosition[] = [];
+      
+      Object.entries(positions).forEach(([key, value]: [string, any], index) => {
+        if (value && typeof value === 'object') {
+          const position: FormationPosition = {
+            id: value.id || key,
+            name: value.name || key,
+            dutch_name: value.dutch_name || value.name || key,
+            label_translations: value.label_translations || {},
+            order: value.order || index + 1,
+            x: value.x || 50,
+            y: value.y || 50,
+          };
+          positionsArray.push(position);
+        }
+      });
+      
+      positionsArray.sort((a, b) => a.order - b.order);
+      return positionsArray;
+    }
+    
+    return [];
+  };
+
+  const fetchFormation = async (formationIdentifier: string) => {
+    if (!formationIdentifier) return;
+    
+    try {
+      let query = supabase.from('formations').select('*');
+      
+      if (isValidUUID(formationIdentifier)) {
+        query = query.eq('id', formationIdentifier);
+      } else {
+        query = query.eq('key', formationIdentifier);
+      }
+      
+      const { data, error } = await query.single();
+
+      if (error) {
+        console.error('Error fetching formation:', error);
+        return;
+      }
+      
+      if (data) {
+        const positionsArray = convertPositionsToArray(data.positions);
+        const formationObject = {
+          ...data,
+          positions: positionsArray
+        };
+        
+        setFormation(formationObject);
+      }
+    } catch (error) {
+      console.error('Exception in fetchFormation:', error);
+    }
+  };
+
+  const parseScheduleData = (data: SubstitutionData) => {
+    const parsed: ParsedSchedule = {};
+    
+    Object.entries(data).forEach(([key, value]) => {
+      if (key.includes('-') && typeof value === 'object' && value?.id) {
+        const parts = key.split('-');
+        if (parts.length >= 3) {
+          const position = parts[0];
+          const quarter = parseInt(parts[1]);
+          const slot = parseInt(parts[2]);
+
+          if (!parsed[position]) {
+            parsed[position] = {};
+          }
+          if (!parsed[position][quarter]) {
+            parsed[position][quarter] = [];
+          }
+          
+          parsed[position][quarter][slot] = value as Player;
+        }
+      }
+    });
+
+    setParsedSchedule(parsed);
+  };
+
+  const generateTimelineEvents = (data: SubstitutionData) => {
+    const events: TimelineEvent[] = [];
+    const quarterDuration = 15 * 60;
+    const subsPerQuarter = data.subs_per_quarter || data.substitutions_per_quarter || 2;
+    
+    Object.entries(data).forEach(([key, value]) => {
+      if (key.includes('-') && typeof value === 'object' && value?.id) {
+        const parts = key.split('-');
+        if (parts.length >= 3) {
+          const position = parts[0];
+          const quarter = parseInt(parts[1]);
+          const slot = parseInt(parts[2]);
+          
+          const quarterStartTime = (quarter - 1) * quarterDuration;
+          const slotInterval = quarterDuration / (subsPerQuarter + 1);
+          const eventTime = quarterStartTime + slot * slotInterval;
+          
+          events.push({
+            time: eventTime,
+            quarter,
+            position,
+            slot,
+            player: value as Player,
+            isSubstitution: slot > 0,
+          });
+        }
+      }
+    });
+
+    events.sort((a, b) => a.time - b.time);
+    setTimelineEvents(events);
+  };
 
   const fetchMatch = async () => {
     try {
@@ -88,57 +340,69 @@ export default function MatchDetailsScreen() {
         .select(`
           *,
           teams (
-            name
+            id,
+            name,
+            players
           )
         `)
         .eq('id', id)
         .single();
 
       if (error) throw error;
-
+      
+      const lineupArray = convertPlayersDataToArray(data.lineup);
+      const reservePlayersArray = convertPlayersDataToArray(data.reserve_players);
+      const substitutionsArray = Array.isArray(data.substitutions) ? data.substitutions : [];
+      const eventsArray = Array.isArray(data.match_events) ? data.match_events : [];
+      const statsArray = Array.isArray(data.player_stats) ? data.player_stats : 
+        initializePlayerStats(lineupArray, reservePlayersArray);
+      const quarterTimesArray = Array.isArray(data.quarter_times) ? data.quarter_times : [0, 0, 0, 0];
+      
+      // Set team data
+      if (data.teams) {
+        setTeam({
+          id: data.teams.id,
+          name: data.teams.name,
+          players: Array.isArray(data.teams.players) ? data.teams.players : [],
+          coach: Array.isArray(data.teams.coach) ? data.teams.coach : []
+        });
+      }
+      
       const matchData = {
         ...data,
-        lineup: convertPlayersDataToArray(data.lineup),
-        reserve_players: convertPlayersDataToArray(data.reserve_players),
+        lineup: lineupArray,
+        reserve_players: reservePlayersArray,
+        substitutions: substitutionsArray,
+        match_events: eventsArray,
+        player_stats: statsArray,
+        quarter_times: quarterTimesArray,
         home_score: data.home_score || 0,
         away_score: data.away_score || 0,
+        formation: data.formation_key || data.formation || '',
+        substitution_schedule: data.substitution_schedule || {},
       };
-
+      
       setMatch(matchData);
-      setMatchTime(matchData.match_time || 0);
-      setCurrentQuarter(matchData.current_quarter || 1);
-      setQuarterTimes(matchData.quarter_times || [0, 0, 0, 0]);
-      setHomeScore(matchData.home_score || 0);
-      setAwayScore(matchData.away_score || 0);
-      setMatchStatus(matchData.status || 'upcoming');
-
-      // Fetch formation if available
-      if (matchData.formation_key || matchData.formation) {
-        await fetchFormation(matchData.formation_key || matchData.formation);
+      setPlayerStats(statsArray);
+      setMatchEvents(eventsArray);
+      setCurrentTime(data.match_time || 0);
+      
+      // Handle substitution schedule
+      if (data.substitution_schedule) {
+        setScheduleData(data.substitution_schedule);
+        parseScheduleData(data.substitution_schedule);
+        generateTimelineEvents(data.substitution_schedule);
+      }
+      
+      const formationIdentifier = data.formation_key || data.formation;
+      if (formationIdentifier) {
+        await fetchFormation(formationIdentifier);
       }
     } catch (error) {
       console.error('Error fetching match:', error);
+      Alert.alert('Fout', 'Kon wedstrijdgegevens niet laden');
     } finally {
       setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const fetchFormation = async (formationKey: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('formations')
-        .select('positions')
-        .eq('key', formationKey)
-        .single();
-
-      if (error) throw error;
-
-      if (data?.positions && Array.isArray(data.positions)) {
-        setFormation(data.positions);
-      }
-    } catch (error) {
-      console.error('Error fetching formation:', error);
     }
   };
 
@@ -149,339 +413,465 @@ export default function MatchDetailsScreen() {
   }, [id]);
 
   useEffect(() => {
-    if (matchStatus === 'inProgress') {
-      intervalRef.current = setInterval(() => {
-        setMatchTime(prev => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentTime(prev => {
           const newTime = prev + 1;
-          // Log time updates periodically (every 30 seconds)
-          if (newTime % 30 === 0 && match?.id) {
-            matchEventLogger.updateMatchTime(match.id, newTime, currentQuarter);
+          if (newTime >= 60 * 60) {
+            setIsPlaying(false);
+            return prev;
           }
           return newTime;
         });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      }, 100);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  const updateMatch = async (updates: Partial<Match>) => {
+    if (!match) return;
+
+    try {
+      console.log('🔄 Updating match with:', updates);
+      
+      const dbUpdates: Partial<Match> = {};
+      Object.keys(updates).forEach(key => {
+        dbUpdates[key as keyof Match] = updates[key as keyof Match];
+      });
+
+      const { error } = await supabase
+        .from('matches')
+        .update(dbUpdates)
+        .eq('id', match.id);
+
+      if (error) {
+        console.error('❌ Database update failed:', error);
+        throw error;
+      }
+      
+      console.log('✅ Database update successful');
+      setMatch(prev => prev ? { ...prev, ...updates } : null);
+      
+      return true;
+    } catch (error) {
+      console.error('💥 Error updating match:', error);
+      Alert.alert('Fout', 'Kon wedstrijd niet bijwerken');
+      return false;
+    }
+  };
+
+  const performPlayerSwap = async (player1: Player, player2: Player, isPlayer1OnField: boolean, isPlayer2OnField: boolean) => {
+    if (!match) return;
+
+    console.log('🔄 Starting player swap:', {
+      player1: { name: player1.name, number: player1.number, onField: isPlayer1OnField },
+      player2: { name: player2.name, number: player2.number, onField: isPlayer2OnField }
+    });
+
+    try {
+      let newLineup = [...match.lineup];
+      let newReservePlayers = [...match.reserve_players];
+      let newSubstitutions = [...match.substitutions];
+      let swapDescription = '';
+
+      if (isPlayer1OnField && isPlayer2OnField) {
+        // Both on field - swap positions
+        const player1Index = newLineup.findIndex(p => p.id === player1.id);
+        const player2Index = newLineup.findIndex(p => p.id === player2.id);
+        
+        if (player1Index !== -1 && player2Index !== -1) {
+          const tempPosition = newLineup[player1Index].position;
+          newLineup[player1Index] = { ...newLineup[player1Index], position: newLineup[player2Index].position };
+          newLineup[player2Index] = { ...newLineup[player2Index], position: tempPosition };
+          
+          swapDescription = `Position swap: ${player1.name} and ${player2.name} switched positions`;
+          
+          // Log the position swap
+          await matchEventLogger.logPlayerSwap(
+            match.id,
+            player1,
+            player2,
+            currentTime,
+            getCurrentQuarter(currentTime),
+            player2.position,
+            player1.position
+          );
+        }
+      } else if (!isPlayer1OnField && !isPlayer2OnField) {
+        // Both on bench - show error
+        Alert.alert('Fout', 'Kan geen wissel maken tussen twee reservespelers');
+        return;
+      } else {
+        // One on field, one on bench - substitution
+        const fieldPlayer = isPlayer1OnField ? player1 : player2;
+        const benchPlayer = isPlayer1OnField ? player2 : player1;
+        
+        const fieldIndex = newLineup.findIndex(p => p.id === fieldPlayer.id);
+        const benchIndex = newReservePlayers.findIndex(p => p.id === benchPlayer.id);
+        
+        if (fieldIndex !== -1 && benchIndex !== -1) {
+          // Create new player objects with swapped positions
+          const newFieldPlayer = { ...benchPlayer, position: fieldPlayer.position };
+          const newBenchPlayer = { ...fieldPlayer };
+          
+          // Update arrays
+          newLineup[fieldIndex] = newFieldPlayer;
+          newReservePlayers[benchIndex] = newBenchPlayer;
+          
+          // Create substitution record
+          const substitution: Substitution = {
+            time: currentTime,
+            quarter: getCurrentQuarter(currentTime),
+            playerIn: benchPlayer,
+            playerOut: fieldPlayer,
+            timestamp: new Date().toISOString(),
+          };
+          newSubstitutions.push(substitution);
+          
+          swapDescription = `Substitution: ${benchPlayer.name} in for ${fieldPlayer.name}`;
+          
+          // Log the substitution
+          await matchEventLogger.logSubstitution(
+            match.id,
+            benchPlayer,
+            fieldPlayer,
+            fieldPlayer.position,
+            currentTime,
+            getCurrentQuarter(currentTime)
+          );
+        }
+      }
+
+      console.log('📊 Swap details:', {
+        newLineupCount: newLineup.length,
+        newReservesCount: newReservePlayers.length,
+        newSubstitutionsCount: newSubstitutions.length,
+        description: swapDescription
+      });
+
+      // Update the database
+      const success = await updateMatch({
+        lineup: newLineup,
+        reserve_players: newReservePlayers,
+        substitutions: newSubstitutions,
+      });
+
+      if (success) {
+        Alert.alert('Succes', swapDescription);
+        console.log('✅ Player swap completed successfully');
+      }
+
+    } catch (error) {
+      console.error('💥 Error in performPlayerSwap:', error);
+      Alert.alert('Fout', 'Kon spelerwissel niet uitvoeren');
+    }
+  };
+
+  const startMatch = async () => {
+    if (match) {
+      const success = await updateMatch({ status: 'inProgress' as const });
+      if (success) {
+        await matchEventLogger.logMatchStart(match.id);
       }
     }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [matchStatus, currentQuarter, match?.id]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchMatch();
   };
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const pauseMatch = async () => {
+    if (match) {
+      await updateMatch({ status: 'paused' as const });
+    }
   };
 
-  const handlePlayerPress = (player: Player, isOnField: boolean) => {
-    if (isSubstituting) {
-      if (selectedPosition && !isOnField) {
-        // Substitute player into selected position
-        handleSubstitution(player, selectedPosition);
-      } else if (selectedPlayer && isOnField) {
-        // Substitute selected player out for this player
-        handleSubstitution(player, selectedPlayer.position);
-      }
-    } else if (isSwapping) {
-      if (swapFromPlayer && player.id !== swapFromPlayer.id) {
-        handlePlayerSwap(swapFromPlayer, player);
-      }
-    } else {
-      // Regular selection
-      setSelectedPlayer(player);
-      
-      // Log player selection
-      if (match?.id) {
-        matchEventLogger.logPlayerSelection(
-          match.id,
-          player,
-          matchTime,
-          currentQuarter,
-          isOnField ? 'field' : 'bench'
-        );
-      }
+  const resumeMatch = async () => {
+    if (match) {
+      await updateMatch({ status: 'inProgress' as const });
+    }
+  };
+
+  const endMatch = () => {
+    Alert.alert(
+      'Wedstrijd Beëindigen',
+      'Weet je zeker dat je deze wedstrijd wilt beëindigen?',
+      [
+        { text: 'Annuleren', style: 'cancel' },
+        {
+          text: 'Beëindigen',
+          style: 'destructive',
+          onPress: async () => {
+            if (match) {
+              const success = await updateMatch({ status: 'completed' });
+              if (success) {
+                await matchEventLogger.logMatchEnd(
+                  match.id,
+                  currentTime,
+                  getCurrentQuarter(currentTime),
+                  { home: match.home_score, away: match.away_score }
+                );
+              }
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleTimeUpdate = (newTime: number) => {
+    if (match) {
+      updateMatch({ match_time: newTime });
     }
   };
 
   const handlePositionPress = (position: FormationPosition) => {
-    if (selectedPlayer) {
-      // Move selected player to this position
-      handlePlayerPositionChange(selectedPlayer, position);
+    if (isSubstituting) {
+      makePositionSubstitution(position);
     } else {
       setSelectedPosition(position.id);
       setIsSubstituting(true);
     }
   };
 
-  const handlePlayerPositionChange = (player: Player, position: FormationPosition) => {
-    if (!match) return;
-
-    const updatedLineup = [...match.lineup];
-    const playerIndex = updatedLineup.findIndex(p => p.id === player.id);
+  const handlePlayerPress = async (player: Player, isOnField: boolean) => {
+    console.log('🎯 Player selected:', {
+      id: player.id,
+      name: player.name,
+      number: player.number,
+      position: player.position,
+      isOnField: isOnField
+    });
     
-    if (playerIndex !== -1) {
-      updatedLineup[playerIndex] = {
-        ...player,
-        position: position.dutch_name || position.name
-      };
+    // Log player selection
+    if (match) {
+      await matchEventLogger.logPlayerSelection(
+        match.id,
+        player,
+        currentTime,
+        getCurrentQuarter(currentTime),
+        isOnField ? 'field' : 'bench'
+      );
+    }
+    
+    if (selectedPlayer) {
+      // Second player selected - perform swap
+      const isSelectedOnField = match?.lineup.some(p => p.id === selectedPlayer.id) || false;
+      await performPlayerSwap(selectedPlayer, player, isSelectedOnField, isOnField);
       
-      setMatch({
-        ...match,
-        lineup: updatedLineup
+      // Clear selection
+      setSelectedPlayer(null);
+      setIsSubstituting(false);
+    } else {
+      // First player selected
+      setSelectedPlayer(player);
+      setIsSubstituting(true);
+    }
+  };
+
+  const getDutchPositionName = (pos: FormationPosition): string => {
+    if (pos.label_translations && pos.label_translations.nl) {
+      return pos.label_translations.nl;
+    }
+    
+    return pos.dutch_name || pos.name || 'Onbekend';
+  };
+
+  const makePositionSubstitution = (targetPosition: FormationPosition) => {
+    if (!match || !selectedPosition) return;
+
+    const currentPlayer = getPlayerInPosition(selectedPosition);
+    const targetPlayer = getPlayerInPosition(targetPosition.id);
+
+    if (currentPlayer && targetPlayer) {
+      const newLineup = match.lineup.map(player => {
+        if (player.id === currentPlayer.id) {
+          return { ...player, position: getDutchPositionName(targetPosition) };
+        }
+        if (player.id === targetPlayer.id) {
+          return { ...player, position: getPositionName(selectedPosition) };
+        }
+        return player;
       });
+
+      updateMatch({ lineup: newLineup });
     }
 
-    setSelectedPlayer(null);
     setSelectedPosition(null);
-  };
-
-  const handleSubstitution = (playerIn: Player, position: string) => {
-    if (!match) return;
-
-    const playerOut = match.lineup.find(p => p.position === position);
-    if (!playerOut) return;
-
-    // Update lineup and reserves
-    const updatedLineup = match.lineup.map(p => 
-      p.position === position ? { ...playerIn, position } : p
-    );
-    
-    const updatedReserves = [
-      ...match.reserve_players.filter(p => p.id !== playerIn.id),
-      playerOut
-    ];
-
-    setMatch({
-      ...match,
-      lineup: updatedLineup,
-      reserve_players: updatedReserves
-    });
-
-    // Log substitution
-    if (match.id) {
-      matchEventLogger.logSubstitution(
-        match.id,
-        playerIn,
-        playerOut,
-        position,
-        matchTime,
-        currentQuarter
-      );
-    }
-
     setIsSubstituting(false);
-    setSelectedPlayer(null);
-    setSelectedPosition(null);
   };
 
-  const handlePlayerSwap = (player1: Player, player2: Player) => {
-    if (!match) return;
+  const makePlayerToPositionSubstitution = (player: Player, isOnField: boolean) => {
+    if (!match || !selectedPosition) return;
 
-    const updatedLineup = [...match.lineup];
-    const updatedReserves = [...match.reserve_players];
+    const newLineup = [...match.lineup];
+    const newReservePlayers = [...match.reserve_players];
+    const currentPositionPlayer = getPlayerInPosition(selectedPosition);
 
-    const player1InLineup = updatedLineup.findIndex(p => p.id === player1.id);
-    const player2InLineup = updatedLineup.findIndex(p => p.id === player2.id);
-    const player1InReserves = updatedReserves.findIndex(p => p.id === player1.id);
-    const player2InReserves = updatedReserves.findIndex(p => p.id === player2.id);
-
-    // Handle different swap scenarios
-    if (player1InLineup !== -1 && player2InLineup !== -1) {
-      // Both in lineup - swap positions
-      const temp = updatedLineup[player1InLineup].position;
-      updatedLineup[player1InLineup].position = updatedLineup[player2InLineup].position;
-      updatedLineup[player2InLineup].position = temp;
-    } else if (player1InLineup !== -1 && player2InReserves !== -1) {
-      // Player1 in lineup, Player2 in reserves
-      updatedReserves[player2InReserves] = updatedLineup[player1InLineup];
-      updatedLineup[player1InLineup] = { ...player2, position: player1.position };
-      updatedReserves.splice(player2InReserves, 1);
-    } else if (player1InReserves !== -1 && player2InLineup !== -1) {
-      // Player1 in reserves, Player2 in lineup
-      updatedReserves[player1InReserves] = updatedLineup[player2InLineup];
-      updatedLineup[player2InLineup] = { ...player1, position: player2.position };
-      updatedReserves.splice(player1InReserves, 1);
-    }
-
-    setMatch({
-      ...match,
-      lineup: updatedLineup,
-      reserve_players: updatedReserves
-    });
-
-    // Log player swap
-    if (match.id) {
-      matchEventLogger.logPlayerSwap(
-        match.id,
-        player1,
-        player2,
-        matchTime,
-        currentQuarter,
-        player1.position,
-        player2.position
-      );
-    }
-
-    setIsSwapping(false);
-    setSwapFromPlayer(null);
-    setSwapFromPosition(null);
-  };
-
-  const handleMatchStart = () => {
-    if (!match?.id) return;
-    
-    setMatchStatus('inProgress');
-    matchEventLogger.logMatchStart(match.id);
-  };
-
-  const handleMatchPause = () => {
-    if (!match?.id) return;
-    
-    setMatchStatus('paused');
-    matchEventLogger.updateMatchStatus(match.id, 'paused', matchTime, currentQuarter);
-  };
-
-  const handleMatchResume = () => {
-    if (!match?.id) return;
-    
-    setMatchStatus('inProgress');
-    matchEventLogger.updateMatchStatus(match.id, 'inProgress', matchTime, currentQuarter);
-  };
-
-  const handleMatchEnd = () => {
-    if (!match?.id) return;
-    
-    setMatchStatus('completed');
-    matchEventLogger.logMatchEnd(match.id, matchTime, currentQuarter, {
-      home: homeScore,
-      away: awayScore
-    });
-  };
-
-  const handleNextQuarter = () => {
-    if (currentQuarter < 4) {
-      const newQuarter = currentQuarter + 1;
-      setCurrentQuarter(newQuarter);
+    if (isOnField && currentPositionPlayer) {
+      const playerIndex = newLineup.findIndex(p => p.id === player.id);
+      const currentIndex = newLineup.findIndex(p => p.id === currentPositionPlayer.id);
       
-      if (match?.id) {
-        matchEventLogger.logQuarterEnd(match.id, currentQuarter, matchTime);
-        matchEventLogger.logQuarterStart(match.id, newQuarter, matchTime);
+      if (playerIndex !== -1 && currentIndex !== -1) {
+        const tempPosition = newLineup[playerIndex].position;
+        newLineup[playerIndex] = { ...newLineup[playerIndex], position: newLineup[currentIndex].position };
+        newLineup[currentIndex] = { ...newLineup[currentIndex], position: tempPosition };
+      }
+    } else if (!isOnField && currentPositionPlayer) {
+      const reserveIndex = newReservePlayers.findIndex(p => p.id === player.id);
+      const fieldIndex = newLineup.findIndex(p => p.id === currentPositionPlayer.id);
+      
+      if (reserveIndex !== -1 && fieldIndex !== -1) {
+        const positionName = getPositionName(selectedPosition);
+        newLineup[fieldIndex] = { ...player, position: positionName };
+        newReservePlayers[reserveIndex] = currentPositionPlayer;
+
+        const substitution: Substitution = {
+          time: match.match_time,
+          quarter: match.current_quarter,
+          playerIn: player,
+          playerOut: currentPositionPlayer,
+          timestamp: new Date().toISOString(),
+        };
+
+        const newSubstitutions = [...match.substitutions, substitution];
+        
+        updateMatch({
+          lineup: newLineup,
+          reserve_players: newReservePlayers,
+          substitutions: newSubstitutions,
+        });
       }
     }
-  };
 
-  const handleTimeUpdate = (time: number) => {
-    setMatchTime(time);
-  };
-
-  const handleScoreUpdate = (newHomeScore: number, newAwayScore: number) => {
-    const previousHomeScore = homeScore;
-    const previousAwayScore = awayScore;
-    
-    setHomeScore(newHomeScore);
-    setAwayScore(newAwayScore);
-
-    // Log score change
-    if (match?.id) {
-      let teamScored: 'home' | 'away' | undefined;
-      if (newHomeScore > previousHomeScore) teamScored = 'home';
-      else if (newAwayScore > previousAwayScore) teamScored = 'away';
-
-      matchEventLogger.logScoreChange(
-        match.id,
-        matchTime,
-        currentQuarter,
-        newHomeScore,
-        newAwayScore,
-        previousHomeScore,
-        previousAwayScore,
-        teamScored
-      );
-    }
-  };
-
-  const handleAddEvent = (event: any) => {
-    if (!match?.id) return;
-    
-    // Handle different event types
-    switch (event.type) {
-      case 'goal':
-        if (event.player) {
-          matchEventLogger.logGoal(match.id, event.player, matchTime, currentQuarter);
-        }
-        break;
-      case 'card':
-        if (event.player) {
-          matchEventLogger.logCard(match.id, event.player, 'yellow', matchTime, currentQuarter, event.details);
-        }
-        break;
-      case 'timeout':
-        matchEventLogger.logTimeout(match.id, matchTime, currentQuarter, 'home');
-        break;
-      case 'injury':
-        if (event.player) {
-          matchEventLogger.logInjury(match.id, event.player, matchTime, currentQuarter);
-        }
-        break;
-      case 'penalty_corner':
-        matchEventLogger.logPenaltyCorner(match.id, matchTime, currentQuarter, 'home');
-        break;
-      case 'penalty_stroke':
-        if (event.player) {
-          matchEventLogger.logPenaltyStroke(match.id, event.player, matchTime, currentQuarter, 'goal');
-        }
-        break;
-    }
-  };
-
-  const dismissSelection = () => {
-    setSelectedPlayer(null);
     setSelectedPosition(null);
     setIsSubstituting(false);
-    setIsSwapping(false);
-    setSwapFromPlayer(null);
-    setSwapFromPosition(null);
   };
 
-  const handleGoalAction = () => {
-    if (!selectedPlayer || !match?.id) return;
+  const getPlayerInPosition = (positionId: string): Player | null => {
+    if (!match || !formation) return null;
+    const position = formation.positions.find(p => p.id === positionId);
+    if (!position) return null;
     
-    matchEventLogger.logGoal(match.id, selectedPlayer, matchTime, currentQuarter);
-    dismissSelection();
-  };
-
-  const handleSubstituteAction = () => {
-    if (!selectedPlayer) return;
+    const dutchName = getDutchPositionName(position);
     
-    setIsSubstituting(true);
-    // Keep the selected player for substitution
+    let foundPlayer = match.lineup.find(player => player.position === dutchName);
+    
+    if (!foundPlayer) {
+      foundPlayer = match.lineup.find(player => player.position === position.dutch_name);
+    }
+    
+    if (!foundPlayer) {
+      foundPlayer = match.lineup.find(player => player.position === position.name);
+    }
+    
+    return foundPlayer || null;
   };
 
-  const getPositionName = (position: string) => {
-    const formationPosition = formation.find(pos => 
-      pos.id === position || 
-      pos.name === position || 
-      pos.dutch_name === position
-    );
-    return formationPosition?.dutch_name || formationPosition?.name || position;
+  const getPositionName = (positionId: string): string => {
+    if (!formation) return '';
+    const position = formation.positions.find(p => p.id === positionId);
+    return position ? getDutchPositionName(position) : '';
+  };
+
+  const cancelSubstitution = () => {
+    setSelectedPosition(null);
+    setSelectedPlayer(null);
+    setIsSubstituting(false);
+  };
+
+  const getPlayerStats = (playerId: string): PlayerStats | undefined => {
+    return playerStats.find(stat => stat.playerId === playerId);
+  };
+
+  const getFormationDisplayName = (): string => {
+    if (!formation) return '';
+    
+    const nameTranslations = formation.name_translations || {};
+    return nameTranslations.nl || nameTranslations.en || formation.key || '';
   };
 
   const hasSubstitutionSchedule = match?.substitution_schedule && 
     Object.keys(match.substitution_schedule).length > 0;
 
-  const allPlayers = match ? [...match.lineup, ...match.reserve_players] : [];
+  // Timeline functions
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getCurrentQuarter = (time: number) => {
+    return Math.floor(time / (15 * 60)) + 1;
+  };
+
+  const getActivePlayersAtTime = (time: number) => {
+    const activePlayers: Record<string, Player> = {};
+    
+    const pastEvents = timelineEvents.filter(event => event.time <= time);
+    
+    pastEvents.forEach(event => {
+      activePlayers[event.position] = event.player;
+    });
+    
+    return activePlayers;
+  };
+
+  const getUpcomingSubstitutions = (time: number, lookAhead: number = 120) => {
+    return timelineEvents.filter(event => 
+      event.time > time && 
+      event.time <= time + lookAhead && 
+      event.isSubstitution
+    );
+  };
+
+  const getReservePlayers = (time: number) => {
+    // Get all players from the team
+    if (!team || !team.players) {
+      console.log('🔍 No team data available');
+      return [];
+    }
+    
+    const allPlayers = team.players;
+    
+    console.log('🔍 Debug Reserve Calculation:');
+    console.log('Total players:', allPlayers.length);
+    console.log('Players in lineup:', match.lineup.length);
+    
+    // Get currently active players on field
+    const activePlayerIds = new Set();
+    
+    if (Object.entries(activePlayers).length === 0 && time === 0) {
+      // At start, lineup players are on field
+      match.lineup.forEach(player => activePlayerIds.add(player.id));
+      console.log('Using lineup as active players (start of match)');
+    } else {
+      // Use active players from timeline
+      Object.values(activePlayers).forEach(player => activePlayerIds.add(player.id));
+      console.log('Using timeline active players');
+    }
+    
+    console.log('Active player IDs:', Array.from(activePlayerIds));
+    
+    // Return players not currently on field
+    const reserves = allPlayers.filter(player => !activePlayerIds.has(player.id));
+    console.log('Calculated reserves:', reserves.length, reserves.map(p => p.name));
+    
+    return reserves;
+  };
+  const getPositions = () => {
+    return Object.keys(parsedSchedule).sort();
+  };
+
+  const getQuarters = () => {
+    return scheduleData?.quarters ? Array.from({ length: scheduleData.quarters }, (_, i) => i + 1) : [1, 2, 3, 4];
+  };
+
+  const getPositionColorForSchedule = (position: string) => {
+    const pos = position.toLowerCase();
+    if (pos.includes('goalkeeper')) return '#EF4444';
+    if (pos.includes('back') || pos.includes('sweeper') || pos.includes('lastline')) return '#3B82F6';
+    if (pos.includes('midfield')) return '#8B5CF6';
+    if (pos.includes('forward') || pos.includes('striker')) return '#F59E0B';
+    return '#6B7280';
+  };
 
   if (loading) {
     return (
@@ -503,6 +893,11 @@ export default function MatchDetailsScreen() {
     );
   }
 
+  const activePlayers = getActivePlayersAtTime(currentTime);
+  const upcomingSubstitutions = getUpcomingSubstitutions(currentTime);
+  const currentQuarter = getCurrentQuarter(currentTime);
+  const reservePlayers = getReservePlayers(currentTime);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -517,167 +912,310 @@ export default function MatchDetailsScreen() {
           <Text style={styles.matchTitle}>
             {match.home_team} vs {match.away_team}
           </Text>
-          <Text style={styles.teamName}>{match.teams.name}</Text>
-        </View>
-        <TouchableOpacity style={styles.scheduleButton}>
-          <Settings size={16} color="#FF6B35" />
-        </TouchableOpacity>
+          <Text style={styles.teamName}>#{match.match_key}</Text>
+        </View>      
       </View>
 
-      {/* Player Selection Banner */}
-      <PlayerSelectionBanner
-        selectedPlayer={selectedPlayer}
-        onGoal={handleGoalAction}
-        onSubstitute={handleSubstituteAction}
-        onDismiss={dismissSelection}
-      />
-
-      {/* Substitution Banner */}
-      {isSubstituting && (
-        <View style={styles.substitutionBanner}>
-          <Text style={styles.substitutionText}>
-            {selectedPlayer && selectedPosition
-              ? `Wissel ${selectedPlayer.name} (#${selectedPlayer.number}) uit positie ${getPositionName(selectedPosition)}`
-              : selectedPosition
-              ? `Selecteer een speler voor positie ${getPositionName(selectedPosition)}`
-              : selectedPlayer
-              ? `Selecteer een positie voor ${selectedPlayer.name} (#${selectedPlayer.number})`
-              : 'Selecteer een positie of speler om te wisselen'
-            }
-          </Text>
-          <TouchableOpacity onPress={dismissSelection}>
-            <Text style={styles.cancelText}>Annuleren</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Swap Banner */}
-      {isSwapping && (
-        <View style={styles.swapBanner}>
-          <Text style={styles.swapText}>
-            {swapFromPlayer
-              ? `Selecteer een speler om te wisselen met ${swapFromPlayer.name} (#${swapFromPlayer.number})`
-              : 'Selecteer een speler om te wisselen'
-            }
-          </Text>
-          <TouchableOpacity onPress={dismissSelection}>
-            <Text style={styles.cancelText}>Annuleren</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Live Match Timer */}
-      <LiveMatchTimer
-        matchTime={matchTime}
+      {/* Time Display - Always visible */}
+      <TimeDisplay
+        currentTime={currentTime}
         currentQuarter={currentQuarter}
-        quarterTimes={quarterTimes}
-        status={matchStatus}
-        homeScore={homeScore}
-        awayScore={awayScore}
-        homeTeam={match.home_team}
-        awayTeam={match.away_team}
-        onStart={handleMatchStart}
-        onPause={handleMatchPause}
-        onResume={handleMatchResume}
-        onEnd={handleMatchEnd}
-        onNextQuarter={handleNextQuarter}
-        onTimeUpdate={handleTimeUpdate}
-        onScoreUpdate={handleScoreUpdate}
+        homeScore={match.home_score}
+        awayScore={match.away_score}
+        formatTime={formatTime}
       />
 
       {/* View Mode Toggle */}
-      <View style={styles.viewModeContainer}>
-        {hasSubstitutionSchedule && (
-          <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'timeline' && styles.activeViewMode]}
-            onPress={() => setViewMode('timeline')}
-          >
-            <Clock size={16} color={viewMode === 'timeline' ? '#FFFFFF' : '#6B7280'} />
-            <Text style={[styles.viewModeText, viewMode === 'timeline' && styles.activeViewModeText]}>
-              Live
-            </Text>
-          </TouchableOpacity>
-        )}
-        
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'formation' && styles.activeViewMode]}
-          onPress={() => setViewMode('formation')}
-        >
-          <Eye size={16} color={viewMode === 'formation' ? '#FFFFFF' : '#6B7280'} />
-          <Text style={[styles.viewModeText, viewMode === 'formation' && styles.activeViewModeText]}>
-            Veld
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'list' && styles.activeViewMode]}
-          onPress={() => setViewMode('list')}
-        >
-          <Users size={16} color={viewMode === 'list' ? '#FFFFFF' : '#6B7280'} />
-          <Text style={[styles.viewModeText, viewMode === 'list' && styles.activeViewModeText]}>
-            Spelers
-          </Text>
-        </TouchableOpacity>
+      <ViewModeToggle
+        hasSubstitutionSchedule={hasSubstitutionSchedule}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+      />
 
-        {hasSubstitutionSchedule && (
-          <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'grid' && styles.activeViewMode]}
-            onPress={() => setViewMode('grid')}
-          >
-            <Grid3X3 size={16} color={viewMode === 'grid' ? '#FFFFFF' : '#6B7280'} />
-            <Text style={[styles.viewModeText, viewMode === 'grid' && styles.activeViewModeText]}>
-              Grid
-            </Text>
+      {/* Player Selection Banner */}
+      {isSubstituting && (
+        <View style={styles.swapBanner}>
+          <ArrowUpDown size={14} color="#8B5CF6" />
+          <Text style={styles.swapText}>
+            {selectedPlayer 
+              ? `${selectedPlayer.name} (#${selectedPlayer.number}) geselecteerd - kies een andere speler om te wisselen`
+              : 'Selecteer een speler om te wisselen'
+            }
+          </Text>
+          <TouchableOpacity onPress={cancelSubstitution}>
+            <Text style={styles.cancelText}>Annuleren</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
+      
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {viewMode === 'timeline' && hasSubstitutionSchedule ? (
+          /* Timeline View */
+          <View style={styles.timelineContainer}>
+            {/* Dual Column Active Players */}
+            <View style={styles.activePlayersSection}>
+              <View style={styles.dualColumnContainer}>
+                {/* Left Column - Field Players */}
+                <View style={styles.liveColumn}>
+                  <View style={styles.liveColumnHeader}>
+                    <Users size={16} color="#16A34A" />
+                    <Text style={styles.liveColumnTitle}>Op het Veld</Text>
+                  </View>
+                  
+                  <View style={styles.livePlayersList}>
+                    {Object.entries(activePlayers).length === 0 && currentTime === 0 ? (
+                      // Show starting lineup when no timeline events yet, sorted by formation position order
+                      match.lineup
+                        .sort((a, b) => {
+                          const posA = formation?.positions.find(pos => 
+                            pos.name === a.position || 
+                            pos.dutch_name === a.position ||
+                            pos.label_translations?.nl === a.position
+                          );
+                          const posB = formation?.positions.find(pos => 
+                            pos.name === b.position || 
+                            pos.dutch_name === b.position ||
+                            pos.label_translations?.nl === b.position
+                          );
+                          return (posA?.order || 999) - (posB?.order || 999);
+                        })
+                        .map((player) => (
+                          <TouchableOpacity 
+                            key={player.id} 
+                            style={[
+                              styles.livePlayerCard,
+                              selectedPlayer?.id === player.id && styles.selectedFieldPlayerCard
+                            ]}
+                            onPress={() => handlePlayerPress(player, true)}
+                          >
+                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColor(player.position) }]}>
+                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
+                            </View>
+                            <View style={styles.livePlayerInfo}>
+                              <Text style={styles.livePlayerPosition}>
+                                {formation?.positions.find(pos => 
+                                  pos.name === player.position || 
+                                  pos.dutch_name === player.position ||
+                                  pos.label_translations?.nl === player.position
+                                )?.label_translations?.nl || player.position}
+                              </Text>
+                              <View style={styles.livePlayerDetails}>
+                                <Text style={styles.livePlayerName}>{player.name}</Text>
+                                <Text style={styles.livePlayerSubTime}>Start</Text>
+                              </View>
+                            </View>
+                            <View style={styles.livePlayerMeta}>
+                              <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
+                              {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
+                            </View>
+                          </TouchableOpacity>
+                        ))
+                    ) : (
+                      // Show active players from timeline, sorted by formation position order
+                      Object.entries(activePlayers)
+                        .sort(([positionA], [positionB]) => {
+                          const posA = formation?.positions.find(pos => pos.name === positionA);
+                          const posB = formation?.positions.find(pos => pos.name === positionB);
+                          return (posA?.order || 999) - (posB?.order || 999);
+                        })
+                        .map(([position, player]) => (
+                          <TouchableOpacity 
+                            key={position} 
+                            style={[
+                              styles.livePlayerCard,
+                              selectedPlayer?.id === player.id && styles.selectedFieldPlayerCard
+                            ]}
+                            onPress={() => handlePlayerPress(player, true)}
+                          >
+                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColorForSchedule(position) }]}>
+                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
+                            </View>
+                            <View style={styles.livePlayerInfo}>
+                              <Text style={styles.livePlayerPosition}>
+                                {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
+                              </Text>
+                              <View style={styles.livePlayerDetails}>
+                                <Text style={styles.livePlayerName}>{player.name}</Text>
+                                <Text style={styles.livePlayerSubTime}>
+                                  {formatTime(timelineEvents.find(e => e.player.id === player.id && e.position === position)?.time || 0)}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.livePlayerMeta}>
+                              <View style={[styles.conditionDot, { 
+                                backgroundColor: player.condition && player.condition >= 80 ? '#10B981' : 
+                                               player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                              }]} />
+                              {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
+                            </View>
+                          </TouchableOpacity>
+                        ))
+                    )}
+                  </View>
+                </View>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {/* Formation View */}
-        {viewMode === 'formation' && (
-          <View style={styles.section}>
-            {formation.length > 0 ? (
-              <FieldView
-                positions={formation}
-                lineup={match.lineup}
-                onPositionPress={handlePositionPress}
-                highlightPosition={selectedPosition}
-              />
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Eye size={40} color="#9CA3AF" />
-                <Text style={styles.emptyTitle}>Geen formatie beschikbaar</Text>
-                <Text style={styles.emptySubtitle}>
-                  Er is geen formatie ingesteld voor deze wedstrijd
-                </Text>
+                {/* Right Column - Bench Players */}
+                <View style={styles.liveColumn}>
+                  <View style={styles.liveColumnHeader}>
+                    <Users size={16} color="#6B7280" />
+                    <Text style={styles.liveColumnTitle}>Bank ({reservePlayers.length})</Text>
+                  </View>
+                  
+                  <View style={styles.livePlayersList}>
+                    {reservePlayers.length === 0 ? (
+                      <View style={styles.emptyBenchContainer}>
+                        <Users size={24} color="#9CA3AF" />
+                        <Text style={styles.emptyBenchText}>Geen reservespelers</Text>
+                      </View>
+                    ) : (
+                      reservePlayers
+                        .sort((a, b) => {
+                          const posA = formation?.positions.find(pos => 
+                            pos.name === a.position || 
+                            pos.dutch_name === a.position ||
+                            pos.label_translations?.nl === a.position
+                          );
+                          const posB = formation?.positions.find(pos => 
+                            pos.name === b.position || 
+                            pos.dutch_name === b.position ||
+                            pos.label_translations?.nl === b.position
+                          );
+                          return (posA?.order || 999) - (posB?.order || 999);
+                        })
+                        .map((player) => (
+                          <TouchableOpacity 
+                            key={player.id} 
+                            style={[
+                              styles.livePlayerCard, 
+                              styles.benchPlayerCard,
+                              selectedPlayer?.id === player.id && styles.selectedBenchPlayerCard
+                            ]}
+                            onPress={() => handlePlayerPress(player, false)}
+                          >
+                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColor(player.position) }]}>
+                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
+                            </View>
+                            <View style={styles.livePlayerInfo}>
+                              <Text style={styles.reserveLabel}>Reserve</Text>
+                              <Text style={styles.livePlayerPosition}>
+                                {formation?.positions.find(pos => 
+                                  pos.name === player.position || 
+                                  pos.dutch_name === player.position ||
+                                  pos.label_translations?.nl === player.position
+                                )?.label_translations?.nl || player.position}
+                              </Text>
+                              <View style={styles.livePlayerDetails}>
+                                <Text style={styles.livePlayerName}>{player.name}</Text>
+                              </View>
+                            </View>
+                            <View style={styles.livePlayerMeta}>
+                              <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
+                              {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
+                            </View>
+                          </TouchableOpacity>
+                        ))
+                    )}
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Upcoming Substitutions */}
+            {upcomingSubstitutions.length > 0 && (
+              <View style={styles.upcomingSection}>
+                <Text style={styles.sectionTitle}>Aankomende Wissels</Text>
+                <View style={styles.upcomingList}>
+                  {upcomingSubstitutions.map((event, index) => (
+                    <View key={index} style={styles.upcomingCard}>
+                      <View style={styles.upcomingTime}>
+                        <Clock size={14} color="#F59E0B" />
+                        <Text style={styles.upcomingTimeText}>
+                          {formatTime(event.time)}
+                        </Text>
+                      </View>
+                      <View style={styles.upcomingDetails}>
+                        <Text style={styles.upcomingPosition}>
+                          {getPositionDisplayName(event.position)}
+                        </Text>
+                        <View style={styles.upcomingPlayer}>
+                          <Text style={styles.upcomingPlayerName}>
+                            {event.player.name} #{event.player.number}
+                          </Text>
+                          <Text style={styles.upcomingPlayerAction}>
+                            → Komt erin
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
               </View>
             )}
           </View>
-        )}
+        ) : viewMode === 'formation' ? (
+          /* Formation View */
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Eye size={18} color="#16A34A" />
+              <Text style={styles.sectionTitle}>
+                Formatie {formation ? `(${getFormationDisplayName()})` : ''}
+              </Text>
+            </View>
+            
+            {!formation || formation.positions.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Grid3X3 size={40} color="#9CA3AF" />
+                <Text style={styles.emptyTitle}>Geen formatie ingesteld</Text>
+                <Text style={styles.emptySubtitle}>
+                  Er is geen formatie geselecteerd voor deze wedstrijd
+                </Text>
+              </View>
+            ) : (
+              <FieldView
+                positions={formation.positions}
+                lineup={match.lineup}
+                highlightPosition={selectedPosition}
+                onPositionPress={handlePositionPress}
+              />
+            )}
 
-        {/* Timeline View */}
-        {viewMode === 'timeline' && hasSubstitutionSchedule && (
-          <View style={styles.timelineContainer}>
-            <SubstitutionScheduleDisplay
-              substitutionSchedule={match.substitution_schedule}
-              currentTime={matchTime}
-              currentQuarter={currentQuarter}
-            />
+            {/* Show Events from database */}
+            <View style={styles.reserveSection}>
+              <View style={styles.sectionHeader}>
+                <Users size={18} color="#6B7280" />
+                <Text style={styles.sectionTitle}>Events ({match.reserve_players.length})</Text>
+              </View>
+              {match.reserve_players.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Users size={28} color="#9CA3AF" />
+                  <Text style={styles.emptyText}>Geen events</Text>
+                </View>
+              ) : (
+                <View style={styles.compactPlayersList}>
+                  {match.reserve_players.map((player) => (
+                    <CompactPlayerCard
+                      key={player.id}
+                      player={player}
+                      stats={getPlayerStats(player.id)}
+                      isOnField={false}
+                      isSelected={selectedPlayer?.id === player.id}
+                      isSubstituting={isSubstituting}
+                      onPress={() => handlePlayerPress(player, false)}
+                      formation={formation}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
-        )}
-
-        {/* List View */}
-        {viewMode === 'list' && (
+        ) : viewMode === 'list' ? (
+          /* Two-Column List View */
           <View style={styles.twoColumnContainer}>
+            {/* Left Column - Lineup */}
             <View style={styles.column}>
               <View style={styles.columnHeader}>
-                <Users size={16} color="#16A34A" />
-                <Text style={styles.columnTitle}>Op het veld</Text>
+                <Star size={16} color="#16A34A" />
+                <Text style={styles.columnTitle}>Basisspelers</Text>
                 <View style={styles.countBadge}>
                   <Text style={styles.countText}>{match.lineup.length}</Text>
                 </View>
@@ -685,8 +1223,8 @@ export default function MatchDetailsScreen() {
               
               {match.lineup.length === 0 ? (
                 <View style={styles.emptyColumnContainer}>
-                  <Users size={24} color="#9CA3AF" />
-                  <Text style={styles.emptyColumnText}>Geen spelers op het veld</Text>
+                  <User size={24} color="#9CA3AF" />
+                  <Text style={styles.emptyColumnText}>Geen spelers</Text>
                 </View>
               ) : (
                 <View style={styles.compactPlayersList}>
@@ -694,8 +1232,10 @@ export default function MatchDetailsScreen() {
                     <CompactPlayerCard
                       key={player.id}
                       player={player}
+                      stats={getPlayerStats(player.id)}
                       isOnField={true}
                       isSelected={selectedPlayer?.id === player.id}
+                      isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, true)}
                       formation={formation}
                     />
@@ -704,14 +1244,13 @@ export default function MatchDetailsScreen() {
               )}
             </View>
 
+            {/* Right Column - Reserves */}
             <View style={styles.column}>
               <View style={styles.columnHeader}>
                 <Users size={16} color="#6B7280" />
-                <Text style={styles.columnTitle}>Reserves</Text>
+                <Text style={styles.columnTitle}>Bank</Text>
                 <View style={[styles.countBadge, styles.reserveCountBadge]}>
-                  <Text style={[styles.countText, styles.reserveCountText]}>
-                    {match.reserve_players.length}
-                  </Text>
+                  <Text style={[styles.countText, styles.reserveCountText]}>{match.reserve_players.length}</Text>
                 </View>
               </View>
               
@@ -726,8 +1265,10 @@ export default function MatchDetailsScreen() {
                     <CompactPlayerCard
                       key={player.id}
                       player={player}
+                      stats={getPlayerStats(player.id)}
                       isOnField={false}
                       isSelected={selectedPlayer?.id === player.id}
+                      isSubstituting={isSubstituting}
                       onPress={() => handlePlayerPress(player, false)}
                       formation={formation}
                     />
@@ -736,26 +1277,162 @@ export default function MatchDetailsScreen() {
               )}
             </View>
           </View>
-        )}
-
-        {/* Grid View */}
-        {viewMode === 'grid' && hasSubstitutionSchedule && (
+        ) : (
+          /* Grid View */
           <View style={styles.gridContainer}>
-            <Text style={styles.emptyTitle}>Grid View</Text>
-            <Text style={styles.emptySubtitle}>
-              Grid view implementation coming soon
-            </Text>
+            {/* Header Row */}
+            <View style={styles.gridHeader}>
+              <View style={styles.positionHeaderCell}>
+                <Text style={styles.headerText}>Positie</Text>
+              </View>
+              {getQuarters().map(quarter => (
+                <View key={quarter} style={styles.quarterHeaderCell}>
+                  <Text style={styles.headerText}>Q{quarter}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Data Rows */}
+            {getPositions().map(position => (
+              <View key={position} style={styles.gridRow}>
+                <View style={styles.positionCell}>
+                  <View style={[styles.positionIndicator, { backgroundColor: getPositionColorForSchedule(position) }]} />
+                  <Text style={styles.positionName} numberOfLines={2}>
+                    {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
+                  </Text>
+                </View>
+                
+                {getQuarters().map(quarter => (
+                  <View key={quarter} style={styles.quarterCell}>
+                    {parsedSchedule[position]?.[quarter]?.map((player, index) => (
+                      player ? (
+                        <View key={`${player.id}-${index}`} style={styles.playerChip}>
+                          <View style={[styles.playerNumber, { backgroundColor: getPositionColorForSchedule(position) }]}>
+                            <Text style={styles.playerNumberText}>{player.number}</Text>
+                          </View>
+                          <View style={styles.playerDetails}>
+                            <Text style={styles.playerName} numberOfLines={1}>
+                              {player.name}
+                            </Text>
+                            <View style={styles.playerMeta}>
+                              <View style={styles.conditionIndicator}>
+                                <View style={[styles.conditionDot, { 
+                                  backgroundColor: player.condition && player.condition >= 80 ? '#10B981' : 
+                                                 player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                                }]} />
+                                <Text style={styles.conditionValue}>{player.condition ? `${player.condition}%` : 'N/A'}</Text>
+                              </View>
+                              {player.isGoalkeeper && (
+                                <Shield size={10} color="#EF4444" />
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                      ) : (
+                        <View key={index} style={styles.emptySlot}>
+                          <Text style={styles.emptySlotText}>-</Text>
+                        </View>
+                      )
+                    )) || (
+                      <View style={styles.emptySlot}>
+                        <Text style={styles.emptySlotText}>Geen spelers</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
         )}
-
-        {/* Match Event Logger */}
-        <MatchEventLogger
-          players={allPlayers}
-          onAddEvent={handleAddEvent}
-          currentTime={matchTime}
-          currentQuarter={currentQuarter}
-        />
       </ScrollView>
+
+      {/* Time Control for Schedule */}
+      {hasSubstitutionSchedule && match && (
+        <TimeControl
+          currentTime={currentTime}
+          isPlaying={isPlaying}
+          setCurrentTime={setCurrentTime}
+          setIsPlaying={setIsPlaying}
+          home_score={match.home_score}
+          away_score={match.away_score}
+          onHomeScoreUp={async () => {
+            if (match) {
+              const newScore = match.home_score + 1;
+              await matchEventLogger.logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                newScore,
+                match.away_score,
+                match.home_score,
+                match.away_score,
+                'home'
+              );
+              setMatch(prev => prev ? {
+                ...prev,
+                home_score: newScore
+              } : null);
+            }
+          }}
+          onHomeScoreDown={async () => {
+            if (match) {
+              const newScore = Math.max(0, match.home_score - 1);
+              await matchEventLogger.logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                newScore,
+                match.away_score,
+                match.home_score,
+                match.away_score,
+                'home'
+              );
+              setMatch(prev => prev ? {
+                ...prev,
+                home_score: newScore
+              } : null);
+            }
+          }}
+          onAwayScoreUp={async () => {
+            if (match) {
+              const newScore = match.away_score + 1;
+              await matchEventLogger.logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                match.home_score,
+                newScore,
+                match.home_score,
+                match.away_score,
+                'away'
+              );
+              setMatch(prev => prev ? {
+                ...prev,
+                away_score: newScore
+              } : null);
+            }
+          }}
+          onAwayScoreDown={async () => {
+            if (match) {
+              const newScore = Math.max(0, match.away_score - 1);
+              await matchEventLogger.logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                match.home_score,
+                newScore,
+                match.home_score,
+                match.away_score,
+                'away'
+              );
+              setMatch(prev => prev ? {
+                ...prev,
+                away_score: newScore
+              } : null);
+            }
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
