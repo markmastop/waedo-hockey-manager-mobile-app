@@ -231,8 +231,8 @@ class MatchEventLogger {
       // Use the database function to add the event - fix parameter order
       const { data, error } = await supabase
         .rpc('add_match_event', {
-          event_data: eventData,
-          match_uuid: matchId
+          match_uuid: matchId,
+          event_data: eventData
         });
 
       if (error) {
