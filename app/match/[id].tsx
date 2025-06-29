@@ -24,10 +24,10 @@ import { PositionCard } from '@/components/PositionCard';
 import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import { MatchEventLogger } from '@/components/MatchEventLogger';
 import { SubstitutionScheduleDisplay } from '@/components/SubstitutionScheduleDisplay';
-import TimeDisplay from '@/components/match/TimeDisplay';
-import TimeControl from '@/components/match/TimeControl';
-import ViewModeToggle from '@/components/match/ViewModeToggle';
-import SubstitutionBanner from '@/components/match/SubstitutionBanner';
+import TimeDisplay from '../components/match/TimeDisplay';
+import TimeControl from '../components/match/TimeControl';
+import ViewModeToggle from '../components/match/ViewModeToggle';
+import SubstitutionBanner from '../components/match/SubstitutionBanner';
 
 interface Match {
   id: string;
