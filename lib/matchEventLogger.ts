@@ -25,6 +25,11 @@ class MatchEventLogger {
   private isProcessing = false;
   private retryAttempts = 3;
   private retryDelay = 1000; // 1 second
+  
+  // Event deduplication and throttling
+  private recentEvents: Map<string, number> = new Map(); // eventKey -> timestamp
+  private eventThrottleMs = 2000; // 2 seconds between same events
+  private pendingEvents: Set<string> = new Set(); // Track events currently being processed
 
   static getInstance(): MatchEventLogger {
     if (!MatchEventLogger.instance) {
@@ -35,6 +40,77 @@ class MatchEventLogger {
 
   private async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private generateEventKey(event: MatchEventLog): string {
+    // Create a unique key for this event to prevent duplicates
+    const baseKey = `${event.match_id}-${event.action}-${event.match_time}-${event.quarter}`;
+    
+    // For player-specific events, include player ID
+    if (event.player_id) {
+      return `${baseKey}-${event.player_id}`;
+    }
+    
+    // For description-specific events, include a hash of the description
+    return `${baseKey}-${event.description.slice(0, 20)}`;
+  }
+
+  private isEventDuplicate(event: MatchEventLog): boolean {
+    const eventKey = this.generateEventKey(event);
+    const now = Date.now();
+    const lastEventTime = this.recentEvents.get(eventKey);
+    
+    // Check if this exact event happened recently
+    if (lastEventTime && (now - lastEventTime) < this.eventThrottleMs) {
+      console.log(`🚫 Duplicate event detected and blocked: ${eventKey}`);
+      return true;
+    }
+    
+    // Check if this event is currently being processed
+    if (this.pendingEvents.has(eventKey)) {
+      console.log(`🚫 Event already being processed: ${eventKey}`);
+      return true;
+    }
+    
+    return false;
+  }
+
+  private markEventAsProcessed(event: MatchEventLog): void {
+    const eventKey = this.generateEventKey(event);
+    const now = Date.now();
+    
+    // Mark as recently processed
+    this.recentEvents.set(eventKey, now);
+    
+    // Clean up old entries (older than throttle time)
+    for (const [key, timestamp] of this.recentEvents.entries()) {
+      if (now - timestamp > this.eventThrottleMs * 2) {
+        this.recentEvents.delete(key);
+      }
+    }
+  }
+
+  private shouldLogEvent(event: MatchEventLog): boolean {
+    // Never log player selection events - these are UI interactions, not match events
+    if (event.action === 'player_selection') {
+      console.log(`🚫 Skipping player selection event - not a match event`);
+      return false;
+    }
+    
+    // Only log actual match events that should be recorded
+    const allowedActions = [
+      'goal', 'card', 'substitution', 'swap', 
+      'match_start', 'match_end', 'quarter_start', 'quarter_end',
+      'timeout', 'injury', 'penalty_corner', 'penalty_stroke',
+      'green_card', 'yellow_card', 'red_card', 'score_change'
+    ];
+    
+    if (!allowedActions.includes(event.action)) {
+      console.log(`🚫 Skipping event with action: ${event.action} - not in allowed list`);
+      return false;
+    }
+    
+    return true;
   }
 
   private async retryOperation<T>(
@@ -215,7 +291,12 @@ class MatchEventLogger {
   }
 
   async logEvent(event: MatchEventLog): Promise<void> {
-    console.log('📝 Logging match event:', event);
+    console.log('📝 Attempting to log match event:', event);
+    
+    // First check if this event should be logged at all
+    if (!this.shouldLogEvent(event)) {
+      return; // Silently skip events that shouldn't be logged
+    }
     
     // Validate input data
     if (!this.validateMatchId(event.match_id)) {
@@ -226,7 +307,18 @@ class MatchEventLogger {
       throw new Error('Invalid event data provided');
     }
     
+    // Check for duplicates
+    if (this.isEventDuplicate(event)) {
+      console.log('🚫 Skipping duplicate event');
+      return; // Silently skip duplicate events
+    }
+    
+    const eventKey = this.generateEventKey(event);
+    
     try {
+      // Mark event as being processed
+      this.pendingEvents.add(eventKey);
+      
       await this.retryOperation(async () => {
         // Ensure the matches_live record exists first
         const recordExists = await this.ensureMatchesLiveRecord(event.match_id);
@@ -281,7 +373,10 @@ class MatchEventLogger {
         console.log('✅ Event added to matches_live successfully');
       }, 'logEvent');
 
+      // Mark event as successfully processed
+      this.markEventAsProcessed(event);
       console.log('✅ Match event logged successfully');
+      
     } catch (error) {
       console.error('💥 Failed to log match event:', error);
       
@@ -293,6 +388,9 @@ class MatchEventLogger {
       }
       
       throw error;
+    } finally {
+      // Always remove from pending events
+      this.pendingEvents.delete(eventKey);
     }
   }
 
@@ -545,6 +643,7 @@ class MatchEventLogger {
     quarter: number,
     assistedBy?: Player
   ): Promise<void> {
+    console.log('🥅 Logging goal event for player:', player.name);
     await this.logEvent({
       match_id: matchId,
       player_id: player.id,
@@ -682,31 +781,9 @@ class MatchEventLogger {
     });
   }
 
-  async logPlayerSelection(
-    matchId: string,
-    player: Player,
-    matchTime: number,
-    quarter: number,
-    selectionType: 'field' | 'bench'
-  ): Promise<void> {
-    await this.logEvent({
-      match_id: matchId,
-      player_id: player.id,
-      action: 'player_selection',
-      description: `Player ${player.name} (#${player.number}) selected from ${selectionType}`,
-      match_time: matchTime,
-      quarter: quarter,
-      metadata: {
-        player: {
-          id: player.id,
-          name: player.name,
-          number: player.number,
-          position: player.position
-        },
-        selection_type: selectionType
-      }
-    });
-  }
+  // Note: This method is intentionally removed to prevent unwanted logging
+  // Player selection should NOT trigger match events
+  // async logPlayerSelection() - REMOVED
 
   async logFormationChange(
     matchId: string,
@@ -967,6 +1044,13 @@ class MatchEventLogger {
       console.error('💥 Exception fetching player event stats:', error);
       return [];
     }
+  }
+
+  // Method to clear recent events cache (useful for testing)
+  clearEventCache(): void {
+    this.recentEvents.clear();
+    this.pendingEvents.clear();
+    console.log('🧹 Event cache cleared');
   }
 }
 
