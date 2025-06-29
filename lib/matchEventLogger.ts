@@ -35,9 +35,19 @@ class MatchEventLogger {
     try {
       console.log('🔍 Fetching match data for:', matchId);
       
+      // Fetch match data with club logo from clubs table
       const { data, error } = await supabase
         .from('matches')
-        .select('match_key, home_team, away_team, club_logo_url')
+        .select(`
+          match_key, 
+          home_team, 
+          away_team,
+          teams!inner(
+            clubs!inner(
+              logo_url
+            )
+          )
+        `)
         .eq('id', matchId)
         .single();
 
@@ -51,8 +61,18 @@ class MatchEventLogger {
         return null;
       }
 
-      console.log('✅ Match data fetched:', data);
-      return data;
+      // Extract club logo URL from the nested structure
+      const clubLogoUrl = data.teams?.clubs?.logo_url || null;
+
+      const matchData: MatchData = {
+        match_key: data.match_key,
+        home_team: data.home_team,
+        away_team: data.away_team,
+        club_logo_url: clubLogoUrl
+      };
+
+      console.log('✅ Match data fetched:', matchData);
+      return matchData;
     } catch (error) {
       console.error('💥 Exception fetching match data:', error);
       return null;
