@@ -24,6 +24,115 @@ class MatchEventLogger {
     return MatchEventLogger.instance;
   }
 
+  async ensureMatchesLiveRecord(matchId: string, quarter: number = 1): Promise<void> {
+    console.log('🔍 Ensuring matches_live record exists for match:', matchId);
+    
+    try {
+      // First, check if record already exists
+      const { data: existingRecord, error: selectError } = await supabase
+        .from('matches_live')
+        .select('id, match_id')
+        .eq('match_id', matchId)
+        .single();
+
+      if (selectError && selectError.code !== 'PGRST116') {
+        // PGRST116 is "not found" error, which is expected if no record exists
+        console.error('❌ Error checking for existing matches_live record:', selectError);
+        throw selectError;
+      }
+
+      if (existingRecord) {
+        console.log('✅ matches_live record already exists:', existingRecord.id);
+        return;
+      }
+
+      console.log('📝 Creating new matches_live record...');
+
+      // Verify the match exists in the matches table first
+      const { data: matchData, error: matchError } = await supabase
+        .from('matches')
+        .select('id, home_team, away_team')
+        .eq('id', matchId)
+        .single();
+
+      if (matchError || !matchData) {
+        console.error('❌ Match not found in matches table:', matchError || 'No match found');
+        throw new Error(`Match ${matchId} not found in matches table`);
+      }
+
+      console.log('✅ Match found in matches table:', matchData);
+
+      // Create new matches_live record
+      const { error: insertError, data: insertedData } = await supabase
+        .from('matches_live')
+        .insert({
+          match_id: matchId,
+          status: 'upcoming',
+          current_time: 0,
+          current_quarter: quarter,
+          home_score: 0,
+          away_score: 0,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('❌ Failed to create matches_live record:', insertError);
+        console.log('Insert attempt details:', {
+          match_id: matchId,
+          current_quarter: quarter,
+          timestamp: new Date().toISOString()
+        });
+        throw insertError;
+      }
+
+      console.log('✅ Successfully created matches_live record:', insertedData);
+    } catch (error) {
+      console.error('💥 Exception in ensureMatchesLiveRecord:', error);
+      throw error;
+    }
+  }
+
+  async updateMatchesLiveRecord(
+    matchId: string, 
+    updates: Partial<{
+      status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
+      current_time: number;
+      current_quarter: number;
+      home_score: number;
+      away_score: number;
+    }>
+  ): Promise<void> {
+    console.log('🔄 Updating matches_live record:', matchId, updates);
+    
+    try {
+      // Ensure record exists first
+      await this.ensureMatchesLiveRecord(matchId, updates.current_quarter || 1);
+
+      // Now update the record
+      const { error: updateError, data: updatedData } = await supabase
+        .from('matches_live')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', matchId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ Failed to update matches_live record:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ Successfully updated matches_live record:', updatedData);
+    } catch (error) {
+      console.error('💥 Exception updating matches_live record:', error);
+      throw error;
+    }
+  }
+
   async logEvent(event: MatchEventLog): Promise<void> {
     console.log('📝 Logging match event:', event);
     
@@ -33,55 +142,11 @@ class MatchEventLogger {
         ? event.match_id 
         : event.match_id.toString();
 
-      // First try to update existing record
-      const { error: updateError } = await supabase
-        .from('matches_live')
-        .update({
-          match_id: matchId,
-          current_quarter: event.quarter,
-          updated_at: new Date().toISOString()
-        })
-        .eq('match_id', matchId);
-
-      if (updateError) {
-        console.log('🔄 No existing record found, creating new matches_live record');
-        
-        // Check if the match exists in matches table
-        const { data: matchData, error: matchError } = await supabase
-          .from('matches')
-          .select('id')
-          .eq('id', matchId)
-          .single();
-
-        if (matchError || !matchData) {
-          console.error('❌ Match not found in matches table:', matchError || 'No match found');
-          throw new Error('Match not found in matches table');
-        }
-
-        // If update fails, try to insert a new record
-        const { error: insertError, data } = await supabase
-          .from('matches_live')
-          .insert({
-            match_id: matchId,
-            status: 'inProgress',
-            current_quarter: event.quarter,
-            home_score: 0,
-            away_score: 0,
-            updated_at: new Date().toISOString()
-          })
-          .select();
-
-        if (insertError) {
-          console.error('❌ Failed to create matches_live record:', insertError);
-          console.log('Error details:', {
-            match_id: matchId,
-            current_quarter: event.quarter
-          });
-          throw insertError;
-        }
-
-        console.log('✅ Created new matches_live record:', data);
-      }
+      // Ensure matches_live record exists and update it
+      await this.updateMatchesLiveRecord(matchId, {
+        current_quarter: event.quarter,
+        current_time: event.match_time
+      });
 
       console.log('✅ Match event logged successfully');
     } catch (error) {
@@ -269,22 +334,12 @@ class MatchEventLogger {
     }
 
     // Update the matches_live table with new scores
-    try {
-      const { error } = await supabase
-        .from('matches_live')
-        .update({
-          home_score: homeScore,
-          away_score: awayScore,
-          updated_at: new Date().toISOString()
-        })
-        .eq('match_id', matchId);
-
-      if (error) {
-        console.error('❌ Failed to update scores in matches_live:', error);
-      }
-    } catch (error) {
-      console.error('💥 Exception updating scores:', error);
-    }
+    await this.updateMatchesLiveRecord(matchId, {
+      home_score: homeScore,
+      away_score: awayScore,
+      current_time: matchTime,
+      current_quarter: quarter
+    });
 
     await this.logEvent({
       match_id: matchId,
@@ -448,23 +503,13 @@ class MatchEventLogger {
 
   async createMatchesLiveRecord(matchId: string, status: 'upcoming' | 'inProgress' | 'paused' | 'completed'): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('matches_live')
-        .insert({
-          match_id: matchId,
-          status: status,
-          current_time: 0,
-          current_quarter: 1,
-          home_score: 0,
-          away_score: 0,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) {
-        console.error('❌ Failed to create matches_live record:', error);
-        return false;
+      await this.ensureMatchesLiveRecord(matchId, 1);
+      
+      // Update the status if different from default
+      if (status !== 'upcoming') {
+        await this.updateMatchesLiveRecord(matchId, { status });
       }
-
+      
       return true;
     } catch (error) {
       console.error('💥 Exception creating matches_live record:', error);
@@ -473,8 +518,12 @@ class MatchEventLogger {
   }
 
   async logMatchStart(matchId: string): Promise<void> {
-    // Create matches_live record first
-    await this.createMatchesLiveRecord(matchId, 'inProgress');
+    // Ensure matches_live record exists and set status to inProgress
+    await this.updateMatchesLiveRecord(matchId, {
+      status: 'inProgress',
+      current_time: 0,
+      current_quarter: 1
+    });
 
     await this.logEvent({
       match_id: matchId,
@@ -490,21 +539,15 @@ class MatchEventLogger {
 
   async logMatchEnd(matchId: string, matchTime: number, quarter: number, finalScore?: { home: number; away: number }): Promise<void> {
     // Update matches_live status to completed
-    try {
-      const { error } = await supabase
-        .from('matches_live')
-        .update({
-          status: 'completed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('match_id', matchId);
-
-      if (error) {
-        console.error('❌ Failed to update match status to completed:', error);
-      }
-    } catch (error) {
-      console.error('💥 Exception updating match status:', error);
-    }
+    await this.updateMatchesLiveRecord(matchId, {
+      status: 'completed',
+      current_time: matchTime,
+      current_quarter: quarter,
+      ...(finalScore && {
+        home_score: finalScore.home,
+        away_score: finalScore.away
+      })
+    });
 
     await this.logEvent({
       match_id: matchId,
@@ -520,6 +563,11 @@ class MatchEventLogger {
   }
 
   async logQuarterStart(matchId: string, quarter: number, matchTime: number): Promise<void> {
+    await this.updateMatchesLiveRecord(matchId, {
+      current_quarter: quarter,
+      current_time: matchTime
+    });
+
     await this.logEvent({
       match_id: matchId,
       action: 'quarter_start',
@@ -555,6 +603,11 @@ class MatchEventLogger {
         .single();
 
       if (error) {
+        if (error.code === 'PGRST116') {
+          // No record found - this is expected for matches that haven't started
+          console.log('ℹ️ No matches_live record found for match:', matchId);
+          return null;
+        }
         console.error('❌ Failed to fetch live match state:', error);
         return null;
       }
@@ -568,47 +621,15 @@ class MatchEventLogger {
 
   // Update match status
   async updateMatchStatus(matchId: string, status: 'upcoming' | 'inProgress' | 'paused' | 'completed'): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('matches_live')
-        .update({
-          status: status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('match_id', matchId);
-
-      if (error) {
-        console.error('❌ Failed to update match status:', error);
-        throw error;
-      }
-
-      console.log(`✅ Match status updated to: ${status}`);
-    } catch (error) {
-      console.error('💥 Exception updating match status:', error);
-      throw error;
-    }
+    await this.updateMatchesLiveRecord(matchId, { status });
   }
 
   // Update match time and quarter
   async updateMatchTime(matchId: string, currentTime: number, currentQuarter: number): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('matches_live')
-        .update({
-          current_time: currentTime,
-          current_quarter: currentQuarter,
-          updated_at: new Date().toISOString()
-        })
-        .eq('match_id', matchId);
-
-      if (error) {
-        console.error('❌ Failed to update match time:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('💥 Exception updating match time:', error);
-      throw error;
-    }
+    await this.updateMatchesLiveRecord(matchId, {
+      current_time: currentTime,
+      current_quarter: currentQuarter
+    });
   }
 }
 
