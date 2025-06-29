@@ -2,6 +2,9 @@ export interface MatchesLive {
   id: string;
   match_id: string;
   match_key?: string;
+  home_team: string;
+  away_team: string;
+  club_logo_url?: string;
   status: 'upcoming' | 'inProgress' | 'paused' | 'completed';
   match_time: number;
   current_quarter: number;
@@ -53,6 +56,7 @@ export interface Database {
           formation: string;
           formation_key?: string;
           match_key?: string;
+          club_logo_url?: string;
           lineup: Player[];
           reserve_players: Player[];
           substitutions: Substitution[];
@@ -77,6 +81,7 @@ export interface Database {
           formation?: string;
           formation_key?: string;
           match_key?: string;
+          club_logo_url?: string;
           lineup?: Player[];
           reserve_players?: Player[];
           substitutions?: Substitution[];
@@ -103,6 +108,7 @@ export interface Database {
           formation?: string;
           formation_key?: string;
           match_key?: string;
+          club_logo_url?: string;
           lineup?: Player[];
           reserve_players?: Player[];
           substitutions?: Substitution[];

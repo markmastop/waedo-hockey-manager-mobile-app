@@ -12,6 +12,13 @@ export interface MatchEventLog {
   metadata?: Record<string, any>;
 }
 
+interface MatchData {
+  match_key?: string;
+  home_team: string;
+  away_team: string;
+  club_logo_url?: string;
+}
+
 class MatchEventLogger {
   private static instance: MatchEventLogger;
   private eventQueue: MatchEventLog[] = [];
@@ -24,22 +31,27 @@ class MatchEventLogger {
     return MatchEventLogger.instance;
   }
 
-  async getMatchKey(matchId: string): Promise<string | null> {
+  async getMatchData(matchId: string): Promise<MatchData | null> {
     try {
       const { data: matchData, error } = await supabase
         .from('matches')
-        .select('match_key')
+        .select('match_key, home_team, away_team, club_logo_url')
         .eq('id', matchId)
         .single();
 
       if (error) {
-        console.error('❌ Error fetching match_key:', error);
+        console.error('❌ Error fetching match data:', error);
         return null;
       }
 
-      return matchData?.match_key || null;
+      return {
+        match_key: matchData?.match_key || undefined,
+        home_team: matchData?.home_team || '',
+        away_team: matchData?.away_team || '',
+        club_logo_url: matchData?.club_logo_url || undefined
+      };
     } catch (error) {
-      console.error('💥 Exception fetching match_key:', error);
+      console.error('💥 Exception fetching match data:', error);
       return null;
     }
   }
@@ -67,26 +79,23 @@ class MatchEventLogger {
 
       console.log('📝 Creating new matches_live record...');
 
-      // Verify the match exists in the matches table and get match_key
-      const { data: matchData, error: matchError } = await supabase
-        .from('matches')
-        .select('id, home_team, away_team, match_key')
-        .eq('id', matchId)
-        .single();
-
-      if (matchError || !matchData) {
-        console.error('❌ Match not found in matches table:', matchError || 'No match found');
+      // Get match data including team names and logo
+      const matchData = await this.getMatchData(matchId);
+      if (!matchData) {
         throw new Error(`Match ${matchId} not found in matches table`);
       }
 
-      console.log('✅ Match found in matches table:', matchData);
+      console.log('✅ Match data found:', matchData);
 
-      // Create new matches_live record with match_key
+      // Create new matches_live record with all required fields
       const { error: insertError, data: insertedData } = await supabase
         .from('matches_live')
         .insert({
           match_id: matchId,
           match_key: matchData.match_key,
+          home_team: matchData.home_team,
+          away_team: matchData.away_team,
+          club_logo_url: matchData.club_logo_url,
           status: 'upcoming',
           match_time: 0,
           current_quarter: quarter,
@@ -102,6 +111,9 @@ class MatchEventLogger {
         console.log('Insert attempt details:', {
           match_id: matchId,
           match_key: matchData.match_key,
+          home_team: matchData.home_team,
+          away_team: matchData.away_team,
+          club_logo_url: matchData.club_logo_url,
           current_quarter: quarter,
           timestamp: new Date().toISOString()
         });
