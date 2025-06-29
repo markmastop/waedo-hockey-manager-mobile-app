@@ -41,12 +41,6 @@ export default function ViewModeToggle({
         'formation'
       )}
       
-      {renderViewModeButton(
-        <Users size={16} color={viewMode === 'list' ? '#FFFFFF' : '#6B7280'} />,
-        'Spelers',
-        'list'
-      )}
-
       {hasSubstitutionSchedule && (
         renderViewModeButton(
           <Grid3X3 size={16} color={viewMode === 'grid' ? '#FFFFFF' : '#6B7280'} />,

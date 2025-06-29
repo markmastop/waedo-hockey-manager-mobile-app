@@ -433,8 +433,6 @@ export default function MatchScreen() {
     if (!match) return;
 
     try {
-      console.log('🔄 Updating match with:', updates);
-      
       const dbUpdates: Partial<Match> = {};
       Object.keys(updates).forEach(key => {
         dbUpdates[key as keyof Match] = updates[key as keyof Match];
@@ -446,11 +444,9 @@ export default function MatchScreen() {
         .eq('id', match.id);
 
       if (error) {
-        console.error('❌ Database update failed:', error);
         throw error;
       }
       
-      console.log('✅ Database update successful');
       setMatch(prev => prev ? { ...prev, ...updates } : null);
       
       return true;
@@ -463,11 +459,6 @@ export default function MatchScreen() {
 
   const performPlayerSwap = async (player1: Player, player2: Player, isPlayer1OnField: boolean, isPlayer2OnField: boolean) => {
     if (!match) return;
-
-    console.log('🔄 Starting player swap:', {
-      player1: { name: player1.name, number: player1.number, onField: isPlayer1OnField },
-      player2: { name: player2.name, number: player2.number, onField: isPlayer2OnField }
-    });
 
     try {
       let newLineup = [...match.lineup];
@@ -543,13 +534,6 @@ export default function MatchScreen() {
         }
       }
 
-      console.log('📊 Swap details:', {
-        newLineupCount: newLineup.length,
-        newReservesCount: newReservePlayers.length,
-        newSubstitutionsCount: newSubstitutions.length,
-        description: swapDescription
-      });
-
       // Update the database
       const success = await updateMatch({
         lineup: newLineup,
@@ -559,7 +543,6 @@ export default function MatchScreen() {
 
       if (success) {
         Alert.alert('Succes', swapDescription);
-        console.log('✅ Player swap completed successfully');
       }
 
     } catch (error) {
@@ -632,13 +615,7 @@ export default function MatchScreen() {
   };
 
   const handlePlayerPress = async (player: Player, isOnField: boolean) => {
-    console.log('🎯 Player selected:', {
-      id: player.id,
-      name: player.name,
-      number: player.number,
-      position: player.position,
-      isOnField: isOnField
-    });
+
     
     // Player selection is a UI interaction and should not be logged as a match event
     // The logPlayerSelection method was intentionally removed from matchEventLogger
@@ -817,15 +794,11 @@ export default function MatchScreen() {
   const getReservePlayers = (time: number) => {
     // Get all players from the team
     if (!team || !team.players) {
-      console.log('🔍 No team data available');
+
       return [];
     }
     
     const allPlayers = team.players;
-    
-    console.log('🔍 Debug Reserve Calculation:');
-    console.log('Total players:', allPlayers.length);
-    console.log('Players in lineup:', match.lineup.length);
     
     // Get currently active players on field
     const activePlayerIds = new Set();
@@ -833,18 +806,13 @@ export default function MatchScreen() {
     if (Object.entries(activePlayers).length === 0 && time === 0) {
       // At start, lineup players are on field
       match.lineup.forEach(player => activePlayerIds.add(player.id));
-      console.log('Using lineup as active players (start of match)');
     } else {
       // Use active players from timeline
       Object.values(activePlayers).forEach(player => activePlayerIds.add(player.id));
-      console.log('Using timeline active players');
     }
-    
-    console.log('Active player IDs:', Array.from(activePlayerIds));
     
     // Return players not currently on field
     const reserves = allPlayers.filter(player => !activePlayerIds.has(player.id));
-    console.log('Calculated reserves:', reserves.length, reserves.map(p => p.name));
     
     return reserves;
   };
@@ -907,15 +875,6 @@ export default function MatchScreen() {
           <Text style={styles.teamName}>#{match.match_key}</Text>
         </View>      
       </View>
-
-      {/* Time Display - Always visible */}
-      <TimeDisplay
-        currentTime={currentTime}
-        currentQuarter={currentQuarter}
-        homeScore={match.home_score}
-        awayScore={match.away_score}
-        formatTime={formatTime}
-      />
 
       {/* View Mode Toggle */}
       <ViewModeToggle
@@ -1112,37 +1071,6 @@ export default function MatchScreen() {
               </View>
             </View>
 
-            {/* Upcoming Substitutions */}
-            {upcomingSubstitutions.length > 0 && (
-              <View style={styles.upcomingSection}>
-                <Text style={styles.sectionTitle}>Aankomende Wissels</Text>
-                <View style={styles.upcomingList}>
-                  {upcomingSubstitutions.map((event, index) => (
-                    <View key={index} style={styles.upcomingCard}>
-                      <View style={styles.upcomingTime}>
-                        <Clock size={14} color="#F59E0B" />
-                        <Text style={styles.upcomingTimeText}>
-                          {formatTime(event.time)}
-                        </Text>
-                      </View>
-                      <View style={styles.upcomingDetails}>
-                        <Text style={styles.upcomingPosition}>
-                          {getPositionDisplayName(event.position)}
-                        </Text>
-                        <View style={styles.upcomingPlayer}>
-                          <Text style={styles.upcomingPlayerName}>
-                            {event.player.name} #{event.player.number}
-                          </Text>
-                          <Text style={styles.upcomingPlayerAction}>
-                            → Komt erin
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
           </View>
         ) : viewMode === 'formation' ? (
           /* Formation View */
@@ -1181,75 +1109,6 @@ export default function MatchScreen() {
                 <View style={styles.emptyContainer}>
                   <Users size={28} color="#9CA3AF" />
                   <Text style={styles.emptyText}>Geen events</Text>
-                </View>
-              ) : (
-                <View style={styles.compactPlayersList}>
-                  {match.reserve_players.map((player) => (
-                    <CompactPlayerCard
-                      key={player.id}
-                      player={player}
-                      stats={getPlayerStats(player.id)}
-                      isOnField={false}
-                      isSelected={selectedPlayer?.id === player.id}
-                      isSubstituting={isSubstituting}
-                      onPress={() => handlePlayerPress(player, false)}
-                      formation={formation}
-                    />
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
-        ) : viewMode === 'list' ? (
-          /* Two-Column List View */
-          <View style={styles.twoColumnContainer}>
-            {/* Left Column - Lineup */}
-            <View style={styles.column}>
-              <View style={styles.columnHeader}>
-                <Star size={16} color="#16A34A" />
-                <Text style={styles.columnTitle}>Basisspelers</Text>
-                <View style={styles.countBadge}>
-                  <Text style={styles.countText}>{match.lineup.length}</Text>
-                </View>
-              </View>
-              
-              {match.lineup.length === 0 ? (
-                <View style={styles.emptyColumnContainer}>
-                  <User size={24} color="#9CA3AF" />
-                  <Text style={styles.emptyColumnText}>Geen spelers</Text>
-                </View>
-              ) : (
-                <View style={styles.compactPlayersList}>
-                  {match.lineup.map((player) => (
-                    <CompactPlayerCard
-                      key={player.id}
-                      player={player}
-                      stats={getPlayerStats(player.id)}
-                      isOnField={true}
-                      isSelected={selectedPlayer?.id === player.id}
-                      isSubstituting={isSubstituting}
-                      onPress={() => handlePlayerPress(player, true)}
-                      formation={formation}
-                    />
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {/* Right Column - Reserves */}
-            <View style={styles.column}>
-              <View style={styles.columnHeader}>
-                <Users size={16} color="#6B7280" />
-                <Text style={styles.columnTitle}>Bank</Text>
-                <View style={[styles.countBadge, styles.reserveCountBadge]}>
-                  <Text style={[styles.countText, styles.reserveCountText]}>{match.reserve_players.length}</Text>
-                </View>
-              </View>
-              
-              {match.reserve_players.length === 0 ? (
-                <View style={styles.emptyColumnContainer}>
-                  <Users size={24} color="#9CA3AF" />
-                  <Text style={styles.emptyColumnText}>Geen reserves</Text>
                 </View>
               ) : (
                 <View style={styles.compactPlayersList}>
@@ -1309,8 +1168,8 @@ export default function MatchScreen() {
                             <View style={styles.playerMeta}>
                               <View style={styles.conditionIndicator}>
                                 <View style={[styles.conditionDot, { 
-                                  backgroundColor: player.condition && player.condition >= 80 ? '#10B981' : 
-                                                 player.condition >= 60 ? '#F59E0B' : '#EF4444' 
+                                  backgroundColor: player.condition ? (player.condition >= 80 ? '#10B981' : 
+                                                 player.condition >= 60 ? '#F59E0B' : '#EF4444') : '#EF4444'
                                 }]} />
                                 <Text style={styles.conditionValue}>{player.condition ? `${player.condition}%` : 'N/A'}</Text>
                               </View>
@@ -1337,6 +1196,15 @@ export default function MatchScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Time Display - Always visible */}
+      <TimeDisplay
+        currentTime={currentTime}
+        currentQuarter={currentQuarter}
+        homeScore={match.home_score}
+        awayScore={match.away_score}
+        formatTime={formatTime}
+      />
 
       {/* Time Control for Schedule */}
       {hasSubstitutionSchedule && match && (

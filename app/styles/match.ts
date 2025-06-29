@@ -498,15 +498,6 @@ export const styles = StyleSheet.create({
       borderColor: '#10B981',
       backgroundColor: '#FFFFFF',
     },
-    benchPlayerCard: {
-      borderColor: '#E5E7EB',
-      backgroundColor: '#F9FAFB',
-    },
-    selectedPlayerCard: {
-      borderColor: '#FF6B35',
-      backgroundColor: '#FEF2F2',
-      borderWidth: 2,
-    },
     playerRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -549,11 +540,6 @@ export const styles = StyleSheet.create({
       fontSize: 8,
       color: '#D1D5DB',
       fontFamily: 'Inter-Regular',
-    },
-    timeText: {
-      fontSize: 9,
-      fontFamily: 'Inter-Regular',
-      color: '#6B7280',
     },
     statBadge: {
       flexDirection: 'row',
