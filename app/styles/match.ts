@@ -32,6 +32,20 @@ export const styles = StyleSheet.create({
       color: '#6B7280',
       fontFamily: 'Inter-Regular',
     },
+    matchKeyBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F3E8FF',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      gap: 4,
+    },
+    matchKeyText: {
+      fontSize: 10,
+      fontFamily: 'Inter-SemiBold',
+      color: '#8B5CF6',
+    },
     scheduleButton: {
       padding: 8,
       borderRadius: 8,
@@ -474,6 +488,26 @@ export const styles = StyleSheet.create({
       fontFamily: 'Inter-Regular',
       textAlign: 'center',
     },
+    // Player card container and goal button styles
+    playerCardContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 4,
+    },
+    goalButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: '#10B981',
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
+    },
     // Compact player card styles
     compactPlayersList: {
       padding: 8,
@@ -485,10 +519,12 @@ export const styles = StyleSheet.create({
       borderWidth: 1,
       borderColor: '#E5E7EB',
       padding: 8,
+      flex: 1,
     },
     selectedPlayerCard: {
-      borderColor: '#10B981',
-      backgroundColor: '#F0FDF4',
+      borderColor: '#FF6B35',
+      backgroundColor: '#FEF2F2',
+      borderWidth: 2,
     },
     substitutingPlayerCard: {
       borderColor: '#FF6B35',
@@ -497,15 +533,6 @@ export const styles = StyleSheet.create({
     onFieldPlayerCard: {
       borderColor: '#10B981',
       backgroundColor: '#FFFFFF',
-    },
-    benchPlayerCard: {
-      borderColor: '#E5E7EB',
-      backgroundColor: '#F9FAFB',
-    },
-    selectedPlayerCard: {
-      borderColor: '#FF6B35',
-      backgroundColor: '#FEF2F2',
-      borderWidth: 2,
     },
     playerRow: {
       flexDirection: 'row',
