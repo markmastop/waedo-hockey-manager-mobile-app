@@ -33,10 +33,9 @@ class MatchEventLogger {
         .from('matches_live')
         .select('id, match_id')
         .eq('match_id', matchId)
-        .single();
+        .maybeSingle();
 
-      if (selectError && selectError.code !== 'PGRST116') {
-        // PGRST116 is "not found" error, which is expected if no record exists
+      if (selectError) {
         console.error('❌ Error checking for existing matches_live record:', selectError);
         throw selectError;
       }
@@ -600,15 +599,15 @@ class MatchEventLogger {
         .from('matches_live')
         .select('*')
         .eq('match_id', matchId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No record found - this is expected for matches that haven't started
-          console.log('ℹ️ No matches_live record found for match:', matchId);
-          return null;
-        }
         console.error('❌ Failed to fetch live match state:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('ℹ️ No matches_live record found for match:', matchId);
         return null;
       }
 
