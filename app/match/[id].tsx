@@ -15,26 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Player, FormationPosition, PlayerStats } from '@/types/database';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { matchEventLogger } from '@/lib/matchEventLogger';
-import { 
-  ArrowLeft, 
-  Play, 
-  Pause, 
-  Square, 
-  Users, 
-  Eye, 
-  Clock, 
-  Grid3X3,
-  ArrowUpDown,
-  Target,
-  Plus,
-  Minus,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  Star,
-  UserCheck,
-  Hash
-} from 'lucide-react-native';
+import { ArrowLeft, Play, Pause, Square, Users, Eye, Clock, Grid3x3 as Grid3X3, ArrowUpDown, Target, Plus, Minus, ChevronLeft, ChevronRight, RefreshCw, Star, UserCheck, Hash } from 'lucide-react-native';
 import { styles } from '@/app/styles/match';
 import FieldView from '@/components/FieldView';
 import { CompactPlayerCard } from '@/components/CompactPlayerCard';
