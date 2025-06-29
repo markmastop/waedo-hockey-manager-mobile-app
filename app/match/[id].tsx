@@ -640,16 +640,8 @@ export default function MatchScreen() {
       isOnField: isOnField
     });
     
-    // Log player selection
-    if (match) {
-      await matchEventLogger.logPlayerSelection(
-        match.id,
-        player,
-        currentTime,
-        getCurrentQuarter(currentTime),
-        isOnField ? 'field' : 'bench'
-      );
-    }
+    // Player selection is a UI interaction and should not be logged as a match event
+    // The logPlayerSelection method was intentionally removed from matchEventLogger
     
     if (selectedPlayer) {
       // Second player selected - perform swap
