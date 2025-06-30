@@ -396,11 +396,31 @@ export default function MatchScreen() {
         formation: data.formation_key || data.formation || '',
         substitution_schedule: data.substitution_schedule || {},
       };
-      
+
       setMatch(matchData);
       setPlayerStats(statsArray);
       setMatchEvents(eventsArray);
       setCurrentTime(data.match_time || 0);
+
+      // Load live match state if available
+      const { data: liveData } = await supabase
+        .from('matches_live')
+        .select('status, current_quarter, match_time, home_score, away_score')
+        .eq('match_id', id)
+        .single();
+
+      if (liveData) {
+        setMatch(prev => prev ? {
+          ...prev,
+          status: liveData.status,
+          current_quarter: liveData.current_quarter,
+          match_time: liveData.match_time,
+          home_score: liveData.home_score,
+          away_score: liveData.away_score,
+        } : null);
+        setCurrentTime(liveData.match_time);
+        setIsPlaying(liveData.status === 'inProgress');
+      }
       
       // Handle substitution schedule
       if (data.substitution_schedule) {
