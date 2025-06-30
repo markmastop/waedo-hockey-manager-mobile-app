@@ -11,6 +11,12 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
+import {
+  formatDate,
+  formatTime,
+  getStatusColor,
+  getStatusText,
+} from '@/lib/statusUtils';
 import { 
   Calendar, 
   MapPin, 
@@ -130,51 +136,6 @@ export default function MatchesScreen() {
     fetchMatches();
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('nl-NL', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('nl-NL', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'inProgress':
-      case 'paused':
-        return '#10B981';
-      case 'upcoming':
-        return '#F59E0B';
-      case 'completed':
-        return '#6B7280';
-      default:
-        return '#6B7280';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'inProgress':
-        return 'LIVE';
-      case 'paused':
-        return 'GEPAUZEERD';
-      case 'upcoming':
-        return 'AANKOMEND';
-      case 'completed':
-        return 'AFGEROND';
-      default:
-        return status.toUpperCase();
-    }
-  };
 
   const getFilterCount = (filter: FilterType) => {
     switch (filter) {

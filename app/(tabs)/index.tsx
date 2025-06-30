@@ -13,6 +13,12 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Player } from '@/types/database';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
+import {
+  formatDate,
+  formatTime,
+  getStatusColor,
+  getStatusText,
+} from '@/lib/statusUtils';
 import { router } from 'expo-router';
 import { 
   Calendar, 
@@ -205,44 +211,6 @@ export default function DashboardScreen() {
     fetchDashboardData();
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('nl-NL', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'inProgress':
-      case 'paused':
-        return '#10B981';
-      case 'upcoming':
-        return '#F59E0B';
-      case 'completed':
-        return '#6B7280';
-      default:
-        return '#6B7280';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'inProgress':
-        return 'LIVE';
-      case 'paused':
-        return 'GEPAUZEERD';
-      case 'upcoming':
-        return 'AANKOMEND';
-      case 'completed':
-        return 'AFGEROND';
-      default:
-        return status.toUpperCase();
-    }
-  };
 
 
   const getMatchInfo = (match: RecentMatch) => {
@@ -375,7 +343,7 @@ export default function DashboardScreen() {
                       <View style={styles.matchDetailItem}>
                         <Clock size={12} color="#6B7280" />
                         <Text style={styles.matchDetailText}>
-                          {formatDate(match.date)}
+                          {formatDate(match.date)} • {formatTime(match.date)}
                         </Text>
                       </View>
                       
