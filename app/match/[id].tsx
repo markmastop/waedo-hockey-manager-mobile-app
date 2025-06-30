@@ -465,6 +465,29 @@ export default function MatchScreen() {
     }
   };
 
+  const updateMatchesLiveScores = async (homeScore: number, awayScore: number) => {
+    if (!match) return;
+
+    try {
+      const { error } = await supabase
+        .from('matches_live')
+        .update({
+          home_score: homeScore,
+          away_score: awayScore,
+          match_time: currentTime,
+          current_quarter: getCurrentQuarter(currentTime),
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', match.id);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('💥 Error updating matches_live scores:', error);
+    }
+  };
+
   const performPlayerSwap = async (player1: Player, player2: Player, isPlayer1OnField: boolean, isPlayer2OnField: boolean) => {
     if (!match) return;
 
@@ -1146,6 +1169,7 @@ export default function MatchScreen() {
           onHomeScoreUp={async () => {
             if (match) {
               const newScore = match.home_score + 1;
+              await updateMatchesLiveScores(newScore, match.away_score);
               setMatch(prev => prev ? {
                 ...prev,
                 home_score: newScore
@@ -1155,6 +1179,7 @@ export default function MatchScreen() {
           onHomeScoreDown={async () => {
             if (match) {
               const newScore = Math.max(0, match.home_score - 1);
+              await updateMatchesLiveScores(newScore, match.away_score);
               setMatch(prev => prev ? {
                 ...prev,
                 home_score: newScore
@@ -1164,6 +1189,7 @@ export default function MatchScreen() {
           onAwayScoreUp={async () => {
             if (match) {
               const newScore = match.away_score + 1;
+              await updateMatchesLiveScores(match.home_score, newScore);
               setMatch(prev => prev ? {
                 ...prev,
                 away_score: newScore
@@ -1173,6 +1199,7 @@ export default function MatchScreen() {
           onAwayScoreDown={async () => {
             if (match) {
               const newScore = Math.max(0, match.away_score - 1);
+              await updateMatchesLiveScores(match.home_score, newScore);
               setMatch(prev => prev ? {
                 ...prev,
                 away_score: newScore
