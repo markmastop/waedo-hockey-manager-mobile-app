@@ -435,6 +435,7 @@ export default function MatchScreen() {
           const newTime = prev + 1;
           if (newTime >= 60 * 60) {
             handleTogglePlayPause(false);
+            updateMatch({ status: 'completed' });
             return prev;
           }
           return newTime;
