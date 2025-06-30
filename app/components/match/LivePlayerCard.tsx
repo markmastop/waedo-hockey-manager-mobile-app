@@ -13,7 +13,6 @@ interface Props {
   bench?: boolean;
   numberColor?: string;
   conditionColor?: string;
-  subLabel?: string;
   nextPositionName?: string;
 }
 
@@ -25,7 +24,6 @@ export default function LivePlayerCard({
   bench,
   numberColor,
   conditionColor = '#10B981',
-  subLabel,
   nextPositionName,
 }: Props) {
   return (
@@ -46,7 +44,6 @@ export default function LivePlayerCard({
         <Text style={matchStyles.livePlayerPosition}>{positionName}</Text>
         <View style={matchStyles.livePlayerDetails}>
           <Text style={matchStyles.livePlayerName}>{player.name}</Text>
-          {subLabel && <Text style={matchStyles.livePlayerSubTime}>{subLabel}</Text>}
           {nextPositionName && (
             <View style={matchStyles.nextPositionContainer}>
               <ArrowRight size={10} color="#6B7280" />

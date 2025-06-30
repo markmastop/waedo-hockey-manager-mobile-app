@@ -309,11 +309,6 @@ export const styles = StyleSheet.create({
       fontFamily: 'Inter-Medium',
       color: '#6B7280',
     },
-    livePlayerSubTime: {
-      fontSize: 9,
-      fontFamily: 'Inter-Regular',
-      color: '#10B981',
-    },
     nextPositionContainer: {
       flexDirection: 'row',
       alignItems: 'center',

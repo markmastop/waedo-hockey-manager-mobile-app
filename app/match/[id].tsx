@@ -960,7 +960,6 @@ export default function MatchScreen() {
                             onPress={() => handlePlayerPress(player, true)}
                             selected={selectedPlayer?.id === player.id}
                             numberColor={getPositionColor(player.position)}
-                            subLabel="Start"
                             nextPositionName={getNextPositionForPlayer(player.id, currentTime) || undefined}
                           />
                         ))
@@ -976,7 +975,6 @@ export default function MatchScreen() {
                             onPress={() => handlePlayerPress(player, true)}
                             selected={selectedPlayer?.id === player.id}
                             numberColor={getPositionColorForSchedule(position)}
-                            subLabel={formatTime(timelineEvents.find(e => e.player.id === player.id && e.position === position)?.time || 0)}
                             nextPositionName={getNextPositionForPlayer(player.id, currentTime) || undefined}
                             conditionColor={
                               player.condition && player.condition >= 80 ? '#10B981' :
@@ -1019,6 +1017,7 @@ export default function MatchScreen() {
                             onPress={() => handlePlayerPress(player, false)}
                             selected={selectedPlayer?.id === player.id}
                             numberColor={getPositionColor(player.position)}
+                            nextPositionName={getNextPositionForPlayer(player.id, currentTime) || undefined}
                             conditionColor="#6B7280"
                           />
                         ))
