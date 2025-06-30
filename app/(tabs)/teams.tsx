@@ -1,3 +1,4 @@
+/** Tab listing all available teams. */
 import React, { useState, useEffect } from 'react';
 import {
   View,

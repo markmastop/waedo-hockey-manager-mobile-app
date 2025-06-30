@@ -1,3 +1,4 @@
+/** Singleton service for logging match events to Supabase. */
 import { supabase } from '@/lib/supabase';
 import { Player } from '@/types/database';
 import { MatchesLive } from '@/types/database';
@@ -39,10 +40,18 @@ class MatchEventLogger {
     return MatchEventLogger.instance;
   }
 
+  /**
+   * Wait for a given number of milliseconds before continuing.
+   * Used internally for retry backoff between operations.
+   */
   private async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  /**
+   * Build a deterministic string to identify an event uniquely.
+   * Helps deduplicate and throttle repeated events.
+   */
   private generateEventKey(event: MatchEventLog): string {
     // Create a unique key for this event to prevent duplicates
     const baseKey = `${event.match_id}-${event.action}-${event.match_time}-${event.quarter}`;
@@ -56,6 +65,10 @@ class MatchEventLogger {
     return `${baseKey}-${event.description.slice(0, 20)}`;
   }
 
+  /**
+   * Determine if an event was recently processed or is in progress.
+   * Prevents flooding the database with duplicate logs.
+   */
   private isEventDuplicate(event: MatchEventLog): boolean {
     const eventKey = this.generateEventKey(event);
     const now = Date.now();
@@ -76,6 +89,10 @@ class MatchEventLogger {
     return false;
   }
 
+  /**
+   * Store an event key in the recent map after successful logging.
+   * Older keys are purged to keep the cache small.
+   */
   private markEventAsProcessed(event: MatchEventLog): void {
     const eventKey = this.generateEventKey(event);
     const now = Date.now();
@@ -91,6 +108,10 @@ class MatchEventLogger {
     }
   }
 
+  /**
+   * Check if an event type is allowed and not a trivial UI action.
+   * Filters out noise before sending data to Supabase.
+   */
   private shouldLogEvent(event: MatchEventLog): boolean {
     // Never log player selection events - these are UI interactions, not match events
     if (event.action === 'player_selection') {
@@ -114,6 +135,10 @@ class MatchEventLogger {
     return true;
   }
 
+  /**
+   * Retry an async operation with exponential backoff when it fails.
+   * Provides logging context for easier debugging.
+   */
   private async retryOperation<T>(
     operation: () => Promise<T>,
     operationName: string,
@@ -145,6 +170,10 @@ class MatchEventLogger {
     throw lastError;
   }
 
+  /**
+   * Ensure the provided match ID is a valid UUID string.
+   * Prevents unnecessary requests with malformed IDs.
+   */
   private validateMatchId(matchId: string): boolean {
     if (!matchId || typeof matchId !== 'string') {
       console.error('❌ Invalid match ID:', matchId);
@@ -159,6 +188,10 @@ class MatchEventLogger {
     return true;
   }
 
+  /**
+   * Check that essential event fields are present and valid.
+   * Protects the database from incomplete event objects.
+   */
   private validateEventData(event: MatchEventLog): boolean {
     if (!event.action || !event.description) {
       console.error('❌ Invalid event data: missing action or description', event);
@@ -178,6 +211,10 @@ class MatchEventLogger {
     return true;
   }
 
+  /**
+   * Fetch core match details used when creating live records.
+   * Retries the request a few times on network errors.
+   */
   private async getMatchData(matchId: string): Promise<MatchData | null> {
     return this.retryOperation(async () => {
       console.log('🔍 Fetching match data for:', matchId);
@@ -220,6 +257,10 @@ class MatchEventLogger {
     }, 'getMatchData');
   }
 
+  /**
+   * Ensure the matches_live table contains a record for this match.
+   * Creates a new one if it does not already exist.
+   */
   private async ensureMatchesLiveRecord(matchId: string): Promise<boolean> {
     return this.retryOperation(async () => {
       // First check if record already exists
@@ -289,6 +330,10 @@ class MatchEventLogger {
     }, 'ensureMatchesLiveRecord');
   }
 
+  /**
+   * Persist a match event to the matches_live.events array.
+   * Performs validation, de-duplication and automatic retries.
+   */
   async logEvent(event: MatchEventLog): Promise<void> {
     console.log('📝 Attempting to log match event:', event);
     
@@ -393,6 +438,10 @@ class MatchEventLogger {
     }
   }
 
+  /**
+   * Decide whether an error is likely temporary and worth retrying.
+   * Checks for common network related phrases in the message.
+   */
   private isTransientError(error: Error): boolean {
     const transientErrorPatterns = [
       'connection',
@@ -407,6 +456,10 @@ class MatchEventLogger {
     return transientErrorPatterns.some(pattern => errorMessage.includes(pattern));
   }
 
+  /**
+   * Process any queued events that failed previously.
+   * Runs until the queue is empty or an error occurs.
+   */
   private async processQueue(): Promise<void> {
     if (this.isProcessing || this.eventQueue.length === 0) return;
     
@@ -431,6 +484,10 @@ class MatchEventLogger {
     this.isProcessing = false;
   }
 
+  /**
+   * Retrieve the raw list of events logged for a match.
+   * Returns an empty array when the match ID is invalid.
+   */
   async getMatchEvents(matchId: string): Promise<any[]> {
     if (!this.validateMatchId(matchId)) {
       return [];
@@ -451,6 +508,10 @@ class MatchEventLogger {
     }, 'getMatchEvents');
   }
 
+  /**
+   * Return the most recent events for a match sorted by timestamp.
+   * Limits the result size for lightweight UI feeds.
+   */
   async getRecentMatchEvents(matchId: string, limit: number = 10): Promise<any[]> {
     if (!this.validateMatchId(matchId)) {
       return [];
@@ -467,6 +528,10 @@ class MatchEventLogger {
     }
   }
 
+  /**
+   * Filter events for a match by the given action type.
+   * Useful for statistics or generating summaries.
+   */
   async getEventsByAction(matchId: string, action: string): Promise<any[]> {
     if (!this.validateMatchId(matchId)) {
       return [];
@@ -481,6 +546,10 @@ class MatchEventLogger {
     }
   }
 
+  /**
+   * Fetch the most recently logged event for a match.
+   * Returns null when no events are available.
+   */
   async getLastEvent(matchId: string): Promise<any | null> {
     if (!this.validateMatchId(matchId)) {
       return null;
@@ -501,6 +570,10 @@ class MatchEventLogger {
     }, 'getLastEvent');
   }
 
+  /**
+   * Remove all events from a match and reset state counters.
+   * Useful when restarting or correcting a live match.
+   */
   async clearMatchEvents(matchId: string): Promise<boolean> {
     if (!this.validateMatchId(matchId)) {
       return false;
@@ -526,6 +599,10 @@ class MatchEventLogger {
   }
 
   // Helper method to update scores separately when needed
+  /**
+   * Directly update the score columns in the matches_live table.
+   * Called when a score change occurs outside the event log itself.
+   */
   private async updateMatchScores(
     matchId: string, 
     homeScore: number, 
@@ -552,6 +629,10 @@ class MatchEventLogger {
   }
 
   // Method to update match time without logging an event (for timer updates)
+  /**
+   * Store the running clock value for a live match.
+   * Does not create a new event entry.
+   */
   async updateMatchTime(matchId: string, matchTime: number, quarter: number): Promise<void> {
     if (!this.validateMatchId(matchId)) {
       throw new Error('Invalid match ID');
@@ -574,6 +655,10 @@ class MatchEventLogger {
   }
 
   // Method to update match status
+  /**
+   * Change the overall status for a match in the live table.
+   * Optionally also updates the current time and quarter.
+   */
   async updateMatchStatus(matchId: string, status: 'upcoming' | 'inProgress' | 'paused' | 'completed', matchTime?: number, quarter?: number): Promise<void> {
     if (!this.validateMatchId(matchId)) {
       throw new Error('Invalid match ID');
@@ -599,6 +684,10 @@ class MatchEventLogger {
   }
 
   // Convenience methods for common events
+  /**
+   * Record that two players exchanged positions or bench status.
+   * Stores details about which positions were involved.
+   */
   async logPlayerSwap(
     matchId: string,
     playerIn: Player,
@@ -635,6 +724,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Log a goal scored event with optional assist information.
+   * Includes player IDs and positions for later stats.
+   */
   async logGoal(
     matchId: string,
     player: Player,
@@ -667,6 +760,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Record a disciplinary card issued to a player during the match.
+   * Supports yellow, red and green card types.
+   */
   async logCard(
     matchId: string,
     player: Player,
@@ -701,6 +798,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Log a standard player substitution at a specific field position.
+   * Captures in/out players and the match timing.
+   */
   async logSubstitution(
     matchId: string,
     playerIn: Player,
@@ -734,6 +835,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Log changes in match score and update the live score columns.
+   * Accepts optional hint about which team scored.
+   */
   async logScoreChange(
     matchId: string,
     matchTime: number,
@@ -784,6 +889,10 @@ class MatchEventLogger {
   // Player selection should NOT trigger match events
   // async logPlayerSelection() - REMOVED
 
+  /**
+   * Record a change in team formation during a live match.
+   * Notes both the old and new formation keys.
+   */
   async logFormationChange(
     matchId: string,
     oldFormation: string,
@@ -804,6 +913,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Log that a team has taken a timeout at a specific moment.
+   * Stores which team called it for later review.
+   */
   async logTimeout(
     matchId: string,
     matchTime: number,
@@ -823,6 +936,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Record an injury event for a player with optional severity.
+   * Helps track stoppages and potential substitutions.
+   */
   async logInjury(
     matchId: string,
     player: Player,
@@ -850,6 +967,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Log a penalty corner event for either the home or away team.
+   * Only records the timestamp and team side.
+   */
   async logPenaltyCorner(
     matchId: string,
     matchTime: number,
@@ -869,6 +990,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Record the result of a penalty stroke taken by a player.
+   * Result can be goal, save or miss.
+   */
   async logPenaltyStroke(
     matchId: string,
     player: Player,
@@ -896,6 +1021,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Insert an initial matches_live record for a match.
+   * Used when starting logging for the first time.
+   */
   async createMatchesLiveRecord(matchId: string, status: 'upcoming' | 'inProgress' | 'paused' | 'completed'): Promise<boolean> {
     if (!this.validateMatchId(matchId)) {
       return false;
@@ -939,6 +1068,10 @@ class MatchEventLogger {
     }
   }
 
+  /**
+   * Start tracking a match by creating its live record and first event.
+   * Called when the referee blows the starting whistle.
+   */
   async logMatchStart(matchId: string): Promise<void> {
     // Create matches_live record first
     await this.createMatchesLiveRecord(matchId, 'inProgress');
@@ -955,6 +1088,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * End the match and log the final score if provided.
+   * Also updates the matches_live status to completed.
+   */
   async logMatchEnd(matchId: string, matchTime: number, quarter: number, finalScore?: { home: number; away: number }): Promise<void> {
     // Update status to completed when match ends
     await this.updateMatchStatus(matchId, 'completed', matchTime, quarter);
@@ -972,6 +1109,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Mark the beginning of a quarter with the provided timestamp.
+   * Stored in the event log for timeline generation.
+   */
   async logQuarterStart(matchId: string, quarter: number, matchTime: number): Promise<void> {
     await this.logEvent({
       match_id: matchId,
@@ -985,6 +1126,10 @@ class MatchEventLogger {
     });
   }
 
+  /**
+   * Mark the end of a quarter in the match timeline.
+   * Useful for stats like possession per quarter.
+   */
   async logQuarterEnd(matchId: string, quarter: number, matchTime: number): Promise<void> {
     await this.logEvent({
       match_id: matchId,
@@ -999,6 +1144,10 @@ class MatchEventLogger {
   }
 
   // Get match events summary using the database function
+  /**
+   * Fetch aggregated event data from a Supabase RPC function.
+   * Returns an empty array when the ID is invalid or errors occur.
+   */
   async getMatchEventsSummary(matchId: string): Promise<any[]> {
     if (!this.validateMatchId(matchId)) {
       return [];
@@ -1021,6 +1170,10 @@ class MatchEventLogger {
   }
 
   // Get player event statistics using the database function
+  /**
+   * Fetch aggregated event data for a specific player.
+   * Returns an empty array if the match ID fails validation.
+   */
   async getPlayerEventStats(matchId: string, playerId: string): Promise<any[]> {
     if (!this.validateMatchId(matchId)) {
       return [];
@@ -1046,6 +1199,10 @@ class MatchEventLogger {
   }
 
   // Method to clear recent events cache (useful for testing)
+  /**
+   * Remove all cached event keys and pending events in memory.
+   * Handy during tests or when manually resetting the logger.
+   */
   clearEventCache(): void {
     this.recentEvents.clear();
     this.pendingEvents.clear();

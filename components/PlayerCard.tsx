@@ -1,3 +1,4 @@
+/** Small card component displaying player details. */
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Star } from 'lucide-react-native';

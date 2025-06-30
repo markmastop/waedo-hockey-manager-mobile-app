@@ -1,5 +1,10 @@
+/** Helper to convert raw player data into typed structures. */
 import { Player } from '@/types/database';
 
+/**
+ * Convert flexible player data from Supabase into an array of players.
+ * Handles array or object formats and filters out invalid entries.
+ */
 export function convertPlayersDataToArray(playersData: any): Player[] {
   if (!playersData) return [];
 

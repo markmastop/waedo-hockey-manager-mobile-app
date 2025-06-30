@@ -1,3 +1,4 @@
+/** Supabase client configuration for API access. */
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';

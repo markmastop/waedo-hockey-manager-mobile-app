@@ -1,3 +1,4 @@
+/** Global type definitions for environment variables. */
 declare global {
   namespace NodeJS {
     interface ProcessEnv {

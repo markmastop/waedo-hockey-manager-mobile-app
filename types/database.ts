@@ -1,3 +1,4 @@
+/** TypeScript interfaces mirroring Supabase database tables. */
 export interface MatchesLive {
   id: string;
   match_id: string;

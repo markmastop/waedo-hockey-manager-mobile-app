@@ -1,3 +1,4 @@
+/** Shared color palette definitions for light and dark themes. */
 export const LightColors = {
   background: '#F9FAFB',
   cardBackground: '#FFFFFF',

@@ -1,3 +1,4 @@
+/** Shared domain interfaces for matches and player stats. */
 import { Database, Player, Substitution, Coach } from './database';
 
 export interface Team {

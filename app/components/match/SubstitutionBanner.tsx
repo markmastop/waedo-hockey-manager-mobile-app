@@ -1,3 +1,4 @@
+/** Banner displayed when selecting substitutions. */
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ArrowUpDown } from 'lucide-react-native';

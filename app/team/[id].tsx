@@ -1,3 +1,4 @@
+/** Screen showing team details and roster. */
 import React, { useState, useEffect } from 'react';
 import {
   View,

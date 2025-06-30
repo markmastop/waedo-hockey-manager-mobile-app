@@ -1,3 +1,4 @@
+/** User profile tab with sign out options. */
 import React from 'react';
 import {
   View,
