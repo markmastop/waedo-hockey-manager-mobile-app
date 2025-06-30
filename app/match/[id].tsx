@@ -37,6 +37,7 @@ import { styles } from '../styles/match';
 import TimeDisplay from '../components/match/TimeDisplay';
 import SubstitutionBanner from '../components/match/SubstitutionBanner';
 import ViewModeToggle from '../components/match/ViewModeToggle';
+import LivePlayerCard from "../components/match/LivePlayerCard";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -46,6 +47,15 @@ function formatTime(seconds: number) {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
     .toString()
     .padStart(2, '0')}`;
+}
+
+function getPositionOrder(position: string, formation?: Formation | null): number {
+  const pos = formation?.positions.find(p =>
+    p.name === position ||
+    p.dutch_name === position ||
+    p.label_translations?.nl === position
+  );
+  return pos?.order ?? 999;
 }
 
 interface Formation {
@@ -904,89 +914,42 @@ export default function MatchScreen() {
                     {Object.entries(activePlayers).length === 0 && currentTime === 0 ? (
                       // Show starting lineup when no timeline events yet, sorted by formation position order
                       match.lineup
-                        .sort((a, b) => {
-                          const posA = formation?.positions.find(pos => 
-                            pos.name === a.position || 
-                            pos.dutch_name === a.position ||
-                            pos.label_translations?.nl === a.position
-                          );
-                          const posB = formation?.positions.find(pos => 
-                            pos.name === b.position || 
-                            pos.dutch_name === b.position ||
-                            pos.label_translations?.nl === b.position
-                          );
-                          return (posA?.order || 999) - (posB?.order || 999);
-                        })
+                        .sort((a, b) => getPositionOrder(a.position, formation) - getPositionOrder(b.position, formation))
                         .map((player) => (
-                          <TouchableOpacity 
-                            key={player.id} 
-                            style={[
-                              styles.livePlayerCard,
-                              selectedPlayer?.id === player.id && styles.selectedFieldPlayerCard
-                            ]}
+                          <LivePlayerCard
+                            key={player.id}
+                            player={player}
+                            positionName={
+                              formation?.positions.find(pos =>
+                                pos.name === player.position ||
+                                pos.dutch_name === player.position ||
+                                pos.label_translations?.nl === player.position
+                              )?.label_translations?.nl || player.position
+                            }
                             onPress={() => handlePlayerPress(player, true)}
-                          >
-                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColor(player.position) }]}>
-                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
-                            </View>
-                            <View style={styles.livePlayerInfo}>
-                              <Text style={styles.livePlayerPosition}>
-                                {formation?.positions.find(pos => 
-                                  pos.name === player.position || 
-                                  pos.dutch_name === player.position ||
-                                  pos.label_translations?.nl === player.position
-                                )?.label_translations?.nl || player.position}
-                              </Text>
-                              <View style={styles.livePlayerDetails}>
-                                <Text style={styles.livePlayerName}>{player.name}</Text>
-                                <Text style={styles.livePlayerSubTime}>Start</Text>
-                              </View>
-                            </View>
-                            <View style={styles.livePlayerMeta}>
-                              <View style={[styles.conditionDot, { backgroundColor: '#10B981' }]} />
-                              {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
-                            </View>
-                          </TouchableOpacity>
+                            selected={selectedPlayer?.id === player.id}
+                            numberColor={getPositionColor(player.position)}
+                            subLabel="Start"
+                          />
                         ))
                     ) : (
                       // Show active players from timeline, sorted by formation position order
                       Object.entries(activePlayers)
-                        .sort(([positionA], [positionB]) => {
-                          const posA = formation?.positions.find(pos => pos.name === positionA);
-                          const posB = formation?.positions.find(pos => pos.name === positionB);
-                          return (posA?.order || 999) - (posB?.order || 999);
-                        })
+                        .sort(([a], [b]) => getPositionOrder(a, formation) - getPositionOrder(b, formation))
                         .map(([position, player]) => (
-                          <TouchableOpacity 
-                            key={position} 
-                            style={[
-                              styles.livePlayerCard,
-                              selectedPlayer?.id === player.id && styles.selectedFieldPlayerCard
-                            ]}
+                          <LivePlayerCard
+                            key={position}
+                            player={player}
+                            positionName={formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
                             onPress={() => handlePlayerPress(player, true)}
-                          >
-                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColorForSchedule(position) }]}>
-                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
-                            </View>
-                            <View style={styles.livePlayerInfo}>
-                              <Text style={styles.livePlayerPosition}>
-                                {formation?.positions.find(pos => pos.name === position)?.label_translations?.nl || position}
-                              </Text>
-                              <View style={styles.livePlayerDetails}>
-                                <Text style={styles.livePlayerName}>{player.name}</Text>
-                                <Text style={styles.livePlayerSubTime}>
-                                  {formatTime(timelineEvents.find(e => e.player.id === player.id && e.position === position)?.time || 0)}
-                                </Text>
-                              </View>
-                            </View>
-                            <View style={styles.livePlayerMeta}>
-                              <View style={[styles.conditionDot, { 
-                                backgroundColor: player.condition && player.condition >= 80 ? '#10B981' : 
-                                               player.condition >= 60 ? '#F59E0B' : '#EF4444' 
-                              }]} />
-                              {player.isGoalkeeper && <Shield size={12} color="#EF4444" />}
-                            </View>
-                          </TouchableOpacity>
+                            selected={selectedPlayer?.id === player.id}
+                            numberColor={getPositionColorForSchedule(position)}
+                            subLabel={formatTime(timelineEvents.find(e => e.player.id === player.id && e.position === position)?.time || 0)}
+                            conditionColor={
+                              player.condition && player.condition >= 80 ? '#10B981' :
+                              player.condition >= 60 ? '#F59E0B' : '#EF4444'
+                            }
+                          />
                         ))
                     )}
                   </View>
@@ -1007,50 +970,24 @@ export default function MatchScreen() {
                       </View>
                     ) : (
                       reservePlayers
-                        .sort((a, b) => {
-                          const posA = formation?.positions.find(pos => 
-                            pos.name === a.position || 
-                            pos.dutch_name === a.position ||
-                            pos.label_translations?.nl === a.position
-                          );
-                          const posB = formation?.positions.find(pos => 
-                            pos.name === b.position || 
-                            pos.dutch_name === b.position ||
-                            pos.label_translations?.nl === b.position
-                          );
-                          return (posA?.order || 999) - (posB?.order || 999);
-                        })
+                        .sort((a, b) => getPositionOrder(a.position, formation) - getPositionOrder(b.position, formation))
                         .map((player) => (
-                          <TouchableOpacity 
-                            key={player.id} 
-                            style={[
-                              styles.livePlayerCard, 
-                              styles.benchPlayerCard,
-                              selectedPlayer?.id === player.id && styles.selectedBenchPlayerCard
-                            ]}
+                          <LivePlayerCard
+                            key={player.id}
+                            player={player}
+                            bench
+                            positionName={
+                              formation?.positions.find(pos =>
+                                pos.name === player.position ||
+                                pos.dutch_name === player.position ||
+                                pos.label_translations?.nl === player.position
+                              )?.label_translations?.nl || player.position
+                            }
                             onPress={() => handlePlayerPress(player, false)}
-                          >
-                            <View style={[styles.livePlayerNumberBadge, { backgroundColor: getPositionColor(player.position) }]}>
-                              <Text style={styles.livePlayerNumberText}>#{player.number}</Text>
-                            </View>
-                            <View style={styles.livePlayerInfo}>
-                              <Text style={styles.reserveLabel}>Reserve</Text>
-                              <Text style={styles.livePlayerPosition}>
-                                {formation?.positions.find(pos => 
-                                  pos.name === player.position || 
-                                  pos.dutch_name === player.position ||
-                                  pos.label_translations?.nl === player.position
-                                )?.label_translations?.nl || player.position}
-                              </Text>
-                              <View style={styles.livePlayerDetails}>
-                                <Text style={styles.livePlayerName}>{player.name}</Text>
-                              </View>
-                            </View>
-                            <View style={styles.livePlayerMeta}>
-                              <View style={[styles.conditionDot, { backgroundColor: '#6B7280' }]} />
-                              {player.position?.toLowerCase().includes('goalkeeper') && <Shield size={12} color="#EF4444" />}
-                            </View>
-                          </TouchableOpacity>
+                            selected={selectedPlayer?.id === player.id}
+                            numberColor={getPositionColor(player.position)}
+                            conditionColor="#6B7280"
+                          />
                         ))
                     )}
                   </View>
