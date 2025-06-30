@@ -205,6 +205,8 @@ export default function MatchScreen() {
       cards: 0,
     }));
   };
+
+  const convertPositionsToArray = (positions: any): FormationPosition[] => {
     if (Array.isArray(positions)) {
       return positions;
     }
