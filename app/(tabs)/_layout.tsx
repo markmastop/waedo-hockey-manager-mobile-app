@@ -1,3 +1,4 @@
+/** Tab layout controlling bottom navigation. */
 import { Tabs } from 'expo-router';
 import { Chrome as Home, Calendar, Users, Settings } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';

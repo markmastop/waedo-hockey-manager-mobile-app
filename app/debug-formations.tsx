@@ -1,3 +1,4 @@
+/** Debug screen listing stored formations. */
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
 import { supabase } from '@/lib/supabase';

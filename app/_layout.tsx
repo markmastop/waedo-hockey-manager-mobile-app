@@ -1,3 +1,4 @@
+/** Root layout setting up providers and routes. */
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

@@ -1,3 +1,4 @@
+/** Home tab displaying next matches and team summary. */
 import React, { useState, useEffect } from 'react';
 import {
   View,

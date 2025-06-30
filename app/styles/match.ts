@@ -1,3 +1,4 @@
+/** React Native styles shared across match screens. */
 import { StyleSheet } from 'react-native';
 
 

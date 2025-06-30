@@ -1,3 +1,4 @@
+/** Toggle component to switch between match views. */
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Clock, Eye, Users, Grid3X3 } from 'lucide-react-native';

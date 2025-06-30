@@ -1,3 +1,4 @@
+/** Generic not found screen when route is missing. */
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 

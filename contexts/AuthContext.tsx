@@ -1,3 +1,4 @@
+/** Authentication context managing user session. */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -12,6 +13,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * React context provider that manages Supabase auth state.
+ * Exposes signIn and signOut helpers to child components.
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -79,6 +84,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Convenience hook to access the AuthContext values.
+ * Throws an error when used outside the provider.
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

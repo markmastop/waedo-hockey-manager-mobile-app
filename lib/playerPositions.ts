@@ -1,3 +1,8 @@
+/** Utility helpers for formatting player position labels and colors. */
+/**
+ * Return a representative color for a player's position.
+ * Helps display positions with consistent color coding.
+ */
 export function getPositionColor(position: string) {
   const safe = position?.toLowerCase() || '';
   switch (safe) {
@@ -32,6 +37,10 @@ export function getPositionColor(position: string) {
   }
 }
 
+/**
+ * Translate a raw position identifier into a Dutch display name.
+ * Supports various aliases used across formations.
+ */
 export function getPositionDisplayName(position: string) {
   const safe = position?.toLowerCase() || '';
   switch (safe) {
@@ -78,6 +87,10 @@ export function getPositionDisplayName(position: string) {
 
 import { FormationPosition } from '@/types/database';
 
+/**
+ * Extract the Dutch display name from a formation position object.
+ * Falls back to generic names when translations are missing.
+ */
 export function getDutchPositionName(pos: FormationPosition): string {
   if (pos.label_translations && pos.label_translations.nl) {
     return pos.label_translations.nl;

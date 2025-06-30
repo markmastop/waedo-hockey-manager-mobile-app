@@ -1,3 +1,4 @@
+/** Displays current match time and score. */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Clock } from 'lucide-react-native';

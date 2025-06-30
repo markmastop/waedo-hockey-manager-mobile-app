@@ -1,3 +1,4 @@
+/** Controls for running match timer and scores. */
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { Play, Pause, ChevronLeft, ChevronRight, RefreshCw, Plus, Minus } from 'lucide-react-native';
