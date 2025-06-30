@@ -815,34 +815,39 @@ export default function MatchScreen() {
   };
 
   const getNextPositionForPlayer = (playerId: string, time: number) => {
-    // Determine the player's current position on the field
     const currentAssignments = getActivePlayersAtTime(time);
     const currentPosition = Object.entries(currentAssignments).find(
       ([, p]) => p.id === playerId
     )?.[0];
 
-    // Look for a future event for this player
-    const nextEvent = timelineEvents.find(
-      event => event.time > time && event.player.id === playerId
-    );
-
-    if (nextEvent) {
-      const pos = formation?.positions.find(p => p.name === nextEvent.position);
-      return pos?.label_translations?.nl || nextEvent.position;
+    const nextEventTime = timelineEvents.find(event => event.time > time)?.time;
+    if (nextEventTime === undefined) {
+      return null;
     }
 
-    // If there's no future event for the player, check if someone else will
-    // occupy their current position, meaning the player goes to the bench
+    const eventsAtNextTime = timelineEvents.filter(
+      event => event.time === nextEventTime
+    );
+
+    const playerEvent = eventsAtNextTime.find(
+      event => event.player.id === playerId
+    );
+
+    if (playerEvent) {
+      const pos = formation?.positions.find(p => p.name === playerEvent.position);
+      return pos?.label_translations?.nl || playerEvent.position;
+    }
+
     if (currentPosition) {
-      const positionEvent = timelineEvents.find(
-        event => event.time > time && event.position === currentPosition
+      const positionEvent = eventsAtNextTime.find(
+        event => event.position === currentPosition
       );
       if (positionEvent && positionEvent.player.id !== playerId) {
         return 'Reserve';
       }
     }
 
-    return null;
+    return 'Reserve';
   };
   const getPositions = () => {
     return Object.keys(parsedSchedule).sort();
