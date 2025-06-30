@@ -206,6 +206,13 @@ export default function MatchScreen() {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  async function handleTogglePlayPause(playing: boolean) {
+    if (match) {
+      await updateMatch({ status: playing ? 'inProgress' : 'paused' });
+    }
+    setIsPlaying(playing);
+  }
+
   const initializePlayerStats = (lineup: Player[], reserves: Player[]): PlayerStats[] => {
     const allPlayers = [...lineup, ...reserves];
     return allPlayers.map(player => ({
@@ -427,7 +434,7 @@ export default function MatchScreen() {
         setCurrentTime(prev => {
           const newTime = prev + 1;
           if (newTime >= 60 * 60) {
-            setIsPlaying(false);
+            handleTogglePlayPause(false);
             return prev;
           }
           return newTime;
@@ -1163,7 +1170,7 @@ export default function MatchScreen() {
           currentTime={currentTime}
           isPlaying={isPlaying}
           setCurrentTime={setCurrentTime}
-          setIsPlaying={setIsPlaying}
+          setIsPlaying={handleTogglePlayPause}
           home_score={match.home_score}
           away_score={match.away_score}
           onHomeScoreUp={async () => {
