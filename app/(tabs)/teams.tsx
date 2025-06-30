@@ -12,16 +12,17 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { 
-  Users, 
-  User, 
-  ChevronRight, 
+import {
+  Users,
+  User,
+  ChevronRight,
   Trophy,
   Calendar,
   Star,
   Shield
 } from 'lucide-react-native';
 import { Player } from '@/types/database';
+import { getPositionColor } from '@/lib/playerPositions';
 
 interface Team {
   id: string;
@@ -79,30 +80,6 @@ export default function TeamsScreen() {
 
   const handleTeamPress = (teamId: string) => {
     router.push(`/team/${teamId}`);
-  };
-
-  const getPositionColor = (position: string) => {
-    const safePosition = position?.toLowerCase() || '';
-    switch (safePosition) {
-      case 'goalkeeper':
-      case 'gk':
-      case 'keeper':
-        return '#EF4444';
-      case 'defender':
-      case 'def':
-      case 'verdediger':
-        return '#3B82F6';
-      case 'midfielder':
-      case 'mid':
-      case 'middenvelder':
-        return '#8B5CF6';
-      case 'forward':
-      case 'fwd':
-      case 'aanvaller':
-        return '#F59E0B';
-      default:
-        return '#6B7280';
-    }
   };
 
   const getPositionIcon = (position: string) => {
