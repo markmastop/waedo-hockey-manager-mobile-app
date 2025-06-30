@@ -13,7 +13,6 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Player, Substitution, MatchEvent, PlayerStats, FormationPosition } from '@/types/database';
 import { Match, Team } from '@/types/match';
-import { LiveMatchTimer } from '@/components/LiveMatchTimer';
 import FieldView from '@/components/FieldView';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
 import { matchEventLogger } from '@/lib/matchEventLogger';
