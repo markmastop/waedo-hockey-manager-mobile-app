@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Shield } from 'lucide-react-native';
 import { Player } from '@/types/database';
-import { styles as matchStyles } from '@/styles/match';
+import { styles as matchStyles } from '../../styles/match';
 import { getPositionColor } from '@/lib/playerPositions';
 
 interface Props {
