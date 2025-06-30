@@ -810,8 +810,44 @@ export default function MatchScreen() {
     
     // Return players not currently on field
     const reserves = allPlayers.filter(player => !activePlayerIds.has(player.id));
-    
+
     return reserves;
+  };
+
+  const getNextPositionForPlayer = (playerId: string, time: number) => {
+    const currentAssignments = getActivePlayersAtTime(time);
+    const currentPosition = Object.entries(currentAssignments).find(
+      ([, p]) => p.id === playerId
+    )?.[0];
+
+    const nextEventTime = timelineEvents.find(event => event.time > time)?.time;
+    if (nextEventTime === undefined) {
+      return null;
+    }
+
+    const eventsAtNextTime = timelineEvents.filter(
+      event => event.time === nextEventTime
+    );
+
+    const playerEvent = eventsAtNextTime.find(
+      event => event.player.id === playerId
+    );
+
+    if (playerEvent) {
+      const pos = formation?.positions.find(p => p.name === playerEvent.position);
+      return pos?.label_translations?.nl || playerEvent.position;
+    }
+
+    if (currentPosition) {
+      const positionEvent = eventsAtNextTime.find(
+        event => event.position === currentPosition
+      );
+      if (positionEvent && positionEvent.player.id !== playerId) {
+        return 'Reserve';
+      }
+    }
+
+    return 'Reserve';
   };
   const getPositions = () => {
     return Object.keys(parsedSchedule).sort();
@@ -929,7 +965,7 @@ export default function MatchScreen() {
                             onPress={() => handlePlayerPress(player, true)}
                             selected={selectedPlayer?.id === player.id}
                             numberColor={getPositionColor(player.position)}
-                            subLabel="Start"
+                            nextPositionName={getNextPositionForPlayer(player.id, currentTime) || undefined}
                           />
                         ))
                     ) : (
@@ -944,7 +980,7 @@ export default function MatchScreen() {
                             onPress={() => handlePlayerPress(player, true)}
                             selected={selectedPlayer?.id === player.id}
                             numberColor={getPositionColorForSchedule(position)}
-                            subLabel={formatTime(timelineEvents.find(e => e.player.id === player.id && e.position === position)?.time || 0)}
+                            nextPositionName={getNextPositionForPlayer(player.id, currentTime) || undefined}
                             conditionColor={
                               player.condition && player.condition >= 80 ? '#10B981' :
                               player.condition >= 60 ? '#F59E0B' : '#EF4444'
@@ -986,6 +1022,7 @@ export default function MatchScreen() {
                             onPress={() => handlePlayerPress(player, false)}
                             selected={selectedPlayer?.id === player.id}
                             numberColor={getPositionColor(player.position)}
+                            nextPositionName={getNextPositionForPlayer(player.id, currentTime) || undefined}
                             conditionColor="#6B7280"
                           />
                         ))

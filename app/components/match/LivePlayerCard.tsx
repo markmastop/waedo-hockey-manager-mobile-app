@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Shield } from 'lucide-react-native';
+import { Shield, ArrowRight } from 'lucide-react-native';
 import { Player } from '@/types/database';
 import { styles as matchStyles } from '../../styles/match';
 import { getPositionColor } from '@/lib/playerPositions';
@@ -13,7 +13,7 @@ interface Props {
   bench?: boolean;
   numberColor?: string;
   conditionColor?: string;
-  subLabel?: string;
+  nextPositionName?: string;
 }
 
 export default function LivePlayerCard({
@@ -24,7 +24,7 @@ export default function LivePlayerCard({
   bench,
   numberColor,
   conditionColor = '#10B981',
-  subLabel,
+  nextPositionName,
 }: Props) {
   return (
     <TouchableOpacity
@@ -44,7 +44,12 @@ export default function LivePlayerCard({
         <Text style={matchStyles.livePlayerPosition}>{positionName}</Text>
         <View style={matchStyles.livePlayerDetails}>
           <Text style={matchStyles.livePlayerName}>{player.name}</Text>
-          {subLabel && <Text style={matchStyles.livePlayerSubTime}>{subLabel}</Text>}
+          {nextPositionName && (
+            <View style={matchStyles.nextPositionContainer}>
+              <ArrowRight size={10} color="#6B7280" />
+              <Text style={matchStyles.nextPositionText}>{nextPositionName}</Text>
+            </View>
+          )}
         </View>
       </View>
       <View style={matchStyles.livePlayerMeta}>
