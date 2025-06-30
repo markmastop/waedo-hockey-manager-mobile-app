@@ -16,7 +16,6 @@ import { Player, Substitution, MatchEvent, PlayerStats, FormationPosition } from
 import { Match, Team } from '@/types/match';
 import FieldView from '@/components/FieldView';
 import { convertPlayersDataToArray } from '@/lib/playerUtils';
-import { matchEventLogger } from '@/lib/matchEventLogger';
 import { 
   ArrowLeft, 
   Users, 
@@ -207,6 +206,13 @@ export default function MatchScreen() {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  async function handleTogglePlayPause(playing: boolean) {
+    if (match) {
+      await updateMatch({ status: playing ? 'inProgress' : 'paused' });
+    }
+    setIsPlaying(playing);
+  }
+
   const initializePlayerStats = (lineup: Player[], reserves: Player[]): PlayerStats[] => {
     const allPlayers = [...lineup, ...reserves];
     return allPlayers.map(player => ({
@@ -390,11 +396,31 @@ export default function MatchScreen() {
         formation: data.formation_key || data.formation || '',
         substitution_schedule: data.substitution_schedule || {},
       };
-      
+
       setMatch(matchData);
       setPlayerStats(statsArray);
       setMatchEvents(eventsArray);
       setCurrentTime(data.match_time || 0);
+
+      // Load live match state if available
+      const { data: liveData } = await supabase
+        .from('matches_live')
+        .select('status, current_quarter, match_time, home_score, away_score')
+        .eq('match_id', id)
+        .single();
+
+      if (liveData) {
+        setMatch(prev => prev ? {
+          ...prev,
+          status: liveData.status,
+          current_quarter: liveData.current_quarter,
+          match_time: liveData.match_time,
+          home_score: liveData.home_score,
+          away_score: liveData.away_score,
+        } : null);
+        setCurrentTime(liveData.match_time);
+        setIsPlaying(liveData.status === 'inProgress');
+      }
       
       // Handle substitution schedule
       if (data.substitution_schedule) {
@@ -428,7 +454,8 @@ export default function MatchScreen() {
         setCurrentTime(prev => {
           const newTime = prev + 1;
           if (newTime >= 60 * 60) {
-            setIsPlaying(false);
+            handleTogglePlayPause(false);
+            updateMatch({ status: 'completed' });
             return prev;
           }
           return newTime;
@@ -466,6 +493,29 @@ export default function MatchScreen() {
     }
   };
 
+  const updateMatchesLiveScores = async (homeScore: number, awayScore: number) => {
+    if (!match) return;
+
+    try {
+      const { error } = await supabase
+        .from('matches_live')
+        .update({
+          home_score: homeScore,
+          away_score: awayScore,
+          match_time: currentTime,
+          current_quarter: getCurrentQuarter(currentTime),
+          updated_at: new Date().toISOString()
+        })
+        .eq('match_id', match.id);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('💥 Error updating matches_live scores:', error);
+    }
+  };
+
   const performPlayerSwap = async (player1: Player, player2: Player, isPlayer1OnField: boolean, isPlayer2OnField: boolean) => {
     if (!match) return;
 
@@ -487,16 +537,6 @@ export default function MatchScreen() {
           
           swapDescription = `Position swap: ${player1.name} and ${player2.name} switched positions`;
           
-          // Log the position swap
-          await matchEventLogger.logPlayerSwap(
-            match.id,
-            player1,
-            player2,
-            currentTime,
-            getCurrentQuarter(currentTime),
-            player2.position,
-            player1.position
-          );
         }
       } else if (!isPlayer1OnField && !isPlayer2OnField) {
         // Both on bench - show error
@@ -531,15 +571,6 @@ export default function MatchScreen() {
           
           swapDescription = `Substitution: ${benchPlayer.name} in for ${fieldPlayer.name}`;
           
-          // Log the substitution
-          await matchEventLogger.logSubstitution(
-            match.id,
-            benchPlayer,
-            fieldPlayer,
-            fieldPlayer.position,
-            currentTime,
-            getCurrentQuarter(currentTime)
-          );
         }
       }
 
@@ -562,10 +593,7 @@ export default function MatchScreen() {
 
   const startMatch = async () => {
     if (match) {
-      const success = await updateMatch({ status: 'inProgress' as const });
-      if (success) {
-        await matchEventLogger.logMatchStart(match.id);
-      }
+      await updateMatch({ status: 'inProgress' as const });
     }
   };
 
@@ -592,15 +620,7 @@ export default function MatchScreen() {
           style: 'destructive',
           onPress: async () => {
             if (match) {
-              const success = await updateMatch({ status: 'completed' });
-              if (success) {
-                await matchEventLogger.logMatchEnd(
-                  match.id,
-                  currentTime,
-                  getCurrentQuarter(currentTime),
-                  { home: match.home_score, away: match.away_score }
-                );
-              }
+              await updateMatch({ status: 'completed' });
             }
           },
         },
@@ -625,9 +645,7 @@ export default function MatchScreen() {
 
   const handlePlayerPress = async (player: Player, isOnField: boolean) => {
 
-    
-    // Player selection is a UI interaction and should not be logged as a match event
-    // The logPlayerSelection method was intentionally removed from matchEventLogger
+
     
     if (selectedPlayer) {
       // Second player selected - perform swap
@@ -1173,22 +1191,13 @@ export default function MatchScreen() {
           currentTime={currentTime}
           isPlaying={isPlaying}
           setCurrentTime={setCurrentTime}
-          setIsPlaying={setIsPlaying}
+          setIsPlaying={handleTogglePlayPause}
           home_score={match.home_score}
           away_score={match.away_score}
           onHomeScoreUp={async () => {
             if (match) {
               const newScore = match.home_score + 1;
-              await matchEventLogger.logScoreChange(
-                match.id,
-                currentTime,
-                getCurrentQuarter(currentTime),
-                newScore,
-                match.away_score,
-                match.home_score,
-                match.away_score,
-                'home'
-              );
+              await updateMatchesLiveScores(newScore, match.away_score);
               setMatch(prev => prev ? {
                 ...prev,
                 home_score: newScore
@@ -1198,16 +1207,7 @@ export default function MatchScreen() {
           onHomeScoreDown={async () => {
             if (match) {
               const newScore = Math.max(0, match.home_score - 1);
-              await matchEventLogger.logScoreChange(
-                match.id,
-                currentTime,
-                getCurrentQuarter(currentTime),
-                newScore,
-                match.away_score,
-                match.home_score,
-                match.away_score,
-                'home'
-              );
+              await updateMatchesLiveScores(newScore, match.away_score);
               setMatch(prev => prev ? {
                 ...prev,
                 home_score: newScore
@@ -1217,16 +1217,7 @@ export default function MatchScreen() {
           onAwayScoreUp={async () => {
             if (match) {
               const newScore = match.away_score + 1;
-              await matchEventLogger.logScoreChange(
-                match.id,
-                currentTime,
-                getCurrentQuarter(currentTime),
-                match.home_score,
-                newScore,
-                match.home_score,
-                match.away_score,
-                'away'
-              );
+              await updateMatchesLiveScores(match.home_score, newScore);
               setMatch(prev => prev ? {
                 ...prev,
                 away_score: newScore
@@ -1236,16 +1227,7 @@ export default function MatchScreen() {
           onAwayScoreDown={async () => {
             if (match) {
               const newScore = Math.max(0, match.away_score - 1);
-              await matchEventLogger.logScoreChange(
-                match.id,
-                currentTime,
-                getCurrentQuarter(currentTime),
-                match.home_score,
-                newScore,
-                match.home_score,
-                match.away_score,
-                'away'
-              );
+              await updateMatchesLiveScores(match.home_score, newScore);
               setMatch(prev => prev ? {
                 ...prev,
                 away_score: newScore
