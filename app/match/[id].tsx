@@ -810,8 +810,17 @@ export default function MatchScreen() {
     
     // Return players not currently on field
     const reserves = allPlayers.filter(player => !activePlayerIds.has(player.id));
-    
+
     return reserves;
+  };
+
+  const getNextPositionForPlayer = (playerId: string, time: number) => {
+    const nextEvent = timelineEvents.find(event =>
+      event.time > time && event.player.id === playerId
+    );
+    if (!nextEvent) return null;
+    const pos = formation?.positions.find(p => p.name === nextEvent.position);
+    return pos?.label_translations?.nl || nextEvent.position;
   };
   const getPositions = () => {
     return Object.keys(parsedSchedule).sort();
@@ -930,6 +939,7 @@ export default function MatchScreen() {
                             selected={selectedPlayer?.id === player.id}
                             numberColor={getPositionColor(player.position)}
                             subLabel="Start"
+                            nextPositionName={getNextPositionForPlayer(player.id, currentTime) || undefined}
                           />
                         ))
                     ) : (
@@ -945,6 +955,7 @@ export default function MatchScreen() {
                             selected={selectedPlayer?.id === player.id}
                             numberColor={getPositionColorForSchedule(position)}
                             subLabel={formatTime(timelineEvents.find(e => e.player.id === player.id && e.position === position)?.time || 0)}
+                            nextPositionName={getNextPositionForPlayer(player.id, currentTime) || undefined}
                             conditionColor={
                               player.condition && player.condition >= 80 ? '#10B981' :
                               player.condition >= 60 ? '#F59E0B' : '#EF4444'

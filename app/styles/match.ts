@@ -314,6 +314,16 @@ export const styles = StyleSheet.create({
       fontFamily: 'Inter-Regular',
       color: '#10B981',
     },
+    nextPositionContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+    },
+    nextPositionText: {
+      fontSize: 8,
+      fontFamily: 'Inter-Regular',
+      color: '#6B7280',
+    },
     livePlayerMeta: {
       flexDirection: 'row',
       alignItems: 'center',
