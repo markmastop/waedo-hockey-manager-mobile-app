@@ -29,6 +29,7 @@ import {
   Eye,
   Shield
 } from 'lucide-react-native';
+import { isValidUUID } from '@/lib/validation';
 import TimeControl from '../components/match/TimeControl';
 import { getPositionColor, getPositionDisplayName, getDutchPositionName } from '@/lib/playerPositions';
 import { styles } from '../styles/match';
@@ -204,13 +205,6 @@ export default function MatchScreen() {
       cards: 0,
     }));
   };
-
-  const isValidUUID = (str: string): boolean => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(str);
-  };
-
-  const convertPositionsToArray = (positions: any): FormationPosition[] => {
     if (Array.isArray(positions)) {
       return positions;
     }
