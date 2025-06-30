@@ -36,6 +36,14 @@ To lint the project:
 npm run lint
 ```
 
+## Database Planning
+
+For upcoming features we maintain design notes in `supabase/docs`. See
+[`matches_live_events_plan.md`](supabase/docs/matches_live_events_plan.md) for
+details about storing each live match event. The table is implemented in the
+migration
+[`20250630223000_create_matches_live_events.sql`](supabase/migrations/20250630223000_create_matches_live_events.sql).
+
 ## Building for Web
 
 ```

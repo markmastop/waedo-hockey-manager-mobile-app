@@ -37,6 +37,13 @@ import TimeDisplay from '../components/match/TimeDisplay';
 import SubstitutionBanner from '../components/match/SubstitutionBanner';
 import ViewModeToggle from '../components/match/ViewModeToggle';
 import LivePlayerCard from "../components/match/LivePlayerCard";
+import {
+  logMatchStart,
+  logMatchEnd,
+  logScoreChange,
+  logSubstitution,
+  logPlayerSwap,
+} from '@/lib/liveEventLogger';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -583,6 +590,27 @@ export default function MatchScreen() {
 
       if (success) {
         Alert.alert('Succes', swapDescription);
+        if (isPlayer1OnField && isPlayer2OnField) {
+          await logPlayerSwap(
+            match.id,
+            player1,
+            player2,
+            currentTime,
+            getCurrentQuarter(currentTime),
+            player1.position,
+            player2.position,
+          );
+        } else if (isPlayer1OnField !== isPlayer2OnField) {
+          const fieldPlayer = isPlayer1OnField ? player1 : player2;
+          const benchPlayer = isPlayer1OnField ? player2 : player1;
+          await logSubstitution(
+            match.id,
+            benchPlayer,
+            fieldPlayer,
+            currentTime,
+            getCurrentQuarter(currentTime),
+          );
+        }
       }
 
     } catch (error) {
@@ -593,7 +621,10 @@ export default function MatchScreen() {
 
   const startMatch = async () => {
     if (match) {
-      await updateMatch({ status: 'inProgress' as const });
+      const success = await updateMatch({ status: 'inProgress' as const });
+      if (success) {
+        await logMatchStart(match.id);
+      }
     }
   };
 
@@ -620,7 +651,16 @@ export default function MatchScreen() {
           style: 'destructive',
           onPress: async () => {
             if (match) {
-              await updateMatch({ status: 'completed' });
+              const success = await updateMatch({ status: 'completed' });
+              if (success) {
+                await logMatchEnd(
+                  match.id,
+                  currentTime,
+                  getCurrentQuarter(currentTime),
+                  match.home_score,
+                  match.away_score,
+                );
+              }
             }
           },
         },
@@ -1198,6 +1238,16 @@ export default function MatchScreen() {
             if (match) {
               const newScore = match.home_score + 1;
               await updateMatchesLiveScores(newScore, match.away_score);
+              await logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                newScore,
+                match.away_score,
+                match.home_score,
+                match.away_score,
+                'home',
+              );
               setMatch(prev => prev ? {
                 ...prev,
                 home_score: newScore
@@ -1208,6 +1258,16 @@ export default function MatchScreen() {
             if (match) {
               const newScore = Math.max(0, match.home_score - 1);
               await updateMatchesLiveScores(newScore, match.away_score);
+              await logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                newScore,
+                match.away_score,
+                match.home_score,
+                match.away_score,
+                'home',
+              );
               setMatch(prev => prev ? {
                 ...prev,
                 home_score: newScore
@@ -1218,6 +1278,16 @@ export default function MatchScreen() {
             if (match) {
               const newScore = match.away_score + 1;
               await updateMatchesLiveScores(match.home_score, newScore);
+              await logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                match.home_score,
+                newScore,
+                match.home_score,
+                match.away_score,
+                'away',
+              );
               setMatch(prev => prev ? {
                 ...prev,
                 away_score: newScore
@@ -1228,6 +1298,16 @@ export default function MatchScreen() {
             if (match) {
               const newScore = Math.max(0, match.away_score - 1);
               await updateMatchesLiveScores(match.home_score, newScore);
+              await logScoreChange(
+                match.id,
+                currentTime,
+                getCurrentQuarter(currentTime),
+                match.home_score,
+                newScore,
+                match.home_score,
+                match.away_score,
+                'away',
+              );
               setMatch(prev => prev ? {
                 ...prev,
                 away_score: newScore
