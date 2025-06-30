@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Player, FormationPosition } from '@/types/database';
+import { getDutchPositionName } from '@/lib/playerPositions';
 
 interface Props {
   positions: FormationPosition[];
@@ -83,15 +84,6 @@ export default function FieldView({
     return undefined;
   };
 
-  const getDutchPositionName = (pos: FormationPosition): string => {
-    // First try to get from label_translations.nl
-    if (pos.label_translations && pos.label_translations.nl) {
-      return pos.label_translations.nl;
-    }
-    
-    // Fallback to dutch_name, then name
-    return pos.dutch_name || pos.name || 'Onbekend';
-  };
 
   const getPositionColor = (pos: FormationPosition, player?: Player): string => {
     if (highlightPosition === pos.id) return '#EF4444'; // Red for highlighted

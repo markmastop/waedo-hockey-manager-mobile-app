@@ -75,3 +75,13 @@ export function getPositionDisplayName(position: string) {
       return position || 'Onbekend';
   }
 }
+
+import { FormationPosition } from '@/types/database';
+
+export function getDutchPositionName(pos: FormationPosition): string {
+  if (pos.label_translations && pos.label_translations.nl) {
+    return pos.label_translations.nl;
+  }
+
+  return pos.dutch_name || pos.name || 'Onbekend';
+}

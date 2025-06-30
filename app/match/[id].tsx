@@ -30,7 +30,7 @@ import {
   Shield
 } from 'lucide-react-native';
 import TimeControl from '../components/match/TimeControl';
-import { getPositionColor, getPositionDisplayName } from '@/lib/playerPositions';
+import { getPositionColor, getPositionDisplayName, getDutchPositionName } from '@/lib/playerPositions';
 import { styles } from '../styles/match';
 import TimeDisplay from '../components/match/TimeDisplay';
 import SubstitutionBanner from '../components/match/SubstitutionBanner';
@@ -634,13 +634,6 @@ export default function MatchScreen() {
     }
   };
 
-  const getDutchPositionName = (pos: FormationPosition): string => {
-    if (pos.label_translations && pos.label_translations.nl) {
-      return pos.label_translations.nl;
-    }
-    
-    return pos.dutch_name || pos.name || 'Onbekend';
-  };
 
   const makePositionSubstitution = (targetPosition: FormationPosition) => {
     if (!match || !selectedPosition) return;
