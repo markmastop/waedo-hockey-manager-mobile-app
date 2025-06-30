@@ -19,8 +19,8 @@ import { router } from 'expo-router';
 import { LogIn, Eye, EyeOff, CircleAlert as AlertCircle } from 'lucide-react-native';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('demo@dohockey.app');
+  const [password, setPassword] = useState('F#p!P*N8ScVZ');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
