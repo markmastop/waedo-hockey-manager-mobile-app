@@ -39,6 +39,14 @@ import ViewModeToggle from '../components/match/ViewModeToggle';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+function formatTime(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
+    .toString()
+    .padStart(2, '0')}`;
+}
+
 interface Formation {
   id: string;
   key: string;
@@ -90,11 +98,6 @@ function CompactPlayerCard({
   onPress,
   formation,
 }: CompactPlayerCardProps) {
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
 
   const getCardStyle = () => {
     if (isSelected) return styles.selectedPlayerCard;
@@ -749,11 +752,6 @@ export default function MatchScreen() {
     Object.keys(match.substitution_schedule).length > 0;
 
   // Timeline functions
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
 
   const getCurrentQuarter = (time: number) => {
     return Math.floor(time / (15 * 60)) + 1;
