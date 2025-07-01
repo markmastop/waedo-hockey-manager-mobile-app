@@ -20,7 +20,8 @@ export type MatchEventAction =
   | 'green_card'
   | 'yellow_card'
   | 'red_card'
-  | 'score_change';
+  | 'score_change'
+  | 'match_pause';
 
 interface LogEventParams {
   matchId: string;
@@ -181,5 +182,21 @@ export async function logMatchEnd(
     metadata: {
       final_score: { home: finalHome, away: finalAway },
     },
+  });
+}
+
+export async function logMatchPause(
+  matchId: string,
+  matchTime: number,
+  quarter: number,
+  teamId?: string,
+): Promise<void> {
+  await logEvent({
+    matchId,
+    teamId,
+    action: 'match_pause',
+    description: 'Match paused',
+    matchTime,
+    quarter,
   });
 }

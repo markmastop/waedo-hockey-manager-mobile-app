@@ -40,6 +40,7 @@ import LivePlayerCard from "../components/match/LivePlayerCard";
 import {
   logMatchStart,
   logMatchEnd,
+  logMatchPause,
   logScoreChange,
   logSubstitution,
   logPlayerSwap,
@@ -215,7 +216,23 @@ export default function MatchScreen() {
 
   async function handleTogglePlayPause(playing: boolean) {
     if (match) {
-      await updateMatch({ status: playing ? 'inProgress' : 'paused' });
+      if (playing) {
+        const starting = match.status === 'upcoming';
+        await updateMatch({ status: 'inProgress' as const });
+        await updateMatchesLiveStatus('inProgress');
+        if (starting) {
+          await logMatchStart(match.id, match.team_id);
+        }
+      } else {
+        await updateMatch({ status: 'paused' as const });
+        await updateMatchesLiveStatus('paused');
+        await logMatchPause(
+          match.id,
+          currentTime,
+          getCurrentQuarter(currentTime),
+          match.team_id,
+        );
+      }
     }
     setIsPlaying(playing);
   }
@@ -523,6 +540,28 @@ export default function MatchScreen() {
     }
   };
 
+  const updateMatchesLiveStatus = async (status: 'upcoming' | 'inProgress' | 'paused' | 'completed') => {
+    if (!match) return;
+
+    try {
+      const { error } = await supabase
+        .from('matches_live')
+        .update({
+          status,
+          match_time: currentTime,
+          current_quarter: getCurrentQuarter(currentTime),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('match_id', match.id);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('💥 Error updating matches_live status:', error);
+    }
+  };
+
   const performPlayerSwap = async (player1: Player, player2: Player, isPlayer1OnField: boolean, isPlayer2OnField: boolean) => {
     if (!match) return;
 
@@ -625,6 +664,7 @@ export default function MatchScreen() {
     if (match) {
       const success = await updateMatch({ status: 'inProgress' as const });
       if (success) {
+        await updateMatchesLiveStatus('inProgress');
         await logMatchStart(match.id, match.team_id);
       }
     }
@@ -633,12 +673,20 @@ export default function MatchScreen() {
   const pauseMatch = async () => {
     if (match) {
       await updateMatch({ status: 'paused' as const });
+      await updateMatchesLiveStatus('paused');
+      await logMatchPause(
+        match.id,
+        currentTime,
+        getCurrentQuarter(currentTime),
+        match.team_id,
+      );
     }
   };
 
   const resumeMatch = async () => {
     if (match) {
       await updateMatch({ status: 'inProgress' as const });
+      await updateMatchesLiveStatus('inProgress');
     }
   };
 
@@ -655,6 +703,7 @@ export default function MatchScreen() {
             if (match) {
               const success = await updateMatch({ status: 'completed' });
               if (success) {
+                await updateMatchesLiveStatus('completed');
                 await logMatchEnd(
                   match.id,
                   currentTime,

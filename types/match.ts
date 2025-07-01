@@ -37,7 +37,7 @@ export interface Match {
 
 export interface MatchEvent {
   id: string;
-  type: 'goal' | 'card' | 'substitution' | 'quarter_start' | 'quarter_end' | 'match_start' | 'match_end';
+  type: 'goal' | 'card' | 'substitution' | 'quarter_start' | 'quarter_end' | 'match_start' | 'match_end' | 'match_pause';
   time: number;
   quarter: number;
   player?: Player;
