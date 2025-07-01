@@ -30,11 +30,13 @@ interface LogEventParams {
   quarter?: number;
   playerId?: string;
   teamId?: string;
+  homeScore?: number;
+  awayScore?: number;
   metadata?: Record<string, any>;
 }
 
 export async function logEvent(params: LogEventParams): Promise<void> {
-  const { matchId, action, description, matchTime, quarter, playerId, teamId, metadata } = params;
+  const { matchId, action, description, matchTime, quarter, playerId, teamId, homeScore, awayScore, metadata } = params;
   if (!isValidUUID(matchId)) {
     console.error('Invalid match ID for event log:', matchId);
     return;
@@ -44,6 +46,8 @@ export async function logEvent(params: LogEventParams): Promise<void> {
     match_id: matchId,
     player_id: playerId,
     team_id: teamId,
+    home_score: homeScore,
+    away_score: awayScore,
     action,
     description,
     match_time: matchTime,
@@ -118,6 +122,8 @@ export async function logScoreChange(
     description: `Score updated to ${newHome}-${newAway}`,
     matchTime,
     quarter,
+    homeScore: newHome,
+    awayScore: newAway,
     metadata: {
       new_score: { home: newHome, away: newAway },
       previous_score: { home: prevHome, away: prevAway },
@@ -133,6 +139,8 @@ export async function logMatchStart(matchId: string): Promise<void> {
     description: 'Match started',
     matchTime: 0,
     quarter: 1,
+    homeScore: 0,
+    awayScore: 0,
   });
 }
 
@@ -149,6 +157,8 @@ export async function logMatchEnd(
     description: `Match ended with score ${finalHome}-${finalAway}`,
     matchTime,
     quarter,
+    homeScore: finalHome,
+    awayScore: finalAway,
     metadata: {
       final_score: { home: finalHome, away: finalAway },
     },

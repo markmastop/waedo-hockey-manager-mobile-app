@@ -18,6 +18,8 @@ This plan outlines the structure and purpose of the upcoming `matches_live_event
 | `description` | `text`                    | Human readable description of the event.                               |
 | `match_time`  | `integer`                 | Match clock time when the event occurred (in seconds).                 |
 | `quarter`     | `integer`                 | Match quarter number.                                                  |
+| `home_score`  | `integer`                 | Home team score after this event.                                    |
+| `away_score`  | `integer`                 | Away team score after this event.                                    |
 | `metadata`    | `jsonb`                   | Additional structured info (e.g. card color, position coordinates).    |
 | `created_at`  | `timestamptz`             | Timestamp when the event was recorded.                                 |
 
