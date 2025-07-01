@@ -6,9 +6,7 @@ This plan outlines the structure and purpose of the upcoming `matches_live_event
 - Store each match event as a single row rather than inside the `matches_live.events` JSON array.
 - Provide an audit trail of every action in a match: substitutions, goals, cards, quarter starts/ends, etc.
 - Allow efficient queries for analytics and reporting (per player, match, or event type).
-- After an event is inserted, the description of that event is also stored in the
-  `matches_live.last_event` column so the live state can quickly show the latest
-  action.
+- After an event is inserted, the description of that event is also stored as plain text in the `matches_live.last_event` column so the live state can quickly show the latest action.
 
 ## Proposed Columns
 | Column         | Type                       | Description                                                            |

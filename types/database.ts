@@ -12,7 +12,7 @@ export interface MatchesLive {
   away_team: string;
   club_logo_url: string | null;
   events: any[]; // Array of match events
-  last_event: any | null; // Most recent event for quick access
+  last_event: string | null; // Description of most recent event
   updated_at: string;
 }
 
