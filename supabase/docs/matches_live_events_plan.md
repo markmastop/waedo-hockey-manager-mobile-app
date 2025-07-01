@@ -7,6 +7,7 @@ This plan outlines the structure and purpose of the upcoming `matches_live_event
 - Provide an audit trail of every action in a match: substitutions, goals, cards, quarter starts/ends, etc.
 - Allow efficient queries for analytics and reporting (per player, match, or event type).
 - After an event is inserted, the description of that event is also stored as plain text in the `matches_live.last_event` column so the live state can quickly show the latest action.
+- The timestamp of the latest event is saved in `matches_live.last_event_time` for quick reference to when it occurred.
 
 ## Proposed Columns
 | Column         | Type                       | Description                                                            |

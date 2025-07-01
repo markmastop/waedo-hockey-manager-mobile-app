@@ -62,7 +62,11 @@ export async function logEvent(params: LogEventParams): Promise<void> {
 
   await supabase
     .from('matches_live')
-    .update({ last_event: description, updated_at: new Date().toISOString() })
+    .update({
+      last_event: description,
+      last_event_time: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .eq('match_id', matchId);
 }
 

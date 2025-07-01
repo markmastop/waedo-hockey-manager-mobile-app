@@ -13,6 +13,7 @@ export interface MatchesLive {
   club_logo_url: string | null;
   events: any[]; // Array of match events
   last_event: string | null; // Description of most recent event
+  last_event_time: string | null; // Timestamp when the most recent event occurred
   updated_at: string;
 }
 
