@@ -57,7 +57,13 @@ export async function logEvent(params: LogEventParams): Promise<void> {
 
   if (error) {
     console.error('Failed to log match event:', error);
+    return;
   }
+
+  await supabase
+    .from('matches_live')
+    .update({ last_event: { description }, updated_at: new Date().toISOString() })
+    .eq('match_id', matchId);
 }
 
 export async function logSubstitution(
