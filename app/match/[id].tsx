@@ -218,19 +218,30 @@ export default function MatchScreen() {
     if (match) {
       if (playing) {
         const starting = match.status === 'upcoming';
-        await updateMatch({ status: 'inProgress' as const });
+        await updateMatch({ 
+          status: 'inProgress' as const,
+          home_score: match.home_score,
+          away_score: match.away_score
+        });
         await updateMatchesLiveStatus('inProgress');
         if (starting) {
-          await logMatchStart(match.id, match.team_id);
+          await logMatchStart(
+            match.id as string,
+            match.team_id as string
+          );
         }
       } else {
-        await updateMatch({ status: 'paused' as const });
+        await updateMatch({ 
+          status: 'paused' as const,
+          home_score: match.home_score,
+          away_score: match.away_score
+        });
         await updateMatchesLiveStatus('paused');
         await logMatchPause(
-          match.id,
+          match.id as string,
           currentTime,
           getCurrentQuarter(currentTime),
-          match.team_id,
+          match.team_id as string
         );
       }
     }
@@ -471,24 +482,6 @@ export default function MatchScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime(prev => {
-          const newTime = prev + 1;
-          if (newTime >= 60 * 60) {
-            handleTogglePlayPause(false);
-            updateMatch({ status: 'completed' });
-            return prev;
-          }
-          return newTime;
-        });
-      }, 100);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
-
   const updateMatch = async (updates: Partial<Match>) => {
     if (!match) return;
 
@@ -516,6 +509,35 @@ export default function MatchScreen() {
       return false;
     }
   };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentTime(prev => {
+          const newTime = prev + 1;
+          if (newTime >= 60 * 60) {
+            handleTogglePlayPause(false);
+            updateMatch({ status: 'completed' });
+            if (match) {
+              logMatchEnd(
+                match.id as string,
+                newTime,
+                getCurrentQuarter(newTime),
+                match.home_score || 0,
+                match.away_score || 0,
+                match.team_id as string
+              );
+            }
+            return prev;
+          }
+          return newTime;
+        });
+      }, 100);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, handleTogglePlayPause, updateMatch, match]);
 
   const updateMatchesLiveScores = async (homeScore: number, awayScore: number) => {
     if (!match) return;
