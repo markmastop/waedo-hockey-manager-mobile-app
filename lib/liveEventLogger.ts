@@ -76,10 +76,12 @@ export async function logSubstitution(
   playerOut: Player,
   matchTime: number,
   quarter: number,
+  teamId?: string,
 ): Promise<void> {
   await logEvent({
     matchId,
     playerId: playerIn.id,
+    teamId,
     action: 'substitution',
     description: `Substitution: ${playerIn.name} in for ${playerOut.name}`,
     matchTime,
@@ -99,10 +101,12 @@ export async function logPlayerSwap(
   quarter: number,
   fromPosition?: string,
   toPosition?: string,
+  teamId?: string,
 ): Promise<void> {
   await logEvent({
     matchId,
     playerId: player1.id,
+    teamId,
     action: 'swap',
     description: `${player1.name} swapped with ${player2.name}`,
     matchTime,
@@ -125,9 +129,11 @@ export async function logScoreChange(
   prevHome: number,
   prevAway: number,
   team?: 'home' | 'away',
+  teamId?: string,
 ): Promise<void> {
   await logEvent({
     matchId,
+    teamId,
     action: 'score_change',
     description: `Score updated to ${newHome}-${newAway}`,
     matchTime,
@@ -142,9 +148,10 @@ export async function logScoreChange(
   });
 }
 
-export async function logMatchStart(matchId: string): Promise<void> {
+export async function logMatchStart(matchId: string, teamId?: string): Promise<void> {
   await logEvent({
     matchId,
+    teamId,
     action: 'match_start',
     description: 'Match started',
     matchTime: 0,
@@ -160,9 +167,11 @@ export async function logMatchEnd(
   quarter: number,
   finalHome: number,
   finalAway: number,
+  teamId?: string,
 ): Promise<void> {
   await logEvent({
     matchId,
+    teamId,
     action: 'match_end',
     description: `Match ended with score ${finalHome}-${finalAway}`,
     matchTime,

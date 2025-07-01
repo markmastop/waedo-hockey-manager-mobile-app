@@ -599,6 +599,7 @@ export default function MatchScreen() {
             getCurrentQuarter(currentTime),
             player1.position,
             player2.position,
+            match.team_id,
           );
         } else if (isPlayer1OnField !== isPlayer2OnField) {
           const fieldPlayer = isPlayer1OnField ? player1 : player2;
@@ -609,6 +610,7 @@ export default function MatchScreen() {
             fieldPlayer,
             currentTime,
             getCurrentQuarter(currentTime),
+            match.team_id,
           );
         }
       }
@@ -623,7 +625,7 @@ export default function MatchScreen() {
     if (match) {
       const success = await updateMatch({ status: 'inProgress' as const });
       if (success) {
-        await logMatchStart(match.id);
+        await logMatchStart(match.id, match.team_id);
       }
     }
   };
@@ -659,6 +661,7 @@ export default function MatchScreen() {
                   getCurrentQuarter(currentTime),
                   match.home_score,
                   match.away_score,
+                  match.team_id,
                 );
               }
             }
@@ -1247,6 +1250,7 @@ export default function MatchScreen() {
                 match.home_score,
                 match.away_score,
                 'home',
+                match.team_id,
               );
               setMatch(prev => prev ? {
                 ...prev,
@@ -1267,6 +1271,7 @@ export default function MatchScreen() {
                 match.home_score,
                 match.away_score,
                 'home',
+                match.team_id,
               );
               setMatch(prev => prev ? {
                 ...prev,
@@ -1287,6 +1292,7 @@ export default function MatchScreen() {
                 match.home_score,
                 match.away_score,
                 'away',
+                match.team_id,
               );
               setMatch(prev => prev ? {
                 ...prev,
@@ -1307,6 +1313,7 @@ export default function MatchScreen() {
                 match.home_score,
                 match.away_score,
                 'away',
+                match.team_id,
               );
               setMatch(prev => prev ? {
                 ...prev,
